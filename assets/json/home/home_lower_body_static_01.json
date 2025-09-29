@@ -1,0 +1,60 @@
+{
+    "id": "home_lower_body_static_01",
+    "name": "Lower Body Controlled Activation",
+    "description": "A lower-body workout with stable, repeatable movements suitable for form tracking.",
+    "tags": [
+        "lower_body",
+        "home",
+        "form_friendly",
+        "static"
+    ],
+    "suitable_for": {
+        "gender": [
+            "male",
+            "female"
+        ],
+        "age_range": [
+            18,
+            65
+        ],
+        "body_type": [
+            "any"
+        ],
+        "goals": [
+            "tone",
+            "general_fitness",
+            "mobility"
+        ],
+        "experience": [
+            "no_experience",
+            "some_experience"
+        ],
+        "limitations": "optional",
+        "workout_location": "home",
+        "training_level": "beginner",
+        "available_days": [
+            4,
+            5,
+            6,
+            7
+        ],
+        "plan_duration": [
+            "1_month"
+        ]
+    },
+    "workout_split": "lower_body_static",
+    "equipment_required": [
+        "chair",
+        "mat"
+    ],
+    "intensity_level": "low_to_moderate",
+    "exercises": [
+        "Chair Squats",
+        "Wall Sit",
+        "Standing Calf Raises",
+        "Glute Bridge Hold",
+        "Single-Leg Glute Bridge (supported)",
+        "Side-Lying Hip Abductions",
+        "Step Back Taps"
+    ]
+}

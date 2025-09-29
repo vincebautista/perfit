@@ -1,0 +1,59 @@
+{
+    "id": "home_upper_body_static_01",
+    "name": "Upper Body Form-Focused Routine",
+    "description": "A slow-paced upper-body plan with minimal movement and posture stability.",
+    "tags": [
+        "upper_body",
+        "home",
+        "form_friendly"
+    ],
+    "suitable_for": {
+        "gender": [
+            "male",
+            "female"
+        ],
+        "age_range": [
+            18,
+            55
+        ],
+        "body_type": [
+            "skinny",
+            "medium",
+            "toned"
+        ],
+        "goals": [
+            "build_muscle",
+            "tone",
+            "posture"
+        ],
+        "experience": [
+            "no_experience",
+            "some_experience"
+        ],
+        "limitations": "optional",
+        "workout_location": "home",
+        "training_level": "beginner",
+        "available_days": [
+            4,
+            5,
+            6
+        ],
+        "plan_duration": [
+            "1_month"
+        ]
+    },
+    "workout_split": "upper_body_static",
+    "equipment_required": [
+        "none"
+    ],
+    "intensity_level": "low_to_moderate",
+    "exercises": [
+        "Wall Push-Ups",
+        "Isometric Shoulder Press (arms raised)",
+        "Arm Circles",
+        "Isometric Bicep Curl (towel resistance)",
+        "Plank Shoulder Taps (slow)",
+        "Seated Arm Raises (front/side)",
+        "Wall Angels"
+    ]
+}

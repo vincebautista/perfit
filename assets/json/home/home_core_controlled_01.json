@@ -1,0 +1,65 @@
+{
+    "id": "home_core_controlled_01",
+    "name": "Controlled Core Stability Routine",
+    "description": "A stable, form-focused core routine with slow, isolated movements.",
+    "tags": [
+        "core",
+        "home",
+        "form_friendly",
+        "low_impact"
+    ],
+    "suitable_for": {
+        "gender": [
+            "male",
+            "female"
+        ],
+        "age_range": [
+            18,
+            65
+        ],
+        "body_type": [
+            "any"
+        ],
+        "goals": [
+            "general_fitness",
+            "core_stability"
+        ],
+        "experience": [
+            "no_experience",
+            "some_experience"
+        ],
+        "limitations": "optional",
+        "medical_conditions": "optional",
+        "workout_location": "home",
+        "training_level": "beginner",
+        "activity_level": [
+            "sedentary",
+            "lightly_active"
+        ],
+        "available_days": [
+            4,
+            5,
+            6,
+            7
+        ],
+        "plan_duration": [
+            "1_month",
+            "2_months"
+        ]
+    },
+    "workout_split": "core_isolation",
+    "equipment_required": [
+        "mat"
+    ],
+    "intensity_level": "low",
+    "exercises": [
+        "Dead Bug",
+        "Bird Dog Hold",
+        "Plank",
+        "Side Plank (each side)",
+        "Seated Leg Lifts",
+        "Toe Taps",
+        "Wall Press Dead Bug",
+        "Modified Hollow Hold"
+    ]
+}

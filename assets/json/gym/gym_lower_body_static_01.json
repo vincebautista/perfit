@@ -1,0 +1,62 @@
+{
+    "id": "gym_lower_body_static_01",
+    "name": "Lower Body Strength & Stability",
+    "description": "Lower body machine and dumbbell routine to develop controlled strength.",
+    "tags": [
+        "gym",
+        "lower_body",
+        "form_friendly",
+        "controlled"
+    ],
+    "suitable_for": {
+        "gender": [
+            "male",
+            "female"
+        ],
+        "age_range": [
+            18,
+            65
+        ],
+        "body_type": [
+            "any"
+        ],
+        "goals": [
+            "build_muscle",
+            "tone",
+            "mobility"
+        ],
+        "experience": [
+            "some_experience"
+        ],
+        "workout_location": "gym",
+        "training_level": "beginner",
+        "available_days": [
+            4,
+            5,
+            6
+        ],
+        "plan_duration": [
+            "1_month",
+            "2_months"
+        ]
+    },
+    "workout_split": "lower_body",
+    "equipment_required": [
+        "leg_press_machine",
+        "leg_extension_machine",
+        "leg_curl_machine",
+        "cable_machine",
+        "bench"
+    ],
+    "intensity_level": "moderate",
+    "exercises": [
+        "Leg Press",
+        "Seated Leg Curl",
+        "Seated Leg Extension",
+        "Standing Calf Raise Machine",
+        "Cable Glute Kickbacks",
+        "Wall Sit",
+        "Bodyweight Step-Ups (Bench)",
+        "Hip Abduction Machine"
+    ]
+}

@@ -1,0 +1,66 @@
+{
+    "id": "gym_push_pull_split_01",
+    "name": "Controlled Push-Pull Routine",
+    "description": "Push-pull split routine using machines and cables to build balanced strength.",
+    "tags": [
+        "gym",
+        "push_pull",
+        "controlled",
+        "form_friendly"
+    ],
+    "suitable_for": {
+        "gender": [
+            "male",
+            "female"
+        ],
+        "age_range": [
+            20,
+            50
+        ],
+        "body_type": [
+            "medium",
+            "toned"
+        ],
+        "goals": [
+            "build_muscle",
+            "general_fitness"
+        ],
+        "experience": [
+            "some_experience",
+            "consistent"
+        ],
+        "workout_location": "gym",
+        "training_level": "intermediate",
+        "available_days": [
+            5,
+            6,
+            7
+        ],
+        "plan_duration": [
+            "2_months",
+            "3_months"
+        ]
+    },
+    "workout_split": "push_pull_split",
+    "equipment_required": [
+        "cable_machine",
+        "dumbbells",
+        "chest_press_machine",
+        "row_machine"
+    ],
+    "intensity_level": "moderate_to_high",
+    "exercises": {
+        "push_day": [
+            "Chest Press Machine",
+            "Seated Dumbbell Shoulder Press",
+            "Cable Triceps Pushdown",
+            "Dumbbell Lateral Raise"
+        ],
+        "pull_day": [
+            "Seated Row Machine",
+            "Lat Pulldown",
+            "Cable Biceps Curl",
+            "Cable Face Pull"
+        ]
+    }
+}
