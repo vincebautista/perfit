@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:gap/gap.dart';
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/exercise_service.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
@@ -184,32 +185,83 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(AppSizes.padding20),
                   child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    color: const Color.fromARGB(80, 255, 255, 255),
+                    elevation: 100,
                     child: Padding(
                       padding: const EdgeInsets.all(AppSizes.padding20),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
                             "Your daily net calorie goal is:",
                             style: TextStyles.body,
+                            textAlign: TextAlign.center,
                           ),
                           Gap(AppSizes.gap10),
                           Text(
                             "${calorieTarget?.round() ?? 0} kcal",
                             style: TextStyles.heading,
+                            textAlign: TextAlign.center,
                           ),
                           Gap(AppSizes.gap20),
                           Text(
-                            "With this $planDuration-week plan, you should aim for "
-                            "${protein?.round() ?? 0}g protein, "
-                            "${carb?.round() ?? 0}g carbs, and "
-                            "${fat?.round() ?? 0}g fat each day.",
+                            "With this $planDuration-week plan, you should aim:",
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.white70,
                               height: 1.5,
                             ),
                             textAlign: TextAlign.center,
+                          ),
+                          Gap(AppSizes.gap10),
+                          Card(
+                            color: AppColors.primary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Text(
+                                "${protein?.round() ?? 0}g protein",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.white,
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                          Card(
+                            color: AppColors.primary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Text(
+                                "${carb?.round() ?? 0}g carbs",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.white,
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                          Card(
+                            color: AppColors.primary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Text(
+                                "${fat?.round() ?? 0}g fat",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.white,
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ),
                         ],
                       ),

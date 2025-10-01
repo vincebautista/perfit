@@ -114,7 +114,6 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // ===== Weight Logs =====
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -130,7 +129,6 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                           ],
                         ),
                         Gap(AppSizes.gap10),
-                        // ===== Month Selector =====
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -149,14 +147,12 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-
                         _buildMonthChart(
                           context,
                           logsSnapshot,
                           selectedMonth,
                           selectedYear,
                         ),
-
                         const SizedBox(height: 20),
                         Text("Completed Workouts", style: TextStyles.body),
                         Gap(AppSizes.gap10),
@@ -428,7 +424,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                             showTitles: true,
                             interval: 10,
                             reservedSize:
-                                48, // 👈 more space for "100" or "110"
+                                48,
                             getTitlesWidget: (value, meta) {
                               if (value % 10 == 0) {
                                 return Text(

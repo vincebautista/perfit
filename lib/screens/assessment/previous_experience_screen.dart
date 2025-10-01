@@ -1,3 +1,4 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/assessment_model.dart';
@@ -8,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class PreviousExperienceScreen extends StatefulWidget {
-  const PreviousExperienceScreen({super.key});
+  const PreviousExperienceScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<PreviousExperienceScreen> createState() =>
@@ -16,6 +19,15 @@ class PreviousExperienceScreen extends StatefulWidget {
 }
 
 class _PreviousExperienceScreenState extends State<PreviousExperienceScreen> {
+  String? selectedExperience;
+
+  @override
+  void initState() {
+    super.initState();
+    final assessment = Provider.of<AssessmentModel>(context, listen: false);
+    selectedExperience = assessment.answers["previousExperience"];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -26,7 +38,7 @@ class _PreviousExperienceScreenState extends State<PreviousExperienceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AssessmentProgressBar(currentValue: 8),
+              if (!widget.fromEdit) AssessmentProgressBar(currentValue: 8),
               Expanded(
                 child: Column(
                   spacing: AppSizes.gap10,
@@ -38,36 +50,9 @@ class _PreviousExperienceScreenState extends State<PreviousExperienceScreen> {
                       style: TextStyles.subtitle,
                       textAlign: TextAlign.center,
                     ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap:
-                            () => saveToProvider(
-                              "Yes, consistent past workout routine",
-                            ),
-                        title: Text(
-                          "Yes, consistent past workout routine",
-                          style: TextStyles.body,
-                        ),
-                      ),
-                    ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("Some, but inconsistent"),
-                        title: Text(
-                          "Some, but inconsistent",
-                          style: TextStyles.body,
-                        ),
-                      ),
-                    ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("No experience"),
-                        title: Text("No experience", style: TextStyles.body),
-                      ),
-                    ),
+                    buildExperienceCard("Yes, consistent past workout routine"),
+                    buildExperienceCard("Some, but inconsistent"),
+                    buildExperienceCard("No experience"),
                   ],
                 ),
               ),
@@ -78,12 +63,41 @@ class _PreviousExperienceScreenState extends State<PreviousExperienceScreen> {
     );
   }
 
+  Widget buildExperienceCard(String label) {
+    final isSelected = selectedExperience == label;
+
+    return Card(
+      color: isSelected ? AppColors.primary : null,
+      elevation: AppSizes.gap10,
+      child: ListTile(
+        onTap: () => saveToProvider(label),
+        title: Text(
+          label,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? AppColors.white : null,
+          ),
+        ),
+        trailing:
+            isSelected ? const Icon(Icons.check, color: AppColors.white) : null,
+      ),
+    );
+  }
+
   void saveToProvider(String value) {
+    setState(() {
+      selectedExperience = value;
+    });
+
     Provider.of<AssessmentModel>(
       context,
       listen: false,
     ).updateAnswer("previousExperience", value);
 
-    NavigationUtils.push(context, WorkoutTypeScreen());
+    if (widget.fromEdit) {
+      Navigator.pop(context);
+    } else {
+      NavigationUtils.push(context, WorkoutTypeScreen());
+    }
   }
 }

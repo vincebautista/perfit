@@ -9,6 +9,7 @@ import 'package:perfit/data/data_sources/exercise_list.dart';
 import 'package:perfit/data/models/exercise_model.dart';
 import 'package:perfit/screens/all_exercises_screen.dart';
 import 'package:perfit/screens/exercise_screen.dart';
+import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/widgets/text_styles.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
             .collection("viewedExercises")
             .get();
 
+    if (!mounted) return;
     setState(() {
       viewedExercises = snapshot.docs.map((doc) => doc.id).toList();
     });
@@ -56,17 +58,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchTodayWorkout() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    
+    if (!mounted) return;
+    if (user == null) {
+      setState(() {
+        todayWorkout = null;
+        loadingWorkout = false;
+      });
+      return;
+    }
 
     final firestore = FirebaseFirestore.instance;
     final userRef = firestore.collection("users").doc(user.uid);
     final userDoc = await userRef.get();
+
+    if (!mounted) return;
     if (!userDoc.exists) {
       setState(() => loadingWorkout = false);
       return;
     }
 
     final userData = userDoc.data() ?? {};
+
+    if (!mounted) return;
     if (!userData.containsKey('activeFitnessPlan')) {
       setState(() => loadingWorkout = false);
       return;
@@ -76,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final planRef = userRef.collection("fitnessPlan").doc(activeFitnessPlanId);
     final planDoc = await planRef.get();
 
+    if (!mounted) return;
     if (!planDoc.exists) {
       setState(() => loadingWorkout = false);
       return;
@@ -93,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final workoutDoc =
         await planRef.collection("workouts").doc(day.toString()).get();
 
+    if (!mounted) return;
     if (!workoutDoc.exists) {
       setState(() => loadingWorkout = false);
       return;
@@ -114,6 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final nextWorkoutDoc =
             await planRef.collection("workouts").doc(day.toString()).get();
+
+        if (!mounted) return;
         setState(() {
           currentDay = day;
           todayWorkout = nextWorkoutDoc.data();
@@ -123,6 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       await planRef.update({'lastOpenedDate': today.toIso8601String()});
+
+      if (!mounted) return;
       setState(() {
         currentDay = day;
         todayWorkout = workoutData;
@@ -147,6 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final nextWorkoutDoc =
           await planRef.collection("workouts").doc(day.toString()).get();
+
+      if (!mounted) return;
       setState(() {
         currentDay = day;
         todayWorkout = nextWorkoutDoc.data();
@@ -155,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    if (!mounted) return;
     await planRef.update({'lastOpenedDate': today.toIso8601String()});
     setState(() {
       currentDay = day;
@@ -174,12 +197,14 @@ class _HomeScreenState extends State<HomeScreen> {
         .doc(exerciseId)
         .set({"viewedAt": Timestamp.now()});
 
+    if (!mounted) return;
     setState(() {
       viewedExercises.add(exerciseId);
     });
   }
 
   void filterExercises(String filter) {
+    if (!mounted) return;
     setState(() {
       _selectedFilter = filter;
       if (filter == "All") {
@@ -194,6 +219,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget todayWorkoutSummary() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Text("");
+    }
+
     if (loadingWorkout) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -207,6 +238,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final exercises = todayWorkout!['exercises'] as List<dynamic>? ?? [];
+
+    final hasProgress = exercises.any(
+      (ex) => ex['status'] == 'completed' || ex['status'] == 'skipped',
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,11 +260,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
           return Text(
             reps != null
-                ? "$name - $sets x $reps reps ${ex['status'] == 'completed' ? '✅' : ''}"
-                : "$name - $sets x ${duration ?? 0}s ${ex['status'] == 'completed' ? '✅' : ''}",
+                ? "$name - $sets x $reps reps ${ex['status'] == 'completed' || ex['status'] == 'skipped' ? '✅' : ''}"
+                : "$name - $sets x ${duration ?? 0}s ${ex['status'] == 'completed' || ex['status'] == 'skipped' ? '✅' : ''}",
             style: TextStyles.label,
           );
         }),
+        Gap(AppSizes.gap20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MainNavigation(initialIndex: 2),
+                ),
+              );
+            },
+            child: Text(hasProgress ? "Continue Workout" : "Go to Workout"),
+          ),
+        ),
+        Gap(AppSizes.gap20),
       ],
     );
   }
@@ -237,174 +288,168 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(AppSizes.padding16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Welcome to Perfit!", style: TextStyles.heading),
-                      Text(
-                        "Ready to perfect your form and build strength the right way?",
-                        style: TextStyles.caption,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Gap(AppSizes.gap20),
-            todayWorkoutSummary(),
-            Gap(AppSizes.gap20),
-            // 🔹 Filter buttons
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSizes.padding16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (var filter in [
-                    "All",
-                    "Beginner",
-                    "Intermediate",
-                    "Advance",
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.only(right: AppSizes.gap10),
-                      child: ElevatedButton(
-                        onPressed: () => filterExercises(filter),
-                        style: ElevatedButton.styleFrom(
-                          fixedSize: Size(130, AppSizes.buttonSmall),
-                          backgroundColor:
-                              _selectedFilter == filter
-                                  ? Theme.of(context).primaryColor
-                                  : AppColors.grey,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Welcome to Perfit!", style: TextStyles.heading),
+                        Text(
+                          "Ready to perfect your form and build strength the right way?",
+                          style: TextStyles.caption,
                         ),
-                        child: Text(filter, style: TextStyles.buttonSmall),
-                      ),
+                      ],
                     ),
+                  ),
                 ],
               ),
-            ),
-            Gap(AppSizes.gap15),
-
-            // 🔹 Exercises Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Exercises", style: TextStyles.body),
-                TextButton(
-                  onPressed:
-                      () => NavigationUtils.push(
-                        context,
-                        const AllExercisesScreen(),
+              Gap(AppSizes.gap20),
+              todayWorkoutSummary(),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (var filter in [
+                      "All",
+                      "Beginner",
+                      "Intermediate",
+                      "Advance",
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.only(right: AppSizes.gap10),
+                        child: ElevatedButton(
+                          onPressed: () => filterExercises(filter),
+                          style: ElevatedButton.styleFrom(
+                            fixedSize: Size(130, AppSizes.buttonSmall),
+                            backgroundColor:
+                                _selectedFilter == filter
+                                    ? Theme.of(context).primaryColor
+                                    : AppColors.grey,
+                          ),
+                          child: Text(filter, style: TextStyles.buttonSmall),
+                        ),
                       ),
-                  child: Text(
-                    "View All",
-                    style: TextStyles.body.copyWith(color: AppColors.white),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            Gap(AppSizes.gap10),
-            Expanded(
-              child:
-                  _filteredExercises.isNotEmpty
-                      ? GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 200,
-                              mainAxisSpacing: AppSizes.gap10,
-                              crossAxisSpacing: AppSizes.gap10,
-                            ),
-                        itemCount: _filteredExercises.length,
-                        itemBuilder: (context, index) {
-                          final exercise = _filteredExercises[index];
+              ),
+              Gap(AppSizes.gap15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Exercises", style: TextStyles.body),
+                  TextButton(
+                    onPressed:
+                        () => NavigationUtils.push(
+                          context,
+                          const AllExercisesScreen(),
+                        ),
+                    child: Text(
+                      "View All",
+                      style: TextStyles.body.copyWith(color: AppColors.white),
+                    ),
+                  ),
+                ],
+              ),
+              Gap(AppSizes.gap10),
+              _filteredExercises.isNotEmpty
+                  ? GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 200,
+                          mainAxisSpacing: AppSizes.gap10,
+                          crossAxisSpacing: AppSizes.gap10,
+                        ),
+                    itemCount: _filteredExercises.length,
+                    itemBuilder: (context, index) {
+                      final exercise = _filteredExercises[index];
 
-                          return GestureDetector(
-                            onTap: () {
-                              NavigationUtils.push(
-                                context,
-                                ExerciseScreen(id: exercise.id),
-                              );
-                              saveViewedExercise(exercise.id);
-                            },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.roundedRadius,
-                              ),
-                              child: GridTile(
-                                footer: Container(
-                                  padding: const EdgeInsets.all(5),
-                                  color: AppColors.grey.withValues(alpha: 0.5),
-                                  alignment: Alignment.center,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSizes.padding16,
-                                    ),
-                                    child: Text(
-                                      exercise.name,
-                                      style: TextStyles.label,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
+                      return GestureDetector(
+                        onTap: () {
+                          NavigationUtils.push(
+                            context,
+                            ExerciseScreen(id: exercise.id),
+                          );
+                          saveViewedExercise(exercise.id);
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.roundedRadius,
+                          ),
+                          child: GridTile(
+                            footer: Container(
+                              padding: const EdgeInsets.all(5),
+                              color: AppColors.grey.withValues(alpha: 0.5),
+                              alignment: Alignment.center,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.padding16,
                                 ),
-                                header:
-                                    viewedExercises.contains(exercise.id)
-                                        ? Align(
-                                          alignment: Alignment.topRight,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(6),
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal:
-                                                        AppSizes.padding20 / 2,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.orange,
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                      AppSizes.circleRadius,
-                                                    ),
-                                              ),
-                                              child: const Text(
-                                                "viewed",
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
+                                child: Text(
+                                  exercise.name,
+                                  style: TextStyles.label,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            header:
+                                viewedExercises.contains(exercise.id)
+                                    ? Align(
+                                      alignment: Alignment.topRight,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(6),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSizes.padding20 / 2,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange,
+                                            borderRadius: BorderRadius.circular(
+                                              AppSizes.circleRadius,
                                             ),
                                           ),
-                                        )
-                                        : const SizedBox.shrink(),
-                                child: Image.asset(
-                                  exercise.image,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    debugPrint(
-                                      "ERROR loading asset: ${exercise.image}",
-                                    );
-                                    return const Center(
-                                      child: Text("Image unavailable"),
-                                    );
-                                  },
-                                ),
-                              ),
+                                          child: const Text(
+                                            "viewed",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    : const SizedBox.shrink(),
+                            child: Image.asset(
+                              exercise.image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint(
+                                  "ERROR loading asset: ${exercise.image}",
+                                );
+                                return const Center(
+                                  child: Text("Image unavailable"),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      )
-                      : const Center(child: Text("No exercises found.")),
-            ),
-          ],
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                  : const Center(child: Text("No exercises found.")),
+            ],
+          ),
         ),
       ),
     );

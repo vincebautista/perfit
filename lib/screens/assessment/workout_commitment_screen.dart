@@ -1,3 +1,4 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/assessment_model.dart';
@@ -8,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class WorkoutCommitmentScreen extends StatefulWidget {
-  const WorkoutCommitmentScreen({super.key});
+  const WorkoutCommitmentScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<WorkoutCommitmentScreen> createState() =>
@@ -16,6 +19,20 @@ class WorkoutCommitmentScreen extends StatefulWidget {
 }
 
 class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
+  String? selectedValue;
+
+  @override
+  void initState() {
+    super.initState();
+    // preload previous answer if editing
+    final currentValue =
+        Provider.of<AssessmentModel>(
+          context,
+          listen: false,
+        ).answers["workoutCommitment"];
+    selectedValue = currentValue;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -38,27 +55,9 @@ class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
                       style: TextStyles.subtitle,
                       textAlign: TextAlign.center,
                     ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("4"),
-                        title: Text("4 days", style: TextStyles.body),
-                      ),
-                    ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("5"),
-                        title: Text("5 days", style: TextStyles.body),
-                      ),
-                    ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("6"),
-                        title: Text("6 days", style: TextStyles.body),
-                      ),
-                    ),
+                    buildOption("4", "4 days"),
+                    buildOption("5", "5 days"),
+                    buildOption("6", "6 days"),
                   ],
                 ),
               ),
@@ -69,12 +68,37 @@ class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
     );
   }
 
+  Widget buildOption(String value, String label) {
+    final isSelected = selectedValue == value;
+    return Card(
+      color: isSelected ? AppColors.primary : null, // 🔹 highlight
+      elevation: AppSizes.gap10,
+      child: ListTile(
+        onTap: () {
+          setState(() => selectedValue = value);
+          saveToProvider(value);
+        },
+        title: Text(
+          label,
+          style: TextStyles.body.copyWith(
+            color: isSelected ? AppColors.white : null,
+          ),
+        ),
+        trailing: isSelected ? Icon(Icons.check, color: AppColors.white) : null,
+      ),
+    );
+  }
+
   void saveToProvider(String value) {
     Provider.of<AssessmentModel>(
       context,
       listen: false,
     ).updateAnswer("workoutCommitment", value);
 
-    NavigationUtils.push(context, AnswersScreen());
+    if (widget.fromEdit) {
+      Navigator.pop(context);
+    } else {
+      NavigationUtils.push(context, AnswersScreen());
+    }
   }
 }

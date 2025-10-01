@@ -174,16 +174,15 @@ class _RegisterState extends State<Register> {
         ],
       );
 
-      NavigationUtils.pop(context);
-      NavigationUtils.pop(context);
-
-      NavigationUtils.pushAndRemoveUntil(context, GenderScreen());
-
       QuickAlert.show(
         context: context,
         type: QuickAlertType.success,
         title: "Registration",
         text: "Your account has been registered.",
+        onConfirmBtnTap: () {
+          NavigationUtils.pop(context);
+          NavigationUtils.pushAndRemoveUntil(context, GenderScreen());
+        },
       );
     } on FirebaseAuthException catch (ex) {
       QuickAlert.show(

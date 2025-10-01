@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TargetWeightScreen extends StatefulWidget {
-  const TargetWeightScreen({super.key});
+  const TargetWeightScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<TargetWeightScreen> createState() => _TargetWeightScreenState();
@@ -20,7 +22,6 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
 
     targetWeightCtrl.text =
@@ -66,7 +67,14 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
                             listen: false,
                           ).updateAnswer("targetWeight", targetWeightCtrl.text);
 
-                          NavigationUtils.push(context, BodyTypeScreen());
+                          if (widget.fromEdit) {
+                            Navigator.pop(context);
+                          } else {
+                            NavigationUtils.push(
+                              context,
+                              const BodyTypeScreen(),
+                            );
+                          }
                         } else {
                           ValidationUtils.snackBar(
                             context,

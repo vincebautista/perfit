@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/exercise_service.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
@@ -110,19 +111,32 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         .collection('fitnessPlan')
         .doc(activeFitnessPlanId);
 
-    final workoutDayRef = planRef.collection('workouts').doc("day_$day");
+    final workoutDayRef = planRef.collection('workouts').doc("$day");
 
-    await workoutDayRef.set({
-      'status': status,
-      'dateCompleted': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    await workoutDayRef
+        .update({
+          'status': status,
+          'dateCompleted': FieldValue.serverTimestamp(),
+        })
+        .catchError((_) async {
+          await workoutDayRef.set({
+            'day': day,
+            'status': status,
+            'dateCompleted': FieldValue.serverTimestamp(),
+          });
+        });
 
-    // update local workouts list
     setState(() {
       final index = workouts.indexWhere((w) => w['day'] == day);
       if (index != -1) {
         workouts[index]['status'] = status;
         workouts[index]['dateCompleted'] = Timestamp.now();
+      } else {
+        workouts.add({
+          'day': day,
+          'status': status,
+          'dateCompleted': Timestamp.now(),
+        });
       }
     });
   }
@@ -219,122 +233,155 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final List<ExerciseMetricsModel> exercises =
         exercisesRaw.map((e) {
           final map = Map<String, dynamic>.from(e);
-          if (map.containsKey('reps')) {
-            return RepsExercise(
-              name: map['name'],
-              sets: map['sets'] ?? 0,
-              rest: map['rest'] ?? 0,
-              reps: map['reps'] ?? 0,
-            );
-          } else {
-            return TimeExercise(
-              name: map['name'],
-              sets: map['sets'] ?? 0,
-              rest: map['rest'] ?? 0,
-              duration: map['duration'] ?? 0,
-            );
-          }
+          return ExerciseMetricsModel.parseExercise(map);
         }).toList();
 
     final finishedCount =
         exercises.where((ex) {
           final key = "$day-${ex.name}";
-          return exerciseStatus[key] == "completed";
+          return exerciseStatus[key] == "completed" ||
+              exerciseStatus[key] == "skipped";
         }).length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          "Day $day - ${dayWorkout['split'] ?? 'Workout'} Day",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          "$finishedCount / ${exercises.length} exercises finished",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: ListView.builder(
-            itemCount: exercises.length,
-            itemBuilder: (_, index) {
-              final ex = exercises[index];
-              final key = "$day-${ex.name}";
-              final status = exerciseStatus[key] ?? "pending";
-
-              return Card(
-                child: ListTile(
-                  title: Text(
-                    ex.name,
-                    style: TextStyle(
-                      color:
-                          status == "pending" && selectedDay == currentDay
-                              ? AppColors.white
-                              : Colors.grey,
-                    ),
-                  ),
-                  subtitle: Text(
-                    ex is RepsExercise
-                        ? "Sets: ${ex.sets} x Reps: ${ex.reps}"
-                        : "Sets: ${ex.sets} x Duration: ${(ex as TimeExercise).duration}",
-                  ),
-                  enabled: status == "pending" && selectedDay == currentDay,
-                  onTap:
-                      status == "pending" && selectedDay == currentDay
-                          ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (_) => PerformExerciseScreen(
-                                      name: ex.name,
-                                      sets: ex.sets,
-                                      reps: ex is RepsExercise ? ex.reps : null,
-                                      duration:
-                                          ex is TimeExercise
-                                              ? ex.duration
-                                              : null,
-                                      planId: activeFitnessPlanId!,
-                                      day: selectedDay.toString(),
-                                      exercises: exercises,
-                                    ),
-                              ),
-                            ).then((result) async {
-                              if (result == "completed") {
-                                setState(() {
-                                  exerciseStatus[key] = result;
-                                });
-
-                                // ✅ check if all exercises in this day are completed
-                                final allCompleted = exercises.every((e) {
-                                  final k = "$day-${e.name}";
-                                  return exerciseStatus[k] == 'completed';
-                                });
-
-                                if (allCompleted) {
-                                  // 🎯 mark day completed & increment currentDay
-                                  await completeWorkoutDay(
-                                    day,
-                                    status: 'completed',
-                                  );
-                                  setState(() {
-                                    currentDay = currentDay + 1;
-                                  });
-                                }
-                              }
-                            });
-                          }
-                          : null,
-                ),
-              );
-            },
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.padding20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            "Day $day - ${dayWorkout['split'] ?? 'Workout'} Day",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            "$finishedCount / ${exercises.length} exercises finished",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.builder(
+              itemCount: exercises.length,
+              itemBuilder: (_, index) {
+                final ex = exercises[index];
+                final key = "$day-${ex.name}";
+                final status = exerciseStatus[key] ?? "pending";
+
+                bool isPastDay = day < currentDay;
+                bool isFutureDay = day > currentDay;
+                bool isToday = day == currentDay;
+
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(
+                      color:
+                          status == "completed"
+                              ? AppColors.green
+                              : status == "skipped"
+                              ? AppColors.red
+                              : Colors.transparent,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      ex.name,
+                      style: TextStyle(
+                        color:
+                            isPastDay
+                                ? Colors.grey
+                                : (status == "pending" && isToday
+                                    ? AppColors.white
+                                    : Colors.grey),
+                      ),
+                    ),
+                    subtitle: Text(
+                      ex is RepsExercise
+                          ? "Sets: ${ex.sets} x Reps: ${ex.reps}"
+                          : "Sets: ${ex.sets} x Duration: ${(ex as TimeExercise).duration}",
+                    ),
+                    trailing:
+                        (() {
+                          final rawExercise = exercisesRaw.firstWhere(
+                            (e) => e['name'] == ex.name,
+                            orElse: () => null,
+                          );
+
+                          if (rawExercise != null &&
+                              rawExercise.containsKey('elapsedTime') &&
+                              (rawExercise['elapsedTime'] ?? 0) > 0) {
+                            final elapsed = rawExercise['elapsedTime'];
+                            return Text(
+                              "${elapsed} s",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                              ),
+                            );
+                          }
+                          return null;
+                        })(),
+                    enabled: !isPastDay,
+                    onTap: () {
+                      if (isPastDay) {
+                        return;
+                      } else if (isFutureDay) {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text("Not yet available"),
+                                content: const Text("Come back tomorrow."),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text("OK"),
+                                  ),
+                                ],
+                              ),
+                        );
+                      } else if (isToday && status == "pending") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => PerformExerciseScreen(
+                                  name: ex.name,
+                                  sets: ex.sets,
+                                  reps: ex is RepsExercise ? ex.reps : null,
+                                  duration:
+                                      ex is TimeExercise ? ex.duration : null,
+                                  planId: activeFitnessPlanId!,
+                                  day: selectedDay.toString(),
+                                  exercises: exercises,
+                                ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  int parseDuration(dynamic value) {
+    if (value == null) return 0;
+
+    final str = value.toString();
+    final match = RegExp(r'\d+').firstMatch(str);
+
+    if (match != null) {
+      return int.tryParse(match.group(0)!) ?? 0;
+    }
+
+    return 0;
   }
 
   @override

@@ -27,9 +27,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
     exercise = exercises.firstWhere((e) => e.id == widget.id);
 
-    _videoController = VideoPlayerController.networkUrl(
-      Uri.parse(exercise.video[0]),
-    );
+    _videoController = VideoPlayerController.asset(exercise.video[0]);
 
     _videoController.initialize().then((_) {
       _chewieController = ChewieController(

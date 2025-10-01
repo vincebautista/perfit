@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class HeightScreen extends StatefulWidget {
-  const HeightScreen({super.key});
+  const HeightScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<HeightScreen> createState() => _HeightScreenState();
@@ -64,8 +66,14 @@ class _HeightScreenState extends State<HeightScreen> {
                             context,
                             listen: false,
                           ).updateAnswer("height", heightCtrl.text);
-
-                          NavigationUtils.push(context, FitnessGoalScreen());
+                          if (widget.fromEdit) {
+                            Navigator.pop(context);
+                          } else {
+                            NavigationUtils.push(
+                              context,
+                              const FitnessGoalScreen(),
+                            );
+                          }
                         } else {
                           ValidationUtils.snackBar(
                             context,

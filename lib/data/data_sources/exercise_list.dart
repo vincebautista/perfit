@@ -5,8 +5,8 @@ List<ExerciseModel> exercises = [
     id: "wall_sit",
     name: "Wall Sit",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-sit-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-sit-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-wall-sit-side-converted.mp4",
+      "assets/videos/male-Bodyweight-wall-sit-front-converted.mp4",
     ],
     image: "assets/images/exercises/wall_sit.jpg",
     instructions: [
@@ -23,8 +23,8 @@ List<ExerciseModel> exercises = [
     id: "glute_bridge",
     name: "Glute Bridge",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-glute-bridge-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-glute-bridge-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-wall-sit-side-converted.mp4",
+      "assets/videos/male-Bodyweight-glute-bridge-front-converted.mp4",
     ],
     image: "assets/images/exercises/glute_bridge.jpg",
     instructions: [
@@ -41,8 +41,8 @@ List<ExerciseModel> exercises = [
     id: "abductor_leg_raise_side_lying",
     name: "Abductor Leg Raise Side Lying",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-abductor-leg-raise-side-lying-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-abductor-leg-raise-side-lying-side.mp4#t=0.1",
+      "assets/videos/male-Recovery-abductor-leg-raise-side-lying-side-converted.mp4",
+      "assets/videos/male-Recovery-abductor-leg-raise-side-lying-front-converted.mp4",
     ],
     image: "assets/images/exercises/abductor_leg_raise_side_lying.jpg",
     instructions: [
@@ -59,8 +59,8 @@ List<ExerciseModel> exercises = [
     id: "calf_raises",
     name: "Calf Raises",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-calf-raises-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-calf-raises-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-calf-raises-front-converted.mp4",
+      "assets/videos/male-Bodyweight-calf-raises-side-converted.mp4",
     ],
     image: "assets/images/exercises/calf_raises.jpg",
     instructions: [
@@ -77,8 +77,8 @@ List<ExerciseModel> exercises = [
     id: "dead_bug",
     name: "Dead Bug",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-dead-bugs-cross-lateral-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-dead-bugs-cross-lateral-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-dead-bug-side-converted.mp4",
+      "assets/videos/male-Bodyweight-dead-bug-front-converted.mp4",
     ],
     image: "assets/images/exercises/dead_bug.jpg",
     instructions: [
@@ -95,8 +95,8 @@ List<ExerciseModel> exercises = [
     id: "knee_extension_seated_partial",
     name: "Knee Extension Seated Partial",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-knee-extension-seated-partial-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-knee-extension-seated-partial-front.mp4#t=0.1",
+      "assets/videos/male-Recovery-knee-extension-seated-partial-side-converted.mp4",
+      "assets/videos/male-Recovery-knee-extension-seated-partial-front-converted.mp4",
     ],
     image: "assets/images/exercises/knee_extension_seated_partial.jpg",
     instructions: [
@@ -113,8 +113,8 @@ List<ExerciseModel> exercises = [
     id: "bodyweight_squat",
     name: "Bodyweight Squat",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/female-Bodyweight-bodyweight-squat-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/female-Bodyweight-bodyweight-squat-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-bodyweight-squat-side-converted.mp4",
+      "assets/videos/male-Bodyweight-bodyweight-squat-front-converted.mp4",
     ],
     image: "assets/images/exercises/bodyweight_squat.jpg",
     instructions: [
@@ -131,8 +131,8 @@ List<ExerciseModel> exercises = [
     id: "bird_dog",
     name: "Bird Dog",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bird-dog-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bird-dog-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-bird-dog-side-converted.mp4",
+      "assets/videos/male-Bodyweight-bird-dog-front-converted.mp4",
     ],
     image: "assets/images/exercises/bird_dog.jpg",
     instructions: [
@@ -149,8 +149,8 @@ List<ExerciseModel> exercises = [
     id: "forearm_plank",
     name: "Forearm Plank",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-forearm-plank-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-forearm-plank-side.mp4#t=0.1",
+      "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
+      "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
     ],
     image: "assets/images/exercises/forearm_plank.jpg",
     instructions: [
@@ -167,8 +167,8 @@ List<ExerciseModel> exercises = [
     id: "hand_side_plank",
     name: "Hand Side Plank",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-hand-side-plank-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-hand-side-plank-side.mp4#t=0.1",
+      "assets/videos/male-bodyweight-hand-side-plank-side-converted.mp4",
+      "assets/videos/male-bodyweight-hand-side-plank-front-converted.mp4",
     ],
     image: "assets/images/exercises/hand_side_plank.jpg",
     instructions: [
@@ -185,8 +185,8 @@ List<ExerciseModel> exercises = [
     id: "hollow_hold",
     name: "Hollow Hold",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-hollow-hold-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-hollow-hold-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-hollow-hold-side-converted.mp4",
+      "assets/videos/male-Bodyweight-hollow-hold-front-converted.mp4",
     ],
     image: "assets/images/exercises/hollow_hold.jpg",
     instructions: [
@@ -203,8 +203,8 @@ List<ExerciseModel> exercises = [
     id: "toe_tap",
     name: "Toe Tap",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-toe-tap-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-toe-tap-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-toe-tap-side-converted.mp4",
+      "assets/videos/male-Bodyweight-toe-tap-front-converted.mp4",
     ],
     image: "assets/images/exercises/toe_tap.jpg",
     instructions: [
@@ -221,8 +221,8 @@ List<ExerciseModel> exercises = [
     id: "push_up",
     name: "Push Up",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-push-up-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-push-up-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-push-up-side-converted.mp4",
+      "assets/videos/male-Bodyweight-push-up-front-converted.mp4",
     ],
     image: "assets/images/exercises/push_up.jpg",
     instructions: [
@@ -239,8 +239,8 @@ List<ExerciseModel> exercises = [
     id: "wall_angel",
     name: "Wall Angel",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-wall-angels-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Recovery-wall-angels-front.mp4#t=0.1",
+      "assets/videos/male-Recovery-wall-angels-side-converted.mp4",
+      "assets/videos/male-Recovery-wall-angels-front-converted.mp4",
     ],
     image: "assets/images/exercises/wall_angel.jpg",
     instructions: [
@@ -257,8 +257,8 @@ List<ExerciseModel> exercises = [
     id: "incline_push_up",
     name: "Incline Push Up",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-incline-push-up-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-incline-push-up-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-incline-push-up-side-converted.mp4",
+      "assets/videos/male-Bodyweight-incline-push-up-front-converted.mp4",
     ],
     image: "assets/images/exercises/incline_push_up.jpg",
     instructions: [
@@ -274,8 +274,8 @@ List<ExerciseModel> exercises = [
     id: "single_leg_glute_bridge",
     name: "Single Leg Glute Bridge",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-single-leg-glute-bridge-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-single-leg-glute-bridge-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-single-leg-glute-bridge-side-converted.mp4",
+      "assets/videos/male-Bodyweight-single-leg-glute-bridge-front-converted.mp4",
     ],
     image: "assets/images/exercises/single_leg_glute_bridge.jpg",
     instructions: [
@@ -292,8 +292,8 @@ List<ExerciseModel> exercises = [
     id: "bodyweight_single_leg_balance_stable",
     name: "Bodyweight Single‑Leg Balance Stable",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bodyweight-single-leg-balance-stable-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bodyweight-single-leg-balance-stable-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-bodyweight-single-leg-balance-stable-side-converted.mp4",
+      "assets/videos/male-Bodyweight-bodyweight-single-leg-balance-stable-front-converted.mp4",
     ],
     image: "assets/images/exercises/bodyweight_single_leg_balance_stable.jpg",
     instructions: [
@@ -309,8 +309,8 @@ List<ExerciseModel> exercises = [
     id: "supermans",
     name: "Supermans",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-supermans-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-supermans-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-supermans-side-converted.mp4",
+      "assets/videos/male-Bodyweight-supermans-front-converted.mp4",
     ],
     image: "assets/images/exercises/supermans.jpg",
     instructions: [
@@ -327,8 +327,8 @@ List<ExerciseModel> exercises = [
     id: "hand_plank",
     name: "Hand Plank",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-hand-plank-side_GnZ2NZh.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-hand-plank-front_ZnMlFBF.mp4#t=0.1",
+      "assets/videos/male-bodyweight-hand-plank-side_GnZ2NZh-converted.mp4",
+      "assets/videos/male-bodyweight-hand-plank-front_ZnMlFBF-converted.mp4",
     ],
     image: "assets/images/exercises/hand_plank.jpg",
     instructions: [
@@ -345,8 +345,8 @@ List<ExerciseModel> exercises = [
     id: "kickbacks",
     name: "Kickbacks",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-kickbacks-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-kickbacks-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-kickbacks-side-converted.mp4",
+      "assets/videos/male-Bodyweight-kickbacks-front-converted.mp4",
     ],
     image: "assets/images/exercises/kickbacks.jpg",
     instructions: [
@@ -363,8 +363,8 @@ List<ExerciseModel> exercises = [
     id: "bodyweight_knee_push_ups",
     name: "Bodyweight Knee Push Ups",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bodyweight-knee-push-ups-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bodyweight-knee-push-ups-side.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-bodyweight-knee-push-ups-side-converted.mp4",
+      "assets/videos/male-Bodyweight-bodyweight-knee-push-ups-front-converted.mp4",
     ],
     image: "assets/images/exercises/bodyweight_knee_push_ups.jpg",
     instructions: [
@@ -380,8 +380,8 @@ List<ExerciseModel> exercises = [
     id: "crunches",
     name: "Crunches",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-crunch-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-crunch-side.mp4#t=0.1",
+      "assets/videos/male-bodyweight-crunch-side-converted.mp4",
+      "assets/videos/male-bodyweight-crunch-front-converted.mp4",
     ],
     image: "assets/images/exercises/crunches.jpg",
     instructions: [
@@ -398,8 +398,8 @@ List<ExerciseModel> exercises = [
     id: "bodyweight_box_assisted_dips",
     name: "Bodyweight Box Assisted Dips",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bodyweight-box-assisted-dips-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bodyweight-box-assisted-dips-front.mp4#t=0.1",
+      "assets/videos/male-Bodyweight-bodyweight-box-assisted-dips-side-converted.mp4",
+      "assets/videos/male-Bodyweight-bodyweight-box-assisted-dips-front-converted.mp4",
     ],
     image: "assets/images/exercises/bodyweight_box_assisted_dips.jpg",
     instructions: [
@@ -416,8 +416,8 @@ List<ExerciseModel> exercises = [
     id: "elbow_side_plank",
     name: "Elbow Side Plank",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-elbow-side-plank-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-elbow-side-plank-side.mp4#t=0.1",
+      "assets/videos/male-bodyweight-elbow-side-plank-side-converted.mp4",
+      "assets/videos/male-bodyweight-elbow-side-plank-front-converted.mp4",
     ],
     image: "assets/images/exercises/elbow_side_plank.jpg",
     instructions: [
@@ -434,8 +434,8 @@ List<ExerciseModel> exercises = [
     id: "split_squat",
     name: "Split Squat",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-split-squat-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-bodyweight-split-squat-side.mp4#t=0.1",
+      "assets/videos/male-bodyweight-split-squat-side-converted.mp4",
+      "assets/videos/male-bodyweight-split-squat-front-converted.mp4",
     ],
     image: "assets/images/exercises/split_squat.jpg",
     instructions: [
@@ -452,8 +452,8 @@ List<ExerciseModel> exercises = [
     id: "dumbbell_goblet_squat",
     name: "dumbbell_goblet_squat",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-goblet-squat-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-goblet-squat-side.mp4#t=0.1",
+      "assets/videos/male-dumbbell-goblet-squat-side-converted.mp4",
+      "assets/videos/male-dumbbell-goblet-squat-front-converted.mp4",
     ],
     image: "assets/images/exercises/goblet_squat.jpg",
     instructions: [
@@ -470,8 +470,8 @@ List<ExerciseModel> exercises = [
     id: "machine-hamstring-curl",
     name: "machine-hamstring-curl",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-hamstring-curl-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-hamstring-curl-side.mp4#t=0.1",
+      "assets/videos/male-machine-hamstring-curl-side-converted.mp4",
+      "assets/videos/male-machine-hamstring-curl-front-converted.mp4",
     ],
     image: "assets/images/exercises/machine_hamstring_curl.jpg",
     instructions: [
@@ -488,8 +488,8 @@ List<ExerciseModel> exercises = [
     id: "machine_pulldown",
     name: "Machine Pulldown",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-pulldown-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-pulldown-side.mp4#t=0.1",
+      "assets/videos/male-machine-pulldown-side-converted.mp4",
+      "assets/videos/male-machine-pulldown-front-converted.mp4",
     ],
     image: "assets/images/exercises/machine.jpg",
     instructions: [
@@ -507,8 +507,8 @@ List<ExerciseModel> exercises = [
     id: "dumbbell_lateral_raise",
     name: "Dumbbell Lateral Raise",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-lateral-raise-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-lateral-raise-side.mp4#t=0.1",
+      "assets/videos/male-Dumbbells-dumbbell-lateral-raise-side-converted.mp4",
+      "assets/videos/male-Dumbbells-dumbbell-lateral-raise-front-converted.mp4",
     ],
     image: "assets/images/exercises/lateral.jpg",
     instructions: [
@@ -525,8 +525,8 @@ List<ExerciseModel> exercises = [
     id: "dumbbell_curl",
     name: "Dumbbell Curl",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-curl-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-curl-side.mp4#t=0.1",
+      "assets/videos/male-Dumbbells-dumbbell-curl-side-converted.mp4",
+      "assets/videos/male-Dumbbells-dumbbell-curl-front-converted.mp4",
     ],
     image: "assets/images/exercises/curl.jpg",
     instructions: [
@@ -543,8 +543,8 @@ List<ExerciseModel> exercises = [
     id: "cable_rope_pushdown",
     name: "Cable Rope Pushdown",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-push-down-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-push-down-front.mp4#t=0.1",
+      "assets/videos/male-Cables-cable-push-down-side-converted.mp4",
+      "assets/videos/male-Cables-cable-push-down-front-converted.mp4",
     ],
     image: "assets/images/exercises/cable.jpg",
     instructions: [
@@ -560,8 +560,8 @@ List<ExerciseModel> exercises = [
     id: "machine_standing_calf_raise",
     name: "Machine Standing Calf Raise",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-standing-calf-raises-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-standing-calf-raises-side.mp4#t=0.1",
+      "assets/videos/male-machine-standing-calf-raises-side-converted.mp4",
+      "assets/videos/male-machine-standing-calf-raises-front-converted.mp4",
     ],
     image: "assets/images/exercises/calf.jpg",
     instructions: [
@@ -579,8 +579,8 @@ List<ExerciseModel> exercises = [
     id: "weighted_forearm_plank",
     name: "Weighted Forearm Plank",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-plate-weighted-forearm-plank-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-plate-weighted-forearm-plank-side.mp4#t=0.1",
+      "assets/videos/male-plate-weighted-forearm-plank-side-converted.mp4",
+      "assets/videos/male-plate-weighted-forearm-plank-front-converted.mp4",
     ],
     image: "assets/images/exercises/forearm.jpg",
     instructions: [
@@ -597,8 +597,8 @@ List<ExerciseModel> exercises = [
     id: "cable_rope_skullcrusher",
     name: "Cable Rope Skullcrusher",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-skullcrusher-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-skullcrusher-side.mp4#t=0.1",
+      "assets/videos/male-Cables-cable-skullcrusher-side-converted.mp4",
+      "assets/videos/male-Cables-cable-skullcrusher-front-converted.mp4",
     ],
     image: "assets/images/exercises/cable_rope.jpg",
     instructions: [
@@ -615,8 +615,8 @@ List<ExerciseModel> exercises = [
     id: "barbell_skullcrusher",
     name: "Barbell Skullcrusher",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-skullcrusher-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-skullcrusher-side.mp4#t=0.1",
+      "assets/videos/male-Barbell-barbell-skullcrusher-side-converted.mp4",
+      "assets/videos/male-Barbell-barbell-skullcrusher-front-converted.mp4",
     ],
     image: "assets/images/exercises/barbell.jpg",
     instructions: [
@@ -633,8 +633,8 @@ List<ExerciseModel> exercises = [
     id: "barbell_squat",
     name: "Barbell Squat",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-squat-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-squat-front.mp4#t=0.1",
+      "assets/videos/male-Barbell-barbell-squat-side-converted.mp4",
+      "assets/videos/male-Barbell-barbell-squat-front-converted.mp4",
     ],
     image: "assets/images/exercises/barbell_squat.jpg",
     instructions: [
@@ -653,8 +653,8 @@ List<ExerciseModel> exercises = [
     id: "barbell_bench_press",
     name: "Barbell Bench Press",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-bench-press-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-bench-press-side_KciuhbB.mp4#t=0.1",
+      "assets/videos/male-barbell-bench-press-side_KciuhbB-converted.mp4",
+      "assets/videos/male-barbell-bench-press-front-converted.mp4",
     ],
     image: "assets/images/exercises/bench.jpg",
     instructions: [
@@ -671,8 +671,8 @@ List<ExerciseModel> exercises = [
     id: "barbell_bent_over_row",
     name: "Barbell Bent Over Row",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-bent-over-row-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-bent-over-row-side.mp4#t=0.1",
+      "assets/videos/male-barbell-bent-over-row-side-converted.mp4",
+      "assets/videos/male-barbell-bent-over-row-front-converted.mp4",
     ],
     image: "assets/images/exercises/bent_over.jpg",
     instructions: [
@@ -690,8 +690,8 @@ List<ExerciseModel> exercises = [
     id: "barbell_landmine_row",
     name: "Barbell Landmine Row",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-landmine-row-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-landmine-row-side.mp4#t=0.1",
+      "assets/videos/male-barbell-landmine-row-side-converted.mp4",
+      "assets/videos/male-barbell-landmine-row-front-converted.mp4",
     ],
     image: "assets/images/exercises/row.jpg",
     instructions: [
@@ -709,8 +709,8 @@ List<ExerciseModel> exercises = [
     id: "barbell_low_bar_good_morning",
     name: "Barbell Low Bar Good Morning",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-low-bar-good-morning-side.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-low-bar-good-morning-front.mp4#t=0.1",
+      "assets/videos/male-Barbell-barbell-low-bar-good-morning-side-converted.mp4",
+      "assets/videos/male-Barbell-barbell-low-bar-good-morning-front-converted.mp4",
     ],
     image: "assets/images/exercises/morning.jpg",
     instructions: [
@@ -727,8 +727,8 @@ List<ExerciseModel> exercises = [
     id: "barbell_curl",
     name: "Barbell Curl",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-curl-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Barbell-barbell-curl-side.mp4#t=0.1",
+      "assets/videos/male-Barbell-barbell-curl-side-converted.mp4",
+      "assets/videos/male-Barbell-barbell-curl-front-converted.mp4",
     ],
     image: "assets/images/exercises/barbell_curl.jpg",
     instructions: [
@@ -746,8 +746,8 @@ List<ExerciseModel> exercises = [
     id: "dumbbell_single_arm_row",
     name: "Dumbbell Single Arm Row",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-single-arm-row-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-single-arm-row-side.mp4#t=0.1",
+      "assets/videos/male-Dumbbells-dumbbell-single-arm-row-side-converted.mp4",
+      "assets/videos/male-Dumbbells-dumbbell-single-arm-row-front-converted.mp4",
     ],
     image: "assets/images/exercises/arm.jpg",
     instructions: [
@@ -765,8 +765,8 @@ List<ExerciseModel> exercises = [
     id: "dumbbell_laying_reverse_fly",
     name: "Dumbbell Laying Reverse Fly",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-laying-reverse-fly-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-laying-reverse-fly-side.mp4#t=0.1",
+      "assets/videos/male-dumbbell-laying-reverse-fly-side-converted.mp4",
+      "assets/videos/male-dumbbell-laying-reverse-fly-front-converted.mp4",
     ],
     image: "assets/images/exercises/fly.jpg",
     instructions: [
@@ -784,10 +784,10 @@ List<ExerciseModel> exercises = [
     id: "dumbbell_skullcrusher",
     name: "Dumbbell Skullcrusher",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-skullcrusher-front_hgKANkM.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-skullcrusher-side_bgn7Uzz.mp4#t=0.1",
+      "assets/videos/male-dumbbell-skullcrusher-side_bgn7Uzz-converted.mp4",
+      "assets/videos/male-dumbbell-skullcrusher-front_hgKANkM-converted.mp4",
     ],
-    image: "assets/images/exercises/crusher.jpg", 
+    image: "assets/images/exercises/crusher.jpg",
     instructions: [
       "Lay flat on the floor or a bench with your fists extended to the ceiling and a neutral grip.",
       "Break at the elbows until your fists are by your temples. Then extend your elbows and flex your triceps at the top.",
@@ -801,8 +801,8 @@ List<ExerciseModel> exercises = [
     id: "machine_leg_extension",
     name: "Machine Leg Extension",
     video: [
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-leg-extension-front.mp4#t=0.1",
-      "https://media.musclewiki.com/media/uploads/videos/branded/male-machine-leg-extension-side.mp4#t=0.1",
+      "assets/videos/male-machine-leg-extension-side-converted.mp4",
+      "assets/videos/male-machine-leg-extension-front-converted.mp4",
     ],
     image: "assets/images/exercises/extension.jpg",
     instructions: [

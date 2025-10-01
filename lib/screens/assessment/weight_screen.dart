@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class WeightScreen extends StatefulWidget {
-  const WeightScreen({super.key});
+  const WeightScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<WeightScreen> createState() => _WeightScreenState();
@@ -65,7 +67,11 @@ class _WeightScreenState extends State<WeightScreen> {
                             listen: false,
                           ).updateAnswer("weight", weightCtrl.text);
 
-                          NavigationUtils.push(context, HeightScreen());
+                          if (widget.fromEdit) {
+                            Navigator.pop(context);
+                          } else {
+                            NavigationUtils.push(context, const HeightScreen());
+                          }
                         } else {
                           ValidationUtils.snackBar(
                             context,

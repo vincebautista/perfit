@@ -327,4 +327,15 @@ class ExerciseService {
         })
         .join("\n");
   }
+
+  int parseDuration(dynamic value) {
+    if (value == null) return 0;
+
+    final str = value.toString();
+    final match = RegExp(r'\d+').firstMatch(str);
+    if (match != null) {
+      return int.tryParse(match.group(0)!) ?? 0;
+    }
+    return 0;
+  }
 }

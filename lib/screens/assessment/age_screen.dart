@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class AgeScreen extends StatefulWidget {
-  const AgeScreen({super.key});
+  const AgeScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<AgeScreen> createState() => _AgeScreenState();
@@ -61,7 +63,11 @@ class _AgeScreenState extends State<AgeScreen> {
                             listen: false,
                           ).updateAnswer("age", ageCtrl.text);
 
-                          NavigationUtils.push(context, WeightScreen());
+                          if (widget.fromEdit) {
+                            Navigator.pop(context);
+                          } else {
+                            NavigationUtils.push(context, const WeightScreen());
+                          }
                         } else {
                           ValidationUtils.snackBar(
                             context,

@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class GenderScreen extends StatefulWidget {
-  const GenderScreen({super.key});
+  const GenderScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<GenderScreen> createState() => _GenderScreenState();
@@ -33,6 +35,7 @@ class _GenderScreenState extends State<GenderScreen> {
   Widget build(BuildContext context) {
     return Center(
       child: Scaffold(
+        appBar: widget.fromEdit ? AppBar() : null,
         body: Padding(
           padding: const EdgeInsets.all(AppSizes.padding16),
           child: Column(
@@ -134,7 +137,11 @@ class _GenderScreenState extends State<GenderScreen> {
                             listen: false,
                           ).updateAnswer("gender", selectedGender!);
 
-                          NavigationUtils.push(context, AgeScreen());
+                          if (widget.fromEdit) {
+                            Navigator.pop(context);
+                          } else {
+                            NavigationUtils.push(context, const AgeScreen());
+                          }
                         } else {
                           ValidationUtils.snackBar(
                             context,

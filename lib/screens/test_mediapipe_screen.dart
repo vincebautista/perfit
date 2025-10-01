@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:perfit/screens/exercise_summary_screen.dart';
 
 class TestMediapipeScreen extends StatefulWidget {
   const TestMediapipeScreen({super.key});
@@ -17,42 +17,24 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
   late Future<void> _initializeControllerFuture;
   late final PoseDetector _poseDetector;
   bool _isBusy = false;
-  List<Pose> _poses = [];
   Size? _cameraImageSize;
 
-  // counts
-  int _leftCurlCount = 0;
   int _rightCurlCount = 0;
+  int _rightCorrectCount = 0;
+  int _rightWrongCount = 0;
+  List<String> _feedback = [];
 
-  // states per arm
-  String _leftState = 'down'; // 'down' or 'up'
-  String _rightState = 'down';
-
-  bool _leftStartedDown = false;
   bool _rightStartedDown = false;
+  bool _rightReachedUp = false;
 
-  bool _leftReachedFullUp = false;
-  bool _rightReachedFullUp = false;
-
-  // frame stability
-  int _leftDownFrameCount = 0;
-  int _leftUpFrameCount = 0;
-  int _rightDownFrameCount = 0;
-  int _rightUpFrameCount = 0;
-  final int _requiredStableFrames = 3; // increase if noisy
-
-  // shoulder movement during rep (cheat detection)
-  double _leftMaxShoulderAngleDuringRep = 0.0;
+  double _rightMinElbowAngleDuringRep = 180.0;
   double _rightMaxShoulderAngleDuringRep = 0.0;
-  final double _maxAllowedShoulderMovement = 40.0; // degrees; lower = stricter
 
-  // thresholds (tweak)
-  final double _downThreshold = 165.0; // elbow angle for "down" (extended)
-  final double _upThreshold = 55.0; // elbow angle for "up" (fully flexed)
-  final double _shoulderBySideThreshold =
-      45.0; // shoulder angle to consider arm by side
-  final double _wristToShoulderTopRatio =
-      0.45; // wrist-to-shoulder <= 0.45 * torsoLen for "touching shoulder"
+  final double _maxAllowedShoulderMovement = 60.0;
+  final double _downThreshold = 165.0;
+  final double _upThreshold = 50.0;
+  final double _shoulderBySideThreshold = 45.0;
+  final double _wristToShoulderTopRatio = 0.45;
 
   @override
   void initState() {
@@ -98,128 +80,14 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
 
       final poses = await _poseDetector.processImage(inputImage);
 
-      debugPrint('Detected ${poses.length} pose(s)');
-
       if (poses.isNotEmpty) {
-        final firstPose = poses.first;
-        final landmarks = firstPose.landmarks;
+        final landmarks = poses.first.landmarks;
 
-        // left landmarks
-        final leftShoulder = landmarks[PoseLandmarkType.leftShoulder];
-        final leftElbow = landmarks[PoseLandmarkType.leftElbow];
-        final leftWrist = landmarks[PoseLandmarkType.leftWrist];
-        final leftHip = landmarks[PoseLandmarkType.leftHip];
-
-        // right landmarks
         final rightShoulder = landmarks[PoseLandmarkType.rightShoulder];
         final rightElbow = landmarks[PoseLandmarkType.rightElbow];
         final rightWrist = landmarks[PoseLandmarkType.rightWrist];
         final rightHip = landmarks[PoseLandmarkType.rightHip];
 
-        // ---- PROCESS LEFT ARM ----
-        if (leftShoulder != null && leftElbow != null && leftWrist != null) {
-          final s = Offset(leftShoulder.x, leftShoulder.y);
-          final e = Offset(leftElbow.x, leftElbow.y);
-          final w = Offset(leftWrist.x, leftWrist.y);
-
-          final double elbowAngle = _calculateAngle(s, e, w);
-
-          // shoulder angle (hip - shoulder - elbow) if hip present
-          final bool canCheckLeftShoulder = leftHip != null;
-          final double leftShoulderAngle =
-              canCheckLeftShoulder
-                  ? _calculateAngle(Offset(leftHip!.x, leftHip.y), s, e)
-                  : 0.0;
-
-          // torso length normalization: prefer shoulder->hip, else shoulder->otherShoulder fallback
-          double torsoLenLeft = 0.0;
-          if (leftHip != null) {
-            torsoLenLeft = _distance(s, Offset(leftHip.x, leftHip.y));
-          } else if (rightShoulder != null) {
-            torsoLenLeft = _distance(
-              s,
-              Offset(rightShoulder.x, rightShoulder.y),
-            );
-          } else {
-            torsoLenLeft =
-                ((_cameraImageSize?.width ?? 1.0) +
-                    (_cameraImageSize?.height ?? 1.0)) /
-                2.0;
-          }
-
-          final double wristShoulderNormLeft =
-              _distance(w, s) / (torsoLenLeft > 0 ? torsoLenLeft : 1.0);
-          final bool reachedTopByProximityLeft =
-              wristShoulderNormLeft <= _wristToShoulderTopRatio;
-          final bool reachedTopByAngleLeft = elbowAngle <= _upThreshold;
-          final bool isArmUpLeft =
-              reachedTopByAngleLeft && reachedTopByProximityLeft;
-
-          final bool upperArmBySideLeft =
-              !canCheckLeftShoulder ||
-              (leftShoulderAngle < _shoulderBySideThreshold);
-          final bool isArmDownLeft =
-              (elbowAngle >= _downThreshold) && upperArmBySideLeft;
-
-          // frame stabilization
-          if (isArmDownLeft) {
-            _leftDownFrameCount++;
-            _leftUpFrameCount = 0;
-          } else if (isArmUpLeft) {
-            _leftUpFrameCount++;
-            _leftDownFrameCount = 0;
-          } else {
-            _leftDownFrameCount = 0;
-            _leftUpFrameCount = 0;
-          }
-
-          // track shoulder movement during rep
-          if (_leftStartedDown && canCheckLeftShoulder) {
-            _leftMaxShoulderAngleDuringRep = math.max(
-              _leftMaxShoulderAngleDuringRep,
-              leftShoulderAngle,
-            );
-          }
-
-          // confirmed stable up (must meet angle + proximity)
-          if (_leftUpFrameCount >= _requiredStableFrames) {
-            if (_leftState == 'down' && _leftStartedDown) {
-              _leftState = 'up';
-              _leftReachedFullUp = true; // mark top reached
-              _leftMaxShoulderAngleDuringRep =
-                  canCheckLeftShoulder ? leftShoulderAngle : 0.0;
-            }
-          }
-
-          // confirmed stable down -> attempt to count if a full up was reached
-          if (_leftDownFrameCount >= _requiredStableFrames) {
-            if (_leftState == 'up' && _leftStartedDown && _leftReachedFullUp) {
-              // shoulder-cheating check
-              if (_leftMaxShoulderAngleDuringRep <=
-                  _maxAllowedShoulderMovement) {
-                _leftCurlCount++;
-                debugPrint('✅ Left full rep counted: $_leftCurlCount');
-              } else {
-                debugPrint(
-                  '⚠️ Left rep rejected due shoulder movement: ${_leftMaxShoulderAngleDuringRep.toStringAsFixed(1)}',
-                );
-              }
-              // reset per-rep trackers
-              _leftReachedFullUp = false;
-              _leftMaxShoulderAngleDuringRep = 0.0;
-              _leftStartedDown = false;
-            }
-            _leftState = 'down';
-            _leftStartedDown = true;
-          }
-
-          // debug
-          debugPrint(
-            'L elbow: ${elbowAngle.toStringAsFixed(1)}, L wristNorm: ${wristShoulderNormLeft.toStringAsFixed(2)}, L downFrames: $_leftDownFrameCount, upFrames: $_leftUpFrameCount, reachedTop:$_leftReachedFullUp',
-          );
-        }
-
-        // ---- PROCESS RIGHT ARM (same logic mirrored) ----
         if (rightShoulder != null && rightElbow != null && rightWrist != null) {
           final s = Offset(rightShoulder.x, rightShoulder.y);
           final e = Offset(rightElbow.x, rightElbow.y);
@@ -230,23 +98,13 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
           final bool canCheckRightShoulder = rightHip != null;
           final double rightShoulderAngle =
               canCheckRightShoulder
-                  ? _calculateAngle(Offset(rightHip!.x, rightHip.y), s, e)
+                  ? _calculateAngle(Offset(rightHip.x, rightHip.y), s, e)
                   : 0.0;
 
-          double torsoLenRight = 0.0;
-          if (rightHip != null) {
-            torsoLenRight = _distance(s, Offset(rightHip.x, rightHip.y));
-          } else if (leftShoulder != null) {
-            torsoLenRight = _distance(
-              s,
-              Offset(leftShoulder.x, leftShoulder.y),
-            );
-          } else {
-            torsoLenRight =
-                ((_cameraImageSize?.width ?? 1.0) +
-                    (_cameraImageSize?.height ?? 1.0)) /
-                2.0;
-          }
+          double torsoLenRight =
+              rightHip != null
+                  ? _distance(s, Offset(rightHip.x, rightHip.y))
+                  : 1.0;
 
           final double wristShoulderNormRight =
               _distance(w, s) / (torsoLenRight > 0 ? torsoLenRight : 1.0);
@@ -262,17 +120,13 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
           final bool isArmDownRight =
               (elbowAngle >= _downThreshold) && upperArmBySideRight;
 
-          if (isArmDownRight) {
-            _rightDownFrameCount++;
-            _rightUpFrameCount = 0;
-          } else if (isArmUpRight) {
-            _rightUpFrameCount++;
-            _rightDownFrameCount = 0;
-          } else {
-            _rightDownFrameCount = 0;
-            _rightUpFrameCount = 0;
-          }
+          // Track min elbow angle continuously
+          _rightMinElbowAngleDuringRep = math.min(
+            _rightMinElbowAngleDuringRep,
+            elbowAngle,
+          );
 
+          // Track max shoulder movement if started down
           if (_rightStartedDown && canCheckRightShoulder) {
             _rightMaxShoulderAngleDuringRep = math.max(
               _rightMaxShoulderAngleDuringRep,
@@ -280,45 +134,77 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
             );
           }
 
-          if (_rightUpFrameCount >= _requiredStableFrames) {
-            if (_rightState == 'down' && _rightStartedDown) {
-              _rightState = 'up';
-              _rightReachedFullUp = true;
-              _rightMaxShoulderAngleDuringRep =
-                  canCheckRightShoulder ? rightShoulderAngle : 0.0;
-            }
-          }
-
-          if (_rightDownFrameCount >= _requiredStableFrames) {
-            if (_rightState == 'up' &&
-                _rightStartedDown &&
-                _rightReachedFullUp) {
-              if (_rightMaxShoulderAngleDuringRep <=
-                  _maxAllowedShoulderMovement) {
-                _rightCurlCount++;
-                debugPrint('✅ Right full rep counted: $_rightCurlCount');
-              } else {
-                debugPrint(
-                  '⚠️ Right rep rejected due shoulder movement: ${_rightMaxShoulderAngleDuringRep.toStringAsFixed(1)}',
-                );
-              }
-              _rightReachedFullUp = false;
-              _rightMaxShoulderAngleDuringRep = 0.0;
-              _rightStartedDown = false;
-            }
-            _rightState = 'down';
+          // Start rep once elbow ≤ 160°
+          if (!_rightStartedDown && elbowAngle >= _downThreshold) {
             _rightStartedDown = true;
           }
+          if (_rightStartedDown && !_rightReachedUp && elbowAngle <= 160.0) {
+            _rightReachedUp = true;
+          }
 
-          // debug
-          debugPrint(
-            'R elbow: ${elbowAngle.toStringAsFixed(1)}, R wristNorm: ${wristShoulderNormRight.toStringAsFixed(2)}, R downFrames: $_rightDownFrameCount, upFrames: $_rightUpFrameCount, reachedTop: $_rightReachedFullUp',
-          );
+          // Count rep when arm comes back down after starting
+          if (_rightStartedDown && _rightReachedUp && isArmDownRight) {
+            _rightCurlCount++;
+
+            bool isCorrect = true;
+            String correction = "";
+
+            // Shoulder movement check
+            if (_rightMaxShoulderAngleDuringRep > _maxAllowedShoulderMovement) {
+              isCorrect = false;
+              correction = "Too much shoulder movement";
+            }
+
+            // Elbow bending check
+            if (_rightMinElbowAngleDuringRep > _upThreshold) {
+              isCorrect = false;
+              correction = "Under-bending";
+            } else if (_rightMinElbowAngleDuringRep < 15) {
+              isCorrect = false;
+              correction = "Over-bending";
+            }
+
+            if (isCorrect) {
+              _rightCorrectCount++;
+              debugPrint(
+                "✅ Correct rep ($_rightCorrectCount) | Min Elbow: ${_rightMinElbowAngleDuringRep.toStringAsFixed(1)} | Shoulder: ${_rightMaxShoulderAngleDuringRep.toStringAsFixed(1)}",
+              );
+            } else {
+              _rightWrongCount++;
+              _feedback.add("Rep $_rightCurlCount: $correction");
+              debugPrint(
+                "❌ Wrong rep ($_rightWrongCount) - $correction | Min Elbow: ${_rightMinElbowAngleDuringRep.toStringAsFixed(1)} | Shoulder: ${_rightMaxShoulderAngleDuringRep.toStringAsFixed(1)}",
+              );
+            }
+
+            // Reset trackers for next rep
+            _rightStartedDown = false;
+            _rightReachedUp = false;
+            _rightMinElbowAngleDuringRep = 180.0;
+            _rightMaxShoulderAngleDuringRep = 0.0;
+
+            // Stop after 5 reps
+            if (_rightCurlCount >= 5) {
+              await _cameraController?.stopImageStream();
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ExerciseSummaryScreen(
+                          correct: _rightCorrectCount,
+                          wrong: _rightWrongCount,
+                          feedback: _feedback,
+                        ),
+                  ),
+                );
+              }
+            }
+          }
         }
       }
 
       setState(() {
-        _poses = poses;
         _cameraImageSize = Size(
           image.width.toDouble(),
           image.height.toDouble(),
@@ -332,7 +218,6 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
   }
 
   InputImage _cameraImageToInputImage(CameraImage image, int rotation) {
-    // Convert YUV420 to NV21
     final int width = image.width;
     final int height = image.height;
     final uvRowStride = image.planes[1].bytesPerRow;
@@ -340,7 +225,6 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
 
     final nv21 = Uint8List(width * height * 3 ~/ 2);
 
-    // Copy Y plane
     for (int i = 0; i < height; i++) {
       nv21.setRange(
         i * width,
@@ -350,7 +234,6 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
       );
     }
 
-    // Copy UV plane
     int uvIndex = 0;
     for (int i = 0; i < height ~/ 2; i++) {
       for (int j = 0; j < width ~/ 2; j++) {
@@ -361,7 +244,7 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
       }
     }
 
-    final inputImage = InputImage.fromBytes(
+    return InputImage.fromBytes(
       bytes: nv21,
       metadata: InputImageMetadata(
         size: Size(width.toDouble(), height.toDouble()),
@@ -372,8 +255,6 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
         bytesPerRow: image.planes[0].bytesPerRow,
       ),
     );
-
-    return inputImage;
   }
 
   @override
@@ -390,76 +271,37 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pose Detector Test')),
+      appBar: AppBar(title: const Text('Right Arm Curl Counter')),
       body: FutureBuilder(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final screenWidth = constraints.maxWidth;
-                final screenHeight = constraints.maxHeight;
-
-                return Stack(
-                  children: [
-                    // Camera preview fills the screen
-                    SizedBox(
-                      width: screenWidth,
-                      height: screenHeight,
-                      child: CameraPreview(_cameraController!),
+            return Stack(
+              children: [
+                CameraPreview(_cameraController!),
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    // Pose overlay
-                    if (_cameraImageSize != null)
-                      CustomPaint(
-                        size: Size(screenWidth, screenHeight),
-                        painter: PosePainter(
-                          poses: _poses,
-                          imageSize: _cameraImageSize!,
-                          widgetSize: Size(screenWidth, screenHeight),
-                          isFrontCamera:
-                              _cameraController!.description.lensDirection ==
-                              CameraLensDirection.front,
-                        ),
-                      ),
-                    Positioned(
-                      top: 20,
-                      left: 20,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Left: $_leftCurlCount",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "Right: $_rightCurlCount",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "Reps: $_rightCurlCount\n✅ $_rightCorrectCount | ❌ $_rightWrongCount",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                );
-              },
+                  ),
+                ),
+              ],
             );
           } else {
             return const Center(child: CircularProgressIndicator());
@@ -472,117 +314,10 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
   double _calculateAngle(Offset a, Offset b, Offset c) {
     final ab = Offset(a.dx - b.dx, a.dy - b.dy);
     final cb = Offset(c.dx - b.dx, c.dy - b.dy);
-
     final dot = (ab.dx * cb.dx + ab.dy * cb.dy);
     final magAB = math.sqrt(ab.dx * ab.dx + ab.dy * ab.dy);
     final magCB = math.sqrt(cb.dx * cb.dx + cb.dy * cb.dy);
-
     final cosine = dot / (magAB * magCB);
     return math.acos(cosine.clamp(-1.0, 1.0)) * (180 / math.pi);
   }
-}
-
-class PosePainter extends CustomPainter {
-  final List<Pose> poses;
-  final Size imageSize; // original camera image size
-  final Size widgetSize; // size of the CustomPaint widget
-  final bool isFrontCamera;
-
-  PosePainter({
-    required this.poses,
-    required this.imageSize,
-    required this.widgetSize,
-    this.isFrontCamera = true,
-  });
-
-  final List<List<PoseLandmarkType>> connections = [
-    [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
-    [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
-    [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
-    [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
-    [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
-    [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
-    [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
-    [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
-    [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
-    [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
-    [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
-    [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint landmarkPaint =
-        Paint()
-          ..color = Colors.green
-          ..style = PaintingStyle.fill
-          ..strokeWidth = 4;
-
-    final Paint linePaint =
-        Paint()
-          ..color = Colors.red
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2;
-
-    // --- FIX: Handle aspect ratio and offset ---
-    double scaleX, scaleY, offsetX, offsetY;
-
-    final imageRatio = imageSize.width / imageSize.height;
-    final widgetRatio = widgetSize.width / widgetSize.height;
-
-    if (widgetRatio > imageRatio) {
-      // Fit height, crop sides
-      scaleY = widgetSize.height / imageSize.height;
-      scaleX = scaleY;
-      offsetX = (widgetSize.width - imageSize.width * scaleX) / 2;
-      offsetY = 0;
-    } else {
-      // Fit width, crop top/bottom
-      scaleX = widgetSize.width / imageSize.width;
-      scaleY = scaleX;
-      offsetX = 0;
-      offsetY = (widgetSize.height - imageSize.height * scaleY) / 2;
-    }
-
-    double translateX(double x) => (x * scaleX) + offsetX;
-    double translateY(double y) => (y * scaleY) + offsetY;
-
-    for (final pose in poses) {
-      // Draw connections (lines)
-      for (final connection in connections) {
-        final start = pose.landmarks[connection[0]];
-        final end = pose.landmarks[connection[1]];
-        if (start != null && end != null) {
-          double startX = translateX(start.x);
-          double startY = translateY(start.y);
-          double endX = translateX(end.x);
-          double endY = translateY(end.y);
-
-          if (isFrontCamera) {
-            startX = widgetSize.width - startX;
-            endX = widgetSize.width - endX;
-          }
-
-          canvas.drawLine(
-            Offset(startX, startY),
-            Offset(endX, endY),
-            linePaint,
-          );
-        }
-      }
-
-      // Draw landmarks (dots)
-      for (final landmark in pose.landmarks.values) {
-        double x = translateX(landmark.x);
-        double y = translateY(landmark.y);
-
-        if (isFrontCamera) x = widgetSize.width - x;
-
-        canvas.drawCircle(Offset(x, y), 4, landmarkPaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

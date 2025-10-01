@@ -1,6 +1,8 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
+import 'package:perfit/screens/forgot_password_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/widgets/text_field_styles.dart';
 import 'package:perfit/widgets/text_styles.dart';
@@ -62,6 +64,19 @@ class _LoginState extends State<Login> {
                 (value) =>
                     ValidationUtils.required(field: "Password", value: value!),
           ),
+          GestureDetector(
+            onTap: () {
+              NavigationUtils.push(context, ForgotPasswordScreen());
+            },
+            child: Text(
+              "Forgot Password?",
+              style: TextStyles.body.copyWith(
+                color: AppColors.white,
+                decoration: TextDecoration.underline,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
           ElevatedButton(
             onPressed: doLogin,
             child: Text("Login", style: TextStyles.buttonLarge),
@@ -83,6 +98,8 @@ class _LoginState extends State<Login> {
         email: emailCtrl.text,
         password: passwordCtrl.text,
       );
+
+      NavigationUtils.pop(context);
 
       NavigationUtils.pushAndRemoveUntil(context, MainNavigation());
     } on FirebaseAuthException catch (ex) {

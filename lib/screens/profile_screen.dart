@@ -7,6 +7,7 @@ import 'package:perfit/core/services/firebase_auth_service.dart';
 import 'package:perfit/core/services/notification_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
+import 'package:perfit/screens/change_password_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/screens/test_mediapipe_screen.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
@@ -192,6 +193,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         //   },
                         //   child: const Text("Test Notification"),
                         // ),
+                        ElevatedButton(
+                          onPressed:
+                              () => NavigationUtils.push(
+                                context,
+                                ChangePasswordScreen(),
+                              ),
+                          child: const Text("Change Password"),
+                        ),
+                        Gap(AppSizes.gap10),
                         ElevatedButton(
                           onPressed:
                               () => NavigationUtils.push(

@@ -1,3 +1,4 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/assessment_model.dart';
@@ -8,13 +9,27 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class BodyTypeScreen extends StatefulWidget {
-  const BodyTypeScreen({super.key});
+  const BodyTypeScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<BodyTypeScreen> createState() => _BodyTypeScreenState();
 }
 
 class _BodyTypeScreenState extends State<BodyTypeScreen> {
+  String? selectedBodyType;
+  String? gender;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final assessment = Provider.of<AssessmentModel>(context, listen: false);
+    selectedBodyType = assessment.answers["bodyType"];
+    gender = assessment.answers["gender"];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -37,108 +52,52 @@ class _BodyTypeScreenState extends State<BodyTypeScreen> {
                       style: TextStyles.subtitle,
                       textAlign: TextAlign.center,
                     ),
-                    GestureDetector(
-                      onTap: () => saveToProvider("Medium"),
-                      child: AspectRatio(
-                        aspectRatio: 3 / 1,
-                        child: Card(
-                          elevation: AppSizes.gap10,
-                          child: Stack(
-                            clipBehavior: Clip.hardEdge,
-                            alignment: Alignment.center,
-                            children: [
-                              Positioned(
-                                right: 0,
-                                child: Image.asset(
-                                  "assets/images/medium.png",
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              Positioned(
-                                left: AppSizes.padding16,
-                                child: Text("Medium", style: TextStyles.body),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => saveToProvider("Flabby"),
-                      child: AspectRatio(
-                        aspectRatio: 3 / 1,
-                        child: Card(
-                          elevation: AppSizes.gap10,
-                          child: Stack(
-                            clipBehavior: Clip.hardEdge,
-                            alignment: Alignment.center,
-                            children: [
-                              Positioned(
-                                right: 0,
-                                child: Image.asset(
-                                  "assets/images/flabby.png",
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              Positioned(
-                                left: AppSizes.padding16,
-                                child: Text("Flabby", style: TextStyles.body),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => saveToProvider("Skinny"),
-                      child: AspectRatio(
-                        aspectRatio: 3 / 1,
-                        child: Card(
-                          elevation: AppSizes.gap10,
-                          child: Stack(
-                            clipBehavior: Clip.hardEdge,
-                            alignment: Alignment.center,
-                            children: [
-                              Positioned(
-                                right: 0,
-                                child: Image.asset(
-                                  "assets/images/skinny.png",
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              Positioned(
-                                left: AppSizes.padding16,
-                                child: Text("Skinny", style: TextStyles.body),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => saveToProvider("Toned"),
-                      child: AspectRatio(
-                        aspectRatio: 3 / 1,
-                        child: Card(
-                          elevation: AppSizes.gap10,
-                          child: Stack(
-                            clipBehavior: Clip.hardEdge,
-                            alignment: Alignment.center,
-                            children: [
-                              Positioned(
-                                right: 0,
-                                child: Image.asset(
-                                  "assets/images/tonned.png",
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              Positioned(
-                                left: AppSizes.padding16,
-                                child: Text("Toned", style: TextStyles.body),
-                              ),
-                            ],
-                          ),
-                        ),
+                    buildBodyCard("Medium"),
+                    buildBodyCard("Flabby"),
+                    buildBodyCard("Skinny"),
+                    buildBodyCard("Toned"),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildBodyCard(String label) {
+    final isSelected = selectedBodyType == label;
+
+    final imagePath =
+        gender == "Female"
+            ? "assets/images/female_${label.toLowerCase()}.png"
+            : "assets/images/male_${label.toLowerCase()}.png";
+
+    return GestureDetector(
+      onTap: () => saveToProvider(label),
+      child: AspectRatio(
+        aspectRatio: 3 / 1,
+        child: Card(
+          color: isSelected ? AppColors.primary : null,
+          elevation: AppSizes.gap10,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                right: 0,
+                child: Image.asset(imagePath, fit: BoxFit.contain),
+              ),
+              Positioned(
+                left: AppSizes.padding16,
+                child: Row(
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? AppColors.white : null,
                       ),
                     ),
                   ],
@@ -152,11 +111,19 @@ class _BodyTypeScreenState extends State<BodyTypeScreen> {
   }
 
   void saveToProvider(String value) {
+    setState(() {
+      selectedBodyType = value;
+    });
+
     Provider.of<AssessmentModel>(
       context,
       listen: false,
     ).updateAnswer("bodyType", value);
 
-    NavigationUtils.push(context, PreviousExperienceScreen());
+    if (widget.fromEdit) {
+      Navigator.pop(context);
+    } else {
+      NavigationUtils.push(context, PreviousExperienceScreen());
+    }
   }
 }

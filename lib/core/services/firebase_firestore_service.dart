@@ -168,9 +168,9 @@ class FirebaseFirestoreService {
     final idx = exercises.indexWhere((e) => e['name'] == exerciseName);
 
     if (idx != -1) {
-      exercises[idx] = {...exercises[idx], 'status': 'completed'};
+      exercises[idx] = {...exercises[idx], 'status': 'skipped'};
     } else {
-      exercises.add({'name': exerciseName, 'status': 'completed'});
+      exercises.add({'name': exerciseName, 'status': 'skipped'});
     }
 
     await docRef.update({'exercises': exercises});
@@ -179,8 +179,9 @@ class FirebaseFirestoreService {
   Future<void> markExerciseCompleted(
     String planId,
     String day,
-    String exerciseName,
-  ) async {
+    String exerciseName, {
+    Map<String, dynamic>? extraData,
+  }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -205,11 +206,52 @@ class FirebaseFirestoreService {
 
     if (index != -1) {
       updatedExercises[index]['status'] = 'completed';
+      if (extraData != null) {
+        updatedExercises[index].addAll(extraData);
+      }
     } else {
-      updatedExercises.add({'name': exerciseName, 'status': 'completed'});
+      updatedExercises.add({
+        'name': exerciseName,
+        'status': 'completed',
+        ...?extraData,
+      });
     }
 
     await docRef.update({'exercises': updatedExercises});
+  }
+
+  Future<void> updateWorkoutDayCompletion(String planId, int day) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final workoutDayRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('fitnessPlan')
+        .doc(planId)
+        .collection('workouts')
+        .doc("$day");
+
+    final doc = await workoutDayRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    final List<dynamic> exercises = data['exercises'] ?? [];
+
+    int finishedCount = exercises.where((e) => e['status'] != null).length;
+    int totalExercises = exercises.length;
+
+    if (finishedCount == totalExercises && totalExercises > 0) {
+      await workoutDayRef.set({
+        'day': day,
+        'status': "completed",
+        'dateCompleted': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print("🔥 Day $day marked as completed ✅");
+    } else {
+      print("Day $day not complete yet ($finishedCount/$totalExercises)");
+    }
   }
 
   Future<void> incrementCurrentDay(String uid, String planId) async {

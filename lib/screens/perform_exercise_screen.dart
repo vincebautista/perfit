@@ -46,9 +46,7 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
     super.initState();
     exercise = exercises.firstWhere((e) => e.name == widget.name);
 
-    _videoController = VideoPlayerController.networkUrl(
-      Uri.parse(exercise.video[0]),
-    );
+    _videoController = VideoPlayerController.asset(exercise.video[0]);
 
     _videoController.initialize().then((_) {
       _chewieController = ChewieController(
@@ -71,18 +69,58 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
   }
 
   void skipExercise() async {
-    await FirebaseFirestoreService().markExerciseSkipped(
-      widget.planId,
-      widget.day,
-      exercise.name,
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text("Skip exercise?"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Gap(AppSizes.gap20),
+                Text("This action is not reversible."),
+                Gap(AppSizes.gap20),
+                Gap(AppSizes.gap20),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text("Cancel"),
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text("Skip"),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
     );
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MainNavigation(initialIndex: 2),
-      ),
-      (route) => false,
-    );
+
+    if (confirm == true) {
+      await FirebaseFirestoreService().markExerciseSkipped(
+        widget.planId,
+        widget.day,
+        exercise.name,
+      );
+
+      await FirebaseFirestoreService().updateWorkoutDayCompletion(
+        widget.planId,
+        int.parse(widget.day),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => MainNavigation(initialIndex: 2)),
+        (route) => false,
+      );
+    }
   }
 
   void startExercise() {

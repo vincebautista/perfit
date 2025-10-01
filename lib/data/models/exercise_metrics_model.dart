@@ -12,19 +12,29 @@ class ExerciseMetricsModel {
   static ExerciseMetricsModel parseExercise(Map<String, dynamic> json) {
     if (json.containsKey("reps")) {
       return RepsExercise(
-        name: json["name"],
-        sets: json["sets"],
-        rest: json["rest"],
-        reps: json["reps"],
+        name: json["name"] ?? 'Unknown',
+        sets: parseNumber(json["sets"]),
+        rest: parseNumber(json["rest"]),
+        reps: parseNumber(json["reps"]),
       );
     } else {
       return TimeExercise(
-        name: json["name"],
-        sets: json["sets"],
-        rest: json["rest"],
-        duration: json["duration"],
+        name: json["name"] ?? 'Unknown',
+        sets: parseNumber(json["sets"]),
+        rest: parseNumber(json["rest"]),
+        duration: parseNumber(json["duration"]),
       );
     }
+  }
+
+  static int parseNumber(dynamic value) {
+    if (value == null) return 0;
+    final str = value.toString();
+    final match = RegExp(r'\d+').firstMatch(str);
+    if (match != null) {
+      return int.tryParse(match.group(0)!) ?? 0;
+    }
+    return 0;
   }
 
   @override

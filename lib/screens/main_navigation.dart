@@ -53,7 +53,7 @@ class _MainNavigationState extends State<MainNavigation> {
             return Padding(
               padding: EdgeInsets.fromLTRB(
                 AppSizes.padding16,
-                0,
+                AppSizes.padding16,
                 AppSizes.padding16,
                 AppSizes.padding16,
               ),

@@ -1,3 +1,4 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/assessment_model.dart';
@@ -8,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class DailyActivityLevelScreen extends StatefulWidget {
-  const DailyActivityLevelScreen({super.key});
+  const DailyActivityLevelScreen({super.key, this.fromEdit = false});
+
+  final bool fromEdit;
 
   @override
   State<DailyActivityLevelScreen> createState() =>
@@ -16,6 +19,20 @@ class DailyActivityLevelScreen extends StatefulWidget {
 }
 
 class _DailyActivityLevelScreenState extends State<DailyActivityLevelScreen> {
+  String? selectedValue;
+
+  @override
+  void initState() {
+    super.initState();
+    // preload the value if editing
+    final currentValue =
+        Provider.of<AssessmentModel>(
+          context,
+          listen: false,
+        ).answers["activityLevel"];
+    selectedValue = currentValue;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -38,38 +55,10 @@ class _DailyActivityLevelScreenState extends State<DailyActivityLevelScreen> {
                       style: TextStyles.subtitle,
                       textAlign: TextAlign.center,
                     ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("Sedentary"),
-                        title: Text("Sedentary", style: TextStyles.body),
-                        subtitle: Text("desk job, minimal movement"),
-                      ),
-                    ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("Lightly Active"),
-                        title: Text("Lightly active", style: TextStyles.body),
-                        subtitle: Text("some walking or standing"),
-                      ),
-                    ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("Active"),
-                        title: Text("Active", style: TextStyles.body),
-                        subtitle: Text("manual labor, regular walking"),
-                      ),
-                    ),
-                    Card(
-                      elevation: AppSizes.gap10,
-                      child: ListTile(
-                        onTap: () => saveToProvider("Very Active"),
-                        title: Text("Very active", style: TextStyles.body),
-                        subtitle: Text("athlete, physical job"),
-                      ),
-                    ),
+                    buildOption("Sedentary", "desk job, minimal movement"),
+                    buildOption("Lightly Active", "some walking or standing"),
+                    buildOption("Active", "manual labor, regular walking"),
+                    buildOption("Very Active", "athlete, physical job"),
                   ],
                 ),
               ),
@@ -80,12 +69,43 @@ class _DailyActivityLevelScreenState extends State<DailyActivityLevelScreen> {
     );
   }
 
+  Widget buildOption(String value, String subtitle) {
+    final isSelected = selectedValue == value;
+    return Card(
+      color: isSelected ? AppColors.primary : null,
+      elevation: AppSizes.gap10,
+      child: ListTile(
+        onTap: () {
+          setState(() => selectedValue = value);
+          saveToProvider(value);
+        },
+        title: Text(
+          value,
+          style: TextStyles.body.copyWith(
+            color: isSelected ? AppColors.white : null,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyles.caption.copyWith(
+            color: isSelected ? AppColors.white : null,
+          ),
+        ),
+        trailing: isSelected ? Icon(Icons.check, color: AppColors.white) : null,
+      ),
+    );
+  }
+
   void saveToProvider(String value) {
     Provider.of<AssessmentModel>(
       context,
       listen: false,
     ).updateAnswer("activityLevel", value);
 
-    NavigationUtils.push(context, WorkoutCommitmentScreen());
+    if (widget.fromEdit) {
+      Navigator.pop(context);
+    } else {
+      NavigationUtils.push(context, WorkoutCommitmentScreen());
+    }
   }
 }
