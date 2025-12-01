@@ -261,6 +261,39 @@ class FirebaseFirestoreService {
         .collection('fitnessPlan')
         .doc(planId);
 
-    await planRef.update({'currentDay': FieldValue.increment(1)});
+    await planRef.set(
+      {'currentDay': FieldValue.increment(1)},
+      SetOptions(merge: true),
+    ); // merge ensures the rest of the document stays intact
+  }
+
+  Future<void> updateExerciseStatus(
+    String userId,
+    String planId,
+    int day,
+    String exerciseName,
+    String status,
+  ) async {
+    final ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('fitnessPlan')
+        .doc(planId)
+        .collection('workouts')
+        .doc("$day");
+
+    await ref.set({
+      'exercisesStatus': {exerciseName: status},
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> skipAllExercises(
+    String planId,
+    int day,
+    List<dynamic> exercises,
+  ) async {
+    for (var ex in exercises) {
+      await markExerciseSkipped(planId, day.toString(), ex['name']);
+    }
   }
 }

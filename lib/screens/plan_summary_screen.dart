@@ -291,7 +291,7 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 14.0),
-                        child: Text("Start my first workout"),
+                        child: Text("Start my plan"),
                       ),
                     ),
                   ),

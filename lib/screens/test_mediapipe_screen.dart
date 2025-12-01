@@ -36,6 +36,8 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
   final double _shoulderBySideThreshold = 45.0;
   final double _wristToShoulderTopRatio = 0.45;
 
+  Pose? _lastPose;
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +84,7 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
 
       if (poses.isNotEmpty) {
         final landmarks = poses.first.landmarks;
+        _lastPose = poses.first;
 
         final rightShoulder = landmarks[PoseLandmarkType.rightShoulder];
         final rightElbow = landmarks[PoseLandmarkType.rightElbow];
@@ -278,7 +281,21 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                CameraPreview(_cameraController!),
+                Positioned.fill(child: CameraPreview(_cameraController!)),
+
+                // Draw circle over head
+                if (_cameraImageSize != null && _lastPose != null)
+                  CustomPaint(
+                    size: Size.infinite,
+                    painter: ScaledStickmanPainter(
+                      lastPose: _lastPose!,
+                      cameraImageSize: _cameraImageSize!,
+                      isFrontCamera:
+                          _cameraController!.description.lensDirection ==
+                          CameraLensDirection.front,
+                    ),
+                  ),
+                // Overlay rep counter
                 Positioned(
                   top: 20,
                   left: 20,
@@ -320,4 +337,133 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
     final cosine = dot / (magAB * magCB);
     return math.acos(cosine.clamp(-1.0, 1.0)) * (180 / math.pi);
   }
+}
+
+class ScaledStickmanPainter extends CustomPainter {
+  final Pose lastPose;
+  final Size cameraImageSize;
+  final bool isFrontCamera;
+
+  ScaledStickmanPainter({
+    required this.lastPose,
+    required this.cameraImageSize,
+    this.isFrontCamera = true,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = Colors.red
+          ..strokeWidth = 4.0
+          ..style = PaintingStyle.stroke;
+
+    // Helper: scale and flip
+    Offset toCanvas(double x, double y) {
+      double sx = x * size.width / cameraImageSize.width;
+      double sy = y * size.height / cameraImageSize.height;
+      if (isFrontCamera) sx = size.width - sx;
+      return Offset(sx, sy);
+    }
+
+    // Extract key landmarks
+    final nose = lastPose.landmarks[PoseLandmarkType.nose];
+    final leftShoulder = lastPose.landmarks[PoseLandmarkType.leftShoulder];
+    final rightShoulder = lastPose.landmarks[PoseLandmarkType.rightShoulder];
+    final leftElbow = lastPose.landmarks[PoseLandmarkType.leftElbow];
+    final rightElbow = lastPose.landmarks[PoseLandmarkType.rightElbow];
+    final leftWrist = lastPose.landmarks[PoseLandmarkType.leftWrist];
+    final rightWrist = lastPose.landmarks[PoseLandmarkType.rightWrist];
+    final leftHip = lastPose.landmarks[PoseLandmarkType.leftHip];
+    final rightHip = lastPose.landmarks[PoseLandmarkType.rightHip];
+    final leftKnee = lastPose.landmarks[PoseLandmarkType.leftKnee];
+    final rightKnee = lastPose.landmarks[PoseLandmarkType.rightKnee];
+    final leftAnkle = lastPose.landmarks[PoseLandmarkType.leftAnkle];
+    final rightAnkle = lastPose.landmarks[PoseLandmarkType.rightAnkle];
+
+    // Use shoulder width as scaling reference
+    double bodyScale = 1.0;
+    if (leftShoulder != null && rightShoulder != null) {
+      final ls = Offset(leftShoulder.x, leftShoulder.y);
+      final rs = Offset(rightShoulder.x, rightShoulder.y);
+      bodyScale = ((ls - rs).distance).clamp(20, 200); // clamp for safety
+    }
+
+    // Draw head circle
+    if (nose != null) {
+      Offset headCenter = toCanvas(
+        nose.x,
+        nose.y - bodyScale * 0.5, // move proportional to body size
+      );
+      canvas.drawCircle(headCenter, bodyScale * 0.25, paint);
+    }
+
+    // Draw torso
+    if (leftShoulder != null &&
+        rightShoulder != null &&
+        leftHip != null &&
+        rightHip != null) {
+      Offset ls = toCanvas(leftShoulder.x, leftShoulder.y);
+      Offset rs = toCanvas(rightShoulder.x, rightShoulder.y);
+      Offset lh = toCanvas(leftHip.x, leftHip.y);
+      Offset rh = toCanvas(rightHip.x, rightHip.y);
+
+      // midpoints for torso line
+      Offset midShoulder = Offset((ls.dx + rs.dx) / 2, (ls.dy + rs.dy) / 2);
+      Offset midHip = Offset((lh.dx + rh.dx) / 2, (lh.dy + rh.dy) / 2);
+
+      canvas.drawLine(midShoulder, midHip, paint);
+      canvas.drawLine(ls, rs, paint); // shoulders
+      canvas.drawLine(lh, rh, paint); // hips
+    }
+
+    // Draw arms
+    void drawArm(
+      PoseLandmark? shoulder,
+      PoseLandmark? elbow,
+      PoseLandmark? wrist,
+    ) {
+      if (shoulder != null && elbow != null) {
+        canvas.drawLine(
+          toCanvas(shoulder.x, shoulder.y),
+          toCanvas(elbow.x, elbow.y),
+          paint,
+        );
+      }
+      if (elbow != null && wrist != null) {
+        canvas.drawLine(
+          toCanvas(elbow.x, elbow.y),
+          toCanvas(wrist.x, wrist.y),
+          paint,
+        );
+      }
+    }
+
+    drawArm(leftShoulder, leftElbow, leftWrist);
+    drawArm(rightShoulder, rightElbow, rightWrist);
+
+    // Draw legs
+    void drawLeg(PoseLandmark? hip, PoseLandmark? knee, PoseLandmark? ankle) {
+      if (hip != null && knee != null) {
+        canvas.drawLine(
+          toCanvas(hip.x, hip.y),
+          toCanvas(knee.x, knee.y),
+          paint,
+        );
+      }
+      if (knee != null && ankle != null) {
+        canvas.drawLine(
+          toCanvas(knee.x, knee.y),
+          toCanvas(ankle.x, ankle.y),
+          paint,
+        );
+      }
+    }
+
+    drawLeg(leftHip, leftKnee, leftAnkle);
+    drawLeg(rightHip, rightKnee, rightAnkle);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

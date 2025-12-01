@@ -26,7 +26,9 @@ class _BodyTypeScreenState extends State<BodyTypeScreen> {
     super.initState();
 
     final assessment = Provider.of<AssessmentModel>(context, listen: false);
-    selectedBodyType = assessment.answers["bodyType"];
+    selectedBodyType =
+        assessment.answers["bodyType"] ?? assessment.suggestBodyType();
+    ;
     gender = assessment.answers["gender"];
   }
 

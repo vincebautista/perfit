@@ -12,6 +12,8 @@ import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/screens/splash_screen.dart';
 import 'package:provider/provider.dart';
 
+ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -21,8 +23,21 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.dark;
+
+  void toggleTheme(bool isDark) {
+    setState(() {
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,23 +48,34 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MealProvider()),
       ],
       child: SafeArea(
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.darkTheme,
-          home: StreamBuilder(
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (_, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return CircularProgressIndicator(color: AppColors.primary);
-              }
+        child: ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeNotifier,
+          builder: (context, currentMode, _) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: currentMode,
+              home: StreamBuilder(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (_, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    );
+                  }
 
-              if (snapshot.hasData) {
-                return MainNavigation();
-              }
+                  if (snapshot.hasData) {
+                    return MainNavigation();
+                  }
 
-              return SplashScreen();
-            },
-          ),
+                  return SplashScreen();
+                },
+              ),
+            );
+          },
         ),
       ),
     );

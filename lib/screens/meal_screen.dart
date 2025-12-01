@@ -56,7 +56,7 @@ class _MealScreenState extends State<MealScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.meal),
+        title: Text(widget.meal, style: TextStyle(color: AppColors.primary)),
         centerTitle: true,
         actions: [
           TextButton(
@@ -86,7 +86,7 @@ class _MealScreenState extends State<MealScreen> {
                         .doc(uid)
                         .collection("nutritionLogs")
                         .doc(getTodayDateString())
-                        .collection("meals")
+                        .collection("foods")
                         .doc(widget.meal.toLowerCase())
                         .collection("items")
                         .snapshots(),
@@ -121,13 +121,13 @@ class _MealScreenState extends State<MealScreen> {
                       final title =
                           isRecipe
                               ? (food['mealName'] ?? 'Unnamed Recipe')
-                              : "${food['quantity'] ?? '-'} ${food['unit'] ?? '-'} ${food['foodName'] ?? 'Unnamed Food'}";
+                              : "${food['quantity'].toStringAsFixed(2) ?? '-'} grams ${food['foodName'] ?? 'Unnamed Food'}";
 
                       final subtitle =
-                          "${food['totalCalories']?.toStringAsFixed(1) ?? '?'} kcal | "
-                          "Protein: ${food['totalProtein']?.toStringAsFixed(1) ?? '?'}g | "
-                          "Carbs: ${food['totalCarbs']?.toStringAsFixed(1) ?? '?'}g | "
-                          "Fat: ${food['totalFat']?.toStringAsFixed(1) ?? '?'}g";
+                          "${food['totalCalories']?.toStringAsFixed(2) ?? '?'} kcal | "
+                          "Protein: ${food['totalProtein']?.toStringAsFixed(2) ?? '?'}g | "
+                          "Carbs: ${food['totalCarbs']?.toStringAsFixed(2) ?? '?'}g | "
+                          "Fat: ${food['totalFat']?.toStringAsFixed(2) ?? '?'}g";
 
                       return Card(
                         child: ListTile(
@@ -167,80 +167,105 @@ class _MealScreenState extends State<MealScreen> {
     final meal = widget.meal.toLowerCase();
     final foodId = food['id'];
 
-    QuickAlert.show(context: context, type: QuickAlertType.loading);
+    // Show loading
+    QuickAlert.show(
+      context: context,
+      type: QuickAlertType.loading,
+      text: "Deleting food...",
+    );
 
-    final todayNutritionLogSnapshot =
-        await FirebaseFirestore.instance
-            .collection("users")
-            .doc(uid)
-            .collection("nutritionLogs")
-            .doc(date)
-            .get();
-
-    final todayNutritionLog = todayNutritionLogSnapshot.data() ?? {};
-
+    // 1️⃣ Delete the food item first
     await FirebaseFirestore.instance
         .collection("users")
         .doc(uid)
         .collection("nutritionLogs")
         .doc(date)
-        .set({
-          "totalCalories":
-              (todayNutritionLog["totalCalories"] ?? 0) -
-              (food["totalCalories"] ?? 0),
-          "totalProtein":
-              (todayNutritionLog["totalProtein"] ?? 0) -
-              (food["totalProtein"] ?? 0),
-          "totalCarbs":
-              (todayNutritionLog["totalCarbs"] ?? 0) -
-              (food["totalCarbs"] ?? 0),
-          "totalFat":
-              (todayNutritionLog["totalFat"] ?? 0) - (food["totalFat"] ?? 0),
-        }, SetOptions(merge: true));
-
-    final mealNutritionLogSnapshot =
-        await FirebaseFirestore.instance
-            .collection("users")
-            .doc(uid)
-            .collection("nutritionLogs")
-            .doc(date)
-            .collection("meals")
-            .doc(meal)
-            .get();
-
-    final mealNutritionLog = mealNutritionLogSnapshot.data() ?? {};
-
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .collection("nutritionLogs")
-        .doc(date)
-        .collection("meals")
-        .doc(meal)
-        .set({
-          "totalCalories":
-              (mealNutritionLog["totalCalories"] ?? 0) -
-              (food["totalCalories"] ?? 0),
-          "totalProtein":
-              (mealNutritionLog["totalProtein"] ?? 0) -
-              (food["totalProtein"] ?? 0),
-          "totalCarbs":
-              (mealNutritionLog["totalCarbs"] ?? 0) - (food["totalCarbs"] ?? 0),
-          "totalFat":
-              (mealNutritionLog["totalFat"] ?? 0) - (food["totalFat"] ?? 0),
-        }, SetOptions(merge: true));
-
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .collection("nutritionLogs")
-        .doc(date)
-        .collection("meals")
+        .collection("foods")
         .doc(meal)
         .collection("items")
         .doc(foodId)
         .delete();
 
+    // 2️⃣ Recalculate meal totals
+    final mealSnapshot =
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(uid)
+            .collection("nutritionLogs")
+            .doc(date)
+            .collection("foods")
+            .doc(meal)
+            .collection("items")
+            .get();
+
+    double totalCalories = 0;
+    double totalProtein = 0;
+    double totalCarbs = 0;
+    double totalFat = 0;
+
+    for (var doc in mealSnapshot.docs) {
+      final data = doc.data();
+      totalCalories += (data["totalCalories"] ?? 0);
+      totalProtein += (data["totalProtein"] ?? 0);
+      totalCarbs += (data["totalCarbs"] ?? 0);
+      totalFat += (data["totalFat"] ?? 0);
+    }
+
+    // Update meal totals
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("nutritionLogs")
+        .doc(date)
+        .collection("foods")
+        .doc(meal)
+        .set({
+          "totalCalories": totalCalories,
+          "totalProtein": totalProtein,
+          "totalCarbs": totalCarbs,
+          "totalFat": totalFat,
+        });
+
+    // 3️⃣ Recalculate daily totals by summing all meals
+    final foodsSnapshot =
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(uid)
+            .collection("nutritionLogs")
+            .doc(date)
+            .collection("foods")
+            .get();
+
+    double dayCalories = 0;
+    double dayProtein = 0;
+    double dayCarbs = 0;
+    double dayFat = 0;
+
+    for (var doc in foodsSnapshot.docs) {
+      if (doc.id == "totals") continue; // skip totals document
+      final data = doc.data();
+      dayCalories += (data["totalCalories"] ?? 0);
+      dayProtein += (data["totalProtein"] ?? 0);
+      dayCarbs += (data["totalCarbs"] ?? 0);
+      dayFat += (data["totalFat"] ?? 0);
+    }
+
+    // Update daily totals
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("nutritionLogs")
+        .doc(date)
+        .collection("foods")
+        .doc("totals")
+        .set({
+          "totalCalories": dayCalories,
+          "totalProtein": dayProtein,
+          "totalCarbs": dayCarbs,
+          "totalFat": dayFat,
+        });
+
+    // Close loading
     NavigationUtils.pop(context);
   }
 

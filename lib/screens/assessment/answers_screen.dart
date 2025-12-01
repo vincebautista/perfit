@@ -308,11 +308,39 @@ class _AnswersScreenState extends State<AnswersScreen> {
               ),
               Gap(AppSizes.gap10),
               ElevatedButton(
-                onPressed:
-                    () => NavigationUtils.pushAndRemoveUntil(
+                onPressed: () async {
+                  bool proceed =
+                      await showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder:
+                            (context) => AlertDialog(
+                              title: Text("Important Notice"),
+                              content: Text(
+                                "If you have any illness, injuries, or disabilities, please consult a professional before using this app.",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.of(context).pop(true),
+                                  child: Text("OK"),
+                                ),
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.of(context).pop(false),
+                                  child: Text("Cancel"),
+                                ),
+                              ],
+                            ),
+                      ) ??
+                      false;
+                  if (proceed) {
+                    NavigationUtils.pushAndRemoveUntil(
                       context,
                       PlanSummaryScreen(),
-                    ),
+                    );
+                  }
+                },
                 child: Text("Generate Plan"),
               ),
             ],

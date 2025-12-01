@@ -7,7 +7,6 @@ class FoodItem {
   final double carbs;
   final double fat;
   final double quantity;
-  final String unit;
 
   FoodItem({
     required this.foodName,
@@ -16,7 +15,6 @@ class FoodItem {
     required this.carbs,
     required this.fat,
     required this.quantity,
-    required this.unit,
   });
 }
 

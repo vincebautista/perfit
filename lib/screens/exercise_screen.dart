@@ -1,4 +1,6 @@
 import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/core/utils/navigation_utils.dart';
+import 'package:perfit/core/utils/validation_utils.dart';
 import 'package:perfit/data/data_sources/exercise_list.dart';
 import 'package:perfit/data/models/exercise_model.dart';
 import 'package:perfit/widgets/text_styles.dart';
@@ -52,7 +54,34 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(exercise.name)),
+      appBar: AppBar(
+        title: Text(exercise.name),
+        actions: [
+          TextButton(
+            onPressed: () {
+              final currentIndex = exercises.indexWhere(
+                (e) => e.id == exercise.id,
+              );
+
+              if (currentIndex != -1 && currentIndex < exercises.length - 1) {
+                final nextExercise = exercises[currentIndex + 1];
+
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => ExerciseScreen(id: nextExercise.id),
+                  ),
+                );
+              } else {
+                ValidationUtils.snackBar(
+                  context,
+                  "You've reached the last exercise!",
+                );
+              }
+            },
+            child: Text("Next"),
+          ),
+        ],
+      ),
       body:
           _chewieController != null && _videoController.value.isInitialized
               ? Column(

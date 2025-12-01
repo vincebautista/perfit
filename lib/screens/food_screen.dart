@@ -53,10 +53,7 @@ class _FoodScreenState extends State<FoodScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Meal Plan", style: TextStyle(color: AppColors.primary)),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text("Food")),
       body: FutureBuilder(
         future: getNutritionPlan(),
         builder: (context, nutritionPlanSnapshot) {
@@ -74,7 +71,7 @@ class _FoodScreenState extends State<FoodScreen> {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(AppSizes.gap20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 StreamBuilder(
                   stream:
@@ -83,6 +80,8 @@ class _FoodScreenState extends State<FoodScreen> {
                           .doc(uid)
                           .collection("nutritionLogs")
                           .doc(getTodayDateString())
+                          .collection('foods')
+                          .doc('totals')
                           .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -176,7 +175,23 @@ class _FoodScreenState extends State<FoodScreen> {
                   },
                 ),
                 Gap(AppSizes.gap20),
-                Text("Meals", style: TextStyles.body),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: const Text(
+                    "Meals",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
                 Gap(AppSizes.gap10),
                 StreamBuilder(
                   stream:
@@ -185,7 +200,7 @@ class _FoodScreenState extends State<FoodScreen> {
                           .doc(uid)
                           .collection("nutritionLogs")
                           .doc(getTodayDateString())
-                          .collection("meals")
+                          .collection("foods")
                           .doc("breakfast")
                           .snapshots(),
                   builder: (context, snapshot) {
@@ -221,7 +236,7 @@ class _FoodScreenState extends State<FoodScreen> {
                                       ),
                                   child: Text(
                                     "Add breakfast",
-                                    style: TextStyle(color: AppColors.white),
+                                    style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),
                               ],
@@ -240,7 +255,7 @@ class _FoodScreenState extends State<FoodScreen> {
                           .doc(uid)
                           .collection("nutritionLogs")
                           .doc(getTodayDateString())
-                          .collection("meals")
+                          .collection("foods")
                           .doc("lunch")
                           .snapshots(),
                   builder: (context, snapshot) {
@@ -276,7 +291,7 @@ class _FoodScreenState extends State<FoodScreen> {
                                       ),
                                   child: Text(
                                     "Add Lunch",
-                                    style: TextStyle(color: AppColors.white),
+                                    style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),
                               ],
@@ -295,7 +310,7 @@ class _FoodScreenState extends State<FoodScreen> {
                           .doc(uid)
                           .collection("nutritionLogs")
                           .doc(getTodayDateString())
-                          .collection("meals")
+                          .collection("foods")
                           .doc("dinner")
                           .snapshots(),
                   builder: (context, snapshot) {
@@ -331,7 +346,7 @@ class _FoodScreenState extends State<FoodScreen> {
                                       ),
                                   child: Text(
                                     "Add Dinner",
-                                    style: TextStyle(color: AppColors.white),
+                                    style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),
                               ],
@@ -350,7 +365,7 @@ class _FoodScreenState extends State<FoodScreen> {
                           .doc(uid)
                           .collection("nutritionLogs")
                           .doc(getTodayDateString())
-                          .collection("meals")
+                          .collection("foods")
                           .doc("snacks")
                           .snapshots(),
                   builder: (context, snapshot) {
@@ -386,7 +401,7 @@ class _FoodScreenState extends State<FoodScreen> {
                                       ),
                                   child: Text(
                                     "Add Snacks",
-                                    style: TextStyle(color: AppColors.white),
+                                    style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),
                               ],
@@ -410,277 +425,3 @@ class _FoodScreenState extends State<FoodScreen> {
     return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
   }
 }
-
-// return Scaffold(
-//       appBar: AppBar(
-//         title: Text("Meal Plan", style: TextStyle(color: AppColors.primary)),
-//         centerTitle: true,
-//       ),
-//       body: StreamBuilder(
-//         stream:
-//             FirebaseFirestore.instance
-//                 .collection("users")
-//                 .doc(user!.uid)
-//                 .collection("nutritionLogs")
-//                 .doc(getTodayDateString())
-//                 .snapshots(),
-//         builder: (context, snapshot) {
-//           if (snapshot.connectionState == ConnectionState.waiting) {
-//             return Center(child: CircularProgressIndicator());
-//           }
-
-//           if (snapshot.hasError) {
-//             return Center(child: Text("Error: ${snapshot.error}"));
-//           }
-
-//           final data = snapshot.data!.data();
-
-//           final totalCalories = data?["totalCalories"] ?? 0;
-//           final totalProtein = data?["totalProtein"] ?? 0;
-//           final totalCarbs = data?["totalCarbs"] ?? 0;
-//           final totalFat = data?["totalFat"] ?? 0;
-
-//           final totalBreakfastCalories = 0;
-//           final totalLunchCalories = 0;
-//           final totalDinnerCalories = 0;
-//           final totalSnacksCalories = 0;
-
-//           print(totalCalories);
-//           print(totalProtein);
-//           print(totalCarbs);
-//           print(totalFat);
-//           print(totalBreakfastCalories);
-//           print(totalLunchCalories);
-//           print(totalDinnerCalories);
-//           print(totalSnacksCalories);
-
-//           return FutureBuilder(
-//             future: getNutritionPlan(),
-//             builder: (context, nutritionPlanSnapshot) {
-//               if (nutritionPlanSnapshot.connectionState ==
-//                   ConnectionState.waiting) {
-//                 return Center(child: CircularProgressIndicator());
-//               }
-
-//               if (nutritionPlanSnapshot.hasError) {
-//                 return Center(
-//                   child: Text("Error: ${nutritionPlanSnapshot.error}"),
-//                 );
-//               }
-
-//               final nutritionPlan = nutritionPlanSnapshot.data;
-
-//               print(nutritionPlan);
-
-//               return SingleChildScrollView(
-//                 padding: const EdgeInsets.all(AppSizes.gap20),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.stretch,
-//                   children: [
-//                     Row(
-//                       crossAxisAlignment: CrossAxisAlignment.start,
-//                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                       children: [
-//                         Text("Today", style: TextStyles.body),
-//                         Stack(
-//                           alignment: Alignment.center,
-//                           children: [
-//                             HalfCircleProgress(
-//                               progress:
-//                                   (totalCalories as num).toDouble() /
-//                                   (nutritionPlan!["calorieTarget"] as num)
-//                                       .toDouble(),
-//                             ),
-//                             Positioned(
-//                               top: 30,
-//                               child: Column(
-//                                 children: [
-//                                   Text(
-//                                     totalCalories.toDouble().toStringAsFixed(1),
-//                                     style: TextStyles.title,
-//                                   ),
-//                                   Text(
-//                                     "of ${(nutritionPlan["calorieTarget"] as num).toDouble().toStringAsFixed(1)} kcal",
-//                                   ),
-//                                 ],
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                         IconButton(
-//                           iconSize: 30,
-//                           padding: EdgeInsets.all(0),
-//                           onPressed:
-//                               () => NavigationUtils.push(
-//                                 context,
-//                                 MealAnalyticsScreen(),
-//                               ),
-//                           icon: Icon(Icons.analytics),
-//                         ),
-//                       ],
-//                     ),
-//                     Gap(AppSizes.gap20 * 2),
-//                     Row(
-//                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-//                       children: [
-//                         MacroProgressBar(
-//                           label: "Protein",
-//                           currentValue: (totalProtein as num).toDouble(),
-//                           goal: (nutritionPlan["protein"] as num).toDouble(),
-//                           barColor: AppColors.primary,
-//                         ),
-//                         MacroProgressBar(
-//                           label: "Carbs",
-//                           currentValue: (totalCarbs as num).toDouble(),
-//                           goal: (nutritionPlan["carb"] as num).toDouble(),
-//                           barColor: AppColors.primary,
-//                         ),
-//                         MacroProgressBar(
-//                           label: "Fat",
-//                           currentValue: (totalFat as num).toDouble(),
-//                           goal: (nutritionPlan["fat"] as num).toDouble(),
-//                           barColor: AppColors.primary,
-//                         ),
-//                       ],
-//                     ),
-//                     Gap(AppSizes.gap20 * 1.5),
-//                     Text(
-//                       "Meals",
-//                       style: TextStyles.body.copyWith(fontSize: 24),
-//                     ),
-//                     Gap(AppSizes.gap10),
-//                     Card(
-//                       child: Padding(
-//                         padding: const EdgeInsets.only(
-//                           top: AppSizes.gap15,
-//                           right: AppSizes.gap15,
-//                           left: AppSizes.gap15,
-//                         ),
-//                         child: Column(
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             Text("Breakfast", style: TextStyles.body),
-//                             Row(
-//                               children: [
-//                                 Text(
-//                                   "${(totalBreakfastCalories).toDouble().toStringAsFixed(1)} kcal",
-//                                 ),
-//                                 Gap(AppSizes.gap15),
-//                                 TextButton(
-//                                   onPressed:
-//                                       () => NavigationUtils.push(
-//                                         context,
-//                                         MealScreen(meal: "Breakfast"),
-//                                       ),
-//                                   child: Text("Add breakfast"),
-//                                 ),
-//                               ],
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                     ),
-//                     Gap(AppSizes.gap10),
-//                     Card(
-//                       child: Padding(
-//                         padding: const EdgeInsets.only(
-//                           top: AppSizes.gap15,
-//                           right: AppSizes.gap15,
-//                           left: AppSizes.gap15,
-//                         ),
-//                         child: Column(
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             Text("Lunch", style: TextStyles.body),
-//                             Row(
-//                               children: [
-//                                 Text(
-//                                   "${(totalLunchCalories).toDouble().toStringAsFixed(1)} kcal",
-//                                 ),
-//                                 Gap(AppSizes.gap15),
-//                                 TextButton(
-//                                   onPressed:
-//                                       () => NavigationUtils.push(
-//                                         context,
-//                                         MealScreen(meal: "Lunch"),
-//                                       ),
-//                                   child: Text("Add lunch"),
-//                                 ),
-//                               ],
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                     ),
-//                     Gap(AppSizes.gap10),
-//                     Card(
-//                       child: Padding(
-//                         padding: const EdgeInsets.only(
-//                           top: AppSizes.gap15,
-//                           right: AppSizes.gap15,
-//                           left: AppSizes.gap15,
-//                         ),
-//                         child: Column(
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             Text("Dinner", style: TextStyles.body),
-//                             Row(
-//                               children: [
-//                                 Text(
-//                                   "${(totalDinnerCalories).toDouble().toStringAsFixed(1)} kcal",
-//                                 ),
-//                                 Gap(AppSizes.gap15),
-//                                 TextButton(
-//                                   onPressed:
-//                                       () => NavigationUtils.push(
-//                                         context,
-//                                         MealScreen(meal: "Dinner"),
-//                                       ),
-//                                   child: Text("Add dinner"),
-//                                 ),
-//                               ],
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                     ),
-//                     Gap(AppSizes.gap10),
-//                     Card(
-//                       child: Padding(
-//                         padding: const EdgeInsets.only(
-//                           top: AppSizes.gap15,
-//                           right: AppSizes.gap15,
-//                           left: AppSizes.gap15,
-//                         ),
-//                         child: Column(
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             Text("Snacks", style: TextStyles.body),
-//                             Row(
-//                               children: [
-//                                 Text(
-//                                   "${(totalSnacksCalories).toDouble().toStringAsFixed(1)} kcal",
-//                                 ),
-//                                 Gap(AppSizes.gap15),
-//                                 TextButton(
-//                                   onPressed:
-//                                       () => NavigationUtils.push(
-//                                         context,
-//                                         MealScreen(meal: "Snack"),
-//                                       ),
-//                                   child: Text("Add snack"),
-//                                 ),
-//                               ],
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               );
-//             },
-//           );
-//         },
-//       ),
-//     );

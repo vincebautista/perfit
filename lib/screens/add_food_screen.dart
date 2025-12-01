@@ -28,27 +28,38 @@ class AddFoodScreen extends StatefulWidget {
 class _AddFoodScreenState extends State<AddFoodScreen> {
   final searchCtrl = TextEditingController();
   final servingCtrl = TextEditingController();
-  final appId = "2309bcc3";
-  final appKey = "fc0f766a22fc7dfb1f59369e4f14a3c3";
+  final appId = "8cbd9bae";
+  final appKey = "f7455b98be55ee9b094918b0b9c3f767";
 
-  Future<Map<String, List<dynamic>>>? foodResult;
+  Future<List<dynamic>>? foodResult;
 
-  Future<Map<String, List<dynamic>>>? searchFood(String query) async {
+  // Search Edamam for foods
+  Future<List<dynamic>> searchFood(String query) async {
     try {
-      final result = await http.get(
-        Uri.parse(
-          "https://trackapi.nutritionix.com/v2/search/instant?query=$query",
-        ),
-        headers: {"x-app-id": appId, "x-app-key": appKey},
-      );
+      final url =
+          "https://api.edamam.com/api/food-database/v2/parser?ingr=${Uri.encodeComponent(query)}&app_id=$appId&app_key=$appKey&nutrition-type=logging";
+
+      final result = await http.get(Uri.parse(url));
 
       if (result.statusCode == 200) {
-        final json = jsonDecode(result.body);
-        print(json);
-        return {
-          "common": json["common"] ?? [],
-          "branded": json["branded"] ?? [],
-        };
+        final jsonData = jsonDecode(result.body);
+        List<dynamic> response = [];
+
+        if (jsonData['parsed'] != null) {
+          for (var item in jsonData['parsed']) {
+            response.add(item['food']);
+          }
+        }
+
+        if (jsonData['hints'] != null) {
+          for (var item in jsonData['hints']) {
+            response.add(item['food']);
+          }
+        }
+
+        print(response);
+
+        return response;
       } else {
         print('API Error: ${result.body}');
         throw Exception("Error: ${result.statusCode}");
@@ -56,76 +67,53 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     } on SocketException catch (e) {
       print("Network error: $e");
       rethrow;
+    } catch (e) {
+      print("Unexpected error: $e");
+      rethrow;
     }
   }
 
-  Future<Map<String, dynamic>?> fetchFoodInfo(
-    Map<String, dynamic> food, {
-    bool isBranded = false,
-  }) async {
-    final headers = {
-      "x-app-id": appId,
-      "x-app-key": appKey,
-      "Content-Type": "application/json",
-    };
-
+  Future<Map<String, dynamic>?> fetchFoodInfo(Map<String, dynamic> food) async {
     try {
-      if (isBranded) {
-        final id = food["nix_item_id"];
+      final foodId = food["foodId"];
+      final measureURI =
+          "http://www.edamam.com/ontologies/edamam.owl#Measure_gram"; // per gram
 
-        if (id == null) {
-          return null;
-        }
+      final result = await http.post(
+        Uri.parse(
+          "https://api.edamam.com/api/food-database/v2/nutrients?app_id=$appId&app_key=$appKey",
+        ),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "ingredients": [
+            {
+              "quantity": 1,
+              "measureURI": measureURI,
+              "foodId": foodId,
+            }, // 1 gram
+          ],
+        }),
+      );
 
-        final result = await http.get(
-          Uri.parse(
-            "https://trackapi.nutritionix.com/v2/search/item?nix_item_id=$id",
-          ),
-          headers: headers,
-        );
-
-        if (result.statusCode == 200) {
-          final json = jsonDecode(result.body);
-          return json["foods"]?[0];
-        }
+      if (result.statusCode == 200) {
+        final jsonData = jsonDecode(result.body);
+        jsonData["food_name"] = food["label"];
+        return jsonData;
       } else {
-        final name = food["food_name"];
-        final result = await http.post(
-          Uri.parse("https://trackapi.nutritionix.com/v2/natural/nutrients"),
-          headers: headers,
-          body: jsonEncode({"query": name}),
-        );
-
-        if (result.statusCode == 200) {
-          final json = jsonDecode(result.body);
-          return json["foods"]?[0];
-        }
+        print("Error fetching nutrients: ${result.body}");
       }
     } catch (e) {
-      print("Error fetching full food info: $e");
+      print("Error fetching food info: $e");
     }
-
     return null;
   }
 
-  Widget foodItem(Map<String, dynamic> food, {bool isBranded = false}) {
+  Widget foodItem(Map<String, dynamic> food) {
     return Card(
       child: ListTile(
-        leading: Image.network(
-          food["photo"]?["thumb"] ??
-              (isBranded ? "https://via.placeholder.com/50" : ""),
-          width: 50,
-          height: 50,
-          errorBuilder: (_, __, ___) => const Icon(Icons.fastfood),
-          fit: BoxFit.cover,
-        ),
-        title: Text(food["food_name"] ?? "Unknown"),
-        subtitle:
-            isBranded
-                ? Text(food["brand_name"] ?? "Branded Food")
-                : Text("Common Food"),
+        title: Text(food["label"] ?? "Unknown"),
         trailing: IconButton(
-          onPressed: () => showFoodInfo(food, isBranded: isBranded),
+          onPressed: () => showFoodInfo(food),
           icon: Icon(Icons.add),
         ),
       ),
@@ -154,7 +142,6 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                         IconButton(
                           onPressed: () {
                             if (searchCtrl.text.isEmpty) return;
-
                             setState(() {
                               foodResult = searchFood(searchCtrl.text);
                             });
@@ -172,7 +159,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
               child:
                   foodResult == null
                       ? Center(child: Text("Search food."))
-                      : FutureBuilder(
+                      : FutureBuilder<List<dynamic>>(
                         future: foodResult,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
@@ -187,26 +174,13 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                           }
 
                           final data = snapshot.data;
-
                           if (data == null || data.isEmpty) {
                             return Center(child: Text("No results found."));
                           }
 
-                          final commonFoods = data["common"];
-                          final brandedFoods = data["branded"];
-
                           return ListView(
-                            children: [
-                              if (commonFoods!.isNotEmpty)
-                                Text("Common Foods", style: TextStyles.title),
-                              ...commonFoods.map((food) => foodItem(food)),
-                              Gap(AppSizes.gap20),
-                              if (brandedFoods!.isNotEmpty)
-                                Text("Branded Foods", style: TextStyles.title),
-                              ...brandedFoods.map(
-                                (food) => foodItem(food, isBranded: true),
-                              ),
-                            ],
+                            children:
+                                data.map((food) => foodItem(food)).toList(),
                           );
                         },
                       ),
@@ -217,8 +191,8 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     );
   }
 
-  void showFoodInfo(Map<String, dynamic> food, {bool isBranded = false}) async {
-    final fullFoodInfo = await fetchFoodInfo(food, isBranded: isBranded);
+  void showFoodInfo(Map<String, dynamic> food) async {
+    final fullFoodInfo = await fetchFoodInfo(food);
 
     if (fullFoodInfo == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -227,26 +201,12 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
       return;
     }
 
-    final measures = fullFoodInfo["alt_measures"] ?? [];
-    final servingWeight = fullFoodInfo["serving_weight_grams"];
-    final calories = fullFoodInfo["nf_calories"];
-    final protein = fullFoodInfo["nf_protein"];
-    final carb = fullFoodInfo["nf_total_carbohydrate"];
-    final fat = fullFoodInfo["nf_total_fat"];
+    final nutrients = fullFoodInfo["totalNutrients"] ?? {};
 
-    final caloriesPerGram = calories / servingWeight;
-    final proteinPerGram = protein / servingWeight;
-    final carbPerGram = carb / servingWeight;
-    final fatPerGram = fat / servingWeight;
-
-    Map<String, dynamic> selectedMeasure =
-        measures.isNotEmpty
-            ? measures[0]
-            : {
-              "serving_weight": servingWeight,
-              "qty": 1,
-              "measure": fullFoodInfo["serving_unit"],
-            };
+    final calories = (nutrients["ENERC_KCAL"]?["quantity"] ?? 0).toDouble();
+    final protein = (nutrients["PROCNT"]?["quantity"] ?? 0).toDouble();
+    final carbs = (nutrients["CHOCDF"]?["quantity"] ?? 0).toDouble();
+    final fat = (nutrients["FAT"]?["quantity"] ?? 0).toDouble();
 
     servingCtrl.text = "1";
 
@@ -257,18 +217,10 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
           builder: (context, setModalState) {
             final double quantity = double.tryParse(servingCtrl.text) ?? 1;
 
-            final double selectedWeight =
-                (selectedMeasure["serving_weight"] as num).toDouble();
-            final double selectedQty =
-                (selectedMeasure["qty"] as num).toDouble();
-
-            final double perUnitWeight = selectedWeight / selectedQty;
-            final double totalGrams = quantity * perUnitWeight;
-
-            final double totalCalories = caloriesPerGram * totalGrams;
-            final double totalProtein = proteinPerGram * totalGrams;
-            final double totalCarbs = carbPerGram * totalGrams;
-            final double totalFat = fatPerGram * totalGrams;
+            final double totalCalories = calories * quantity;
+            final double totalProtein = protein * quantity;
+            final double totalCarbs = carbs * quantity;
+            final double totalFat = fat * quantity;
 
             return AlertDialog(
               title: Text(fullFoodInfo["food_name"]),
@@ -276,63 +228,12 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Quantity"),
+                    Text("Quantity (grams)"),
                     Gap(AppSizes.gap10),
                     TextField(
                       controller: servingCtrl,
                       keyboardType: TextInputType.number,
-                      onChanged: (_) {
-                        setModalState(() {});
-                      },
-                    ),
-                    Gap(AppSizes.gap20),
-                    Text("Unit"),
-                    Gap(AppSizes.gap10),
-                    DropdownButtonFormField<Map<String, dynamic>>(
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 12,
-                        ),
-                        border: OutlineInputBorder(),
-                      ),
-                      value: selectedMeasure,
-                      items:
-                          measures.map<DropdownMenuItem<Map<String, dynamic>>>((
-                            measure,
-                          ) {
-                            return DropdownMenuItem<Map<String, dynamic>>(
-                              value: measure,
-                              child: SizedBox(
-                                width:
-                                    double
-                                        .infinity, // forces ellipsis within bounds
-                                child: Text(
-                                  measure["measure"],
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() {
-                            selectedMeasure = value;
-                          });
-                        }
-                      },
-                      selectedItemBuilder: (context) {
-                        return measures.map<Widget>((measure) {
-                          return Text(
-                            measure["measure"],
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          );
-                        }).toList();
-                      },
+                      onChanged: (_) => setModalState(() {}),
                     ),
                     Gap(AppSizes.gap20),
                     Card(
@@ -375,7 +276,6 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                       addFoodToProvider(
                         food: fullFoodInfo,
                         quantity: quantity,
-                        measure: selectedMeasure,
                         totalCalories: totalCalories,
                         totalProtein: totalProtein,
                         totalCarbs: totalCarbs,
@@ -383,16 +283,14 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                       );
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
-
                       ValidationUtils.snackBar(
                         context,
-                        "added $quantity ${selectedMeasure["measure"]} ${fullFoodInfo["food_name"]}",
+                        "added $quantity ${fullFoodInfo["food_name"]}",
                       );
                     } else {
                       addFood(
                         food: fullFoodInfo,
                         quantity: quantity,
-                        measure: selectedMeasure,
                         totalCalories: totalCalories,
                         totalProtein: totalProtein,
                         totalCarbs: totalCarbs,
@@ -401,7 +299,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                       Navigator.of(context).pop();
                       ValidationUtils.snackBar(
                         context,
-                        "added $quantity ${selectedMeasure["measure"]} ${fullFoodInfo["food_name"]}",
+                        "added $quantity grams ${fullFoodInfo["food_name"]}",
                       );
                     }
                   },
@@ -418,7 +316,6 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   void addFood({
     required Map<String, dynamic> food,
     required double quantity,
-    required Map<String, dynamic> measure,
     required double totalCalories,
     required double totalProtein,
     required double totalCarbs,
@@ -426,16 +323,55 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     final uid = user.uid;
     final date = getTodayDateString();
     final meal = widget.meal.toLowerCase();
 
+    final itemsCollection = FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("nutritionLogs")
+        .doc(date)
+        .collection("foods")
+        .doc(meal)
+        .collection("items");
+
+    // Check if food already exists
+    final existing =
+        await itemsCollection
+            .where("foodName", isEqualTo: food["food_name"])
+            .limit(1)
+            .get();
+
+    if (existing.docs.isNotEmpty) {
+      final doc = existing.docs.first;
+      await doc.reference.update({
+        "quantity": FieldValue.increment(quantity),
+        "totalCalories": FieldValue.increment(totalCalories),
+        "totalProtein": FieldValue.increment(totalProtein),
+        "totalCarbs": FieldValue.increment(totalCarbs),
+        "totalFat": FieldValue.increment(totalFat),
+      });
+    } else {
+      await itemsCollection.add({
+        "foodName": food["food_name"],
+        "quantity": quantity,
+        "totalCalories": totalCalories,
+        "totalProtein": totalProtein,
+        "totalCarbs": totalCarbs,
+        "totalFat": totalFat,
+        "type": "food",
+      });
+    }
+
+    // Update meal totals
     await FirebaseFirestore.instance
         .collection("users")
         .doc(uid)
         .collection("nutritionLogs")
         .doc(date)
+        .collection("foods")
+        .doc(meal)
         .set({
           "totalCalories": FieldValue.increment(totalCalories),
           "totalProtein": FieldValue.increment(totalProtein),
@@ -443,32 +379,14 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
           "totalFat": FieldValue.increment(totalFat),
         }, SetOptions(merge: true));
 
+    // Update daily totals
     await FirebaseFirestore.instance
         .collection("users")
         .doc(uid)
         .collection("nutritionLogs")
         .doc(date)
-        .collection("meals")
-        .doc(meal)
-        .collection("items")
-        .add({
-          "foodName": food["food_name"],
-          "quantity": quantity,
-          "unit": measure["measure"],
-          "totalCalories": totalCalories,
-          "totalProtein": totalProtein,
-          "totalCarbs": totalCarbs,
-          "totalFat": totalFat,
-          "type": "food",
-        });
-
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .collection("nutritionLogs")
-        .doc(date)
-        .collection("meals")
-        .doc(meal)
+        .collection("foods")
+        .doc("totals")
         .set({
           "totalCalories": FieldValue.increment(totalCalories),
           "totalProtein": FieldValue.increment(totalProtein),
@@ -480,24 +398,44 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   void addFoodToProvider({
     required Map<String, dynamic> food,
     required double quantity,
-    required Map<String, dynamic> measure,
     required double totalCalories,
     required double totalProtein,
     required double totalCarbs,
     required double totalFat,
   }) {
-    final foodItem = FoodItem(
-      foodName: food["food_name"],
-      calories: totalCalories,
-      protein: totalProtein,
-      carbs: totalCarbs,
-      fat: totalFat,
-      quantity: quantity,
-      unit: measure["measure"],
+    final mealProvider = Provider.of<MealProvider>(context, listen: false);
+
+    // Check if the food already exists
+    final index = mealProvider.foods.indexWhere(
+      (item) => item.foodName == food["food_name"],
     );
 
-    final mealProvider = Provider.of<MealProvider>(context, listen: false);
-    mealProvider.addFood(foodItem);
+    if (index != -1) {
+      // Replace with a new FoodItem with updated values
+      final existing = mealProvider.foods[index];
+      final updated = FoodItem(
+        foodName: existing.foodName,
+        calories: existing.calories + totalCalories,
+        protein: existing.protein + totalProtein,
+        carbs: existing.carbs + totalCarbs,
+        fat: existing.fat + totalFat,
+        quantity: existing.quantity + quantity,
+      );
+
+      mealProvider.foods[index] = updated;
+      mealProvider.notifyListeners();
+    } else {
+      // Add new food item
+      final foodItem = FoodItem(
+        foodName: food["food_name"],
+        calories: totalCalories,
+        protein: totalProtein,
+        carbs: totalCarbs,
+        fat: totalFat,
+        quantity: quantity,
+      );
+      mealProvider.addFood(foodItem);
+    }
   }
 
   String getTodayDateString() {

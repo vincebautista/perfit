@@ -10,6 +10,8 @@ import 'package:perfit/data/models/exercise_metrics_model.dart';
 import 'package:perfit/screens/assessment/gender_screen.dart';
 import 'package:perfit/screens/perform_exercise_screen.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -34,11 +36,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   bool hasPlan = false;
 
   Map<String, String> exerciseStatus = {};
+  bool _isFirstLoad = true;
 
   @override
   void initState() {
     super.initState();
-
     firestoreService = FirebaseFirestoreService();
     exerciseService = ExerciseService();
     user = FirebaseAuth.instance.currentUser;
@@ -80,15 +82,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       return;
     }
 
-    currentDay = fitnessPlan.currentDay;
-    selectedDay = fitnessPlan.currentDay;
-    planDuration = fitnessPlan.planDuration * 7;
+    if (_isFirstLoad) {
+      currentDay = fitnessPlan.currentDay;
+      selectedDay = fitnessPlan.currentDay;
+      planDuration = fitnessPlan.planDuration * 7;
+      _isFirstLoad = false;
+    }
 
     final workoutDocs = await firestoreService.getWorkouts(
       user!.uid,
       activeFitnessPlanId!,
     );
-
     workouts = workoutDocs.map((doc) => doc.data()).toList();
 
     exerciseStatus = await firestoreService.getExerciseStatuses(
@@ -102,51 +106,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     });
   }
 
-  Future<void> completeWorkoutDay(int day, {required String status}) async {
-    if (activeFitnessPlanId == null) return;
-
-    final planRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection('fitnessPlan')
-        .doc(activeFitnessPlanId);
-
-    final workoutDayRef = planRef.collection('workouts').doc("$day");
-
-    await workoutDayRef
-        .update({
-          'status': status,
-          'dateCompleted': FieldValue.serverTimestamp(),
-        })
-        .catchError((_) async {
-          await workoutDayRef.set({
-            'day': day,
-            'status': status,
-            'dateCompleted': FieldValue.serverTimestamp(),
-          });
-        });
-
-    setState(() {
-      final index = workouts.indexWhere((w) => w['day'] == day);
-      if (index != -1) {
-        workouts[index]['status'] = status;
-        workouts[index]['dateCompleted'] = Timestamp.now();
-      } else {
-        workouts.add({
-          'day': day,
-          'status': status,
-          'dateCompleted': Timestamp.now(),
-        });
-      }
-    });
-  }
-
   Widget createWorkoutRoutineBtn() {
     return Center(
       child: ElevatedButton(
-        onPressed: () {
-          NavigationUtils.push(context, GenderScreen());
-        },
+        onPressed: () => NavigationUtils.push(context, GenderScreen()),
         child: Text("Create workout plan"),
       ),
     );
@@ -325,13 +288,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         })(),
                     enabled: !isPastDay,
                     onTap: () {
-                      if (isPastDay) {
-                        return;
-                      } else if (isFutureDay) {
+                      if (isPastDay) return;
+                      if (isFutureDay) {
                         showDialog(
                           context: context,
                           builder:
-                              (context) => AlertDialog(
+                              (_) => AlertDialog(
                                 title: const Text("Not yet available"),
                                 content: const Text("Come back tomorrow."),
                                 actions: [
@@ -371,17 +333,52 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
-  int parseDuration(dynamic value) {
-    if (value == null) return 0;
+  Future<void> skipDay(int day) async {
+    final dayWorkout = workouts.firstWhere(
+      (w) => w['day'] == day,
+      orElse: () => {},
+    );
+    if (dayWorkout.isEmpty) return;
 
-    final str = value.toString();
-    final match = RegExp(r'\d+').firstMatch(str);
+    final List<dynamic> exercisesRaw = dayWorkout['exercises'] ?? [];
 
-    if (match != null) {
-      return int.tryParse(match.group(0)!) ?? 0;
+    // Mark all exercises skipped locally + Firebase
+    for (var ex in exercisesRaw) {
+      final key = "$day-${ex['name']}";
+      exerciseStatus[key] = "skipped";
+      await firestoreService.skipAllExercises(
+        activeFitnessPlanId!,
+        day,
+        exercisesRaw,
+      );
     }
 
-    return 0;
+    // Use your new method to mark the day complete
+    await firestoreService.updateWorkoutDayCompletion(
+      activeFitnessPlanId!,
+      day,
+    );
+
+    // Increment currentDay in Firebase
+    await firestoreService.incrementCurrentDay(user!.uid, activeFitnessPlanId!);
+
+    // Move to next day locally
+    if (day < planDuration) {
+      setState(() {
+        selectedDay = day + 1;
+        currentDay = day + 1;
+        currentWeekIndex = ((selectedDay - 1) ~/ 7);
+      });
+    }
+  }
+
+  bool isRestDay(int day) {
+    final dayWorkout = workouts.firstWhere(
+      (w) => w['day'] == day,
+      orElse: () => {},
+    );
+    if (dayWorkout.isEmpty) return true;
+    return dayWorkout['type'] == "Rest";
   }
 
   @override
@@ -401,7 +398,98 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text("Workout Plan")),
+      appBar: AppBar(
+        title: Text("Workout Plan"),
+        actions: [
+          if (hasPlan && selectedDay == currentDay && !isRestDay(selectedDay))
+            TextButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder:
+                      (_) => AlertDialog(
+                        title: const Text(
+                          "Skip Day?",
+                          style: TextStyle(color: AppColors.primary),
+                        ),
+                        content: const Text(
+                          "Are you sure you want to skip today's workout?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context), // cancel
+                            child: const Text(
+                              "Cancel",
+                              style: TextStyle(color: AppColors.white),
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSizes.padding16,
+                              vertical: AppSizes.padding16 - 8,
+                            ),
+                            child: GestureDetector(
+                              onTap: () async {
+                                Navigator.pop(context);
+                                // 🔹 Show QuickAlert loading while skipping
+                                QuickAlert.show(
+                                  context: context,
+                                  type: QuickAlertType.loading,
+                                  text: "Skipping today's workout...",
+                                  barrierDismissible: false,
+                                );
+
+                                try {
+                                  await skipDay(selectedDay);
+
+                                  // 🔹 Dismiss loading after done
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pop();
+
+                                  // 🔹 Optional: show a success message
+                                  QuickAlert.show(
+                                    context: context,
+                                    type: QuickAlertType.success,
+                                    text: "Day skipped successfully!",
+                                    autoCloseDuration: const Duration(
+                                      seconds: 2,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pop();
+                                  QuickAlert.show(
+                                    context: context,
+                                    type: QuickAlertType.error,
+                                    text: "Failed to skip day: $e",
+                                    autoCloseDuration: const Duration(
+                                      seconds: 3,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Text(
+                                "Skip",
+                                style: TextStyle(color: AppColors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                );
+              },
+              child: Text("Skip Day", style: TextStyle(color: Colors.white)),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Text("Week ${currentWeekIndex + 1}"),

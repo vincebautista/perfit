@@ -20,7 +20,7 @@ class AppTheme {
       titleSmall: TextStyle(color: AppColors.white),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStatePropertyAll(AppColors.primary),
+      fillColor: MaterialStatePropertyAll(AppColors.primary),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(
       color: AppColors.primary,
@@ -56,6 +56,69 @@ class AppTheme {
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.roundedRadius),
         borderSide: const BorderSide(color: Colors.red),
+      ),
+    ),
+  );
+
+  static ThemeData lightTheme = ThemeData.light().copyWith(
+    scaffoldBackgroundColor: AppColors.white,
+    primaryColor: AppColors.primary,
+    appBarTheme: AppBarTheme(
+      backgroundColor: AppColors.white,
+      surfaceTintColor: Colors.transparent,
+      iconTheme: IconThemeData(color: AppColors.black),
+      titleTextStyle: TextStyle(
+        color: AppColors.black,
+        fontSize: AppSizes.fontSize18,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    textTheme: TextTheme(
+      bodyMedium: TextStyle(color: AppColors.black),
+      labelLarge: TextStyle(color: AppColors.black),
+      bodyLarge: TextStyle(color: AppColors.black),
+      bodySmall: TextStyle(color: AppColors.black),
+      titleLarge: TextStyle(color: AppColors.black),
+      titleMedium: TextStyle(color: AppColors.black),
+      titleSmall: TextStyle(color: AppColors.black),
+    ),
+    checkboxTheme: CheckboxThemeData(
+      fillColor: MaterialStatePropertyAll(AppColors.primary),
+    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: AppColors.primary,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: AppColors.white,
+        backgroundColor: AppColors.primary,
+        fixedSize: Size(1, AppSizes.buttonLarge),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.roundedRadius),
+        ),
+        textStyle: TextStyle(
+          color: AppColors.white,
+          fontSize: AppSizes.fontSize16,
+        ),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surfaceLight,
+      labelStyle: TextStyle(color: AppColors.black),
+      hintStyle: TextStyle(color: AppColors.grey),
+      suffixIconColor: AppColors.black,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.roundedRadius),
+        borderSide: BorderSide(color: Colors.transparent),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.roundedRadius),
+        borderSide: BorderSide(color: AppColors.primary),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.roundedRadius),
+        borderSide: BorderSide(color: Colors.red),
       ),
     ),
   );

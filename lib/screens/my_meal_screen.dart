@@ -1,9 +1,12 @@
 import 'package:perfit/core/utils/navigation_utils.dart';
+import 'package:perfit/core/utils/validation_utils.dart';
 import 'package:perfit/screens/create_meal_screen.dart';
 import 'package:perfit/screens/my_meal_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
 
 class MyMealScreen extends StatefulWidget {
   final String meal;
@@ -87,7 +90,11 @@ class _MyMealScreenState extends State<MyMealScreen> {
                             onPressed: () => addMeal(meal, mealId),
                             icon: Icon(Icons.add),
                           ),
-                          onTap: () => NavigationUtils.push(context, MyMealDetailScreen(id: mealId)),
+                          onTap:
+                              () => NavigationUtils.push(
+                                context,
+                                MyMealDetailScreen(id: mealId),
+                              ),
                         ),
                       );
                     },
@@ -99,80 +106,107 @@ class _MyMealScreenState extends State<MyMealScreen> {
 
   void addMeal(Map<String, dynamic> food, String mealId) async {
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return;
-    }
+    if (user == null) return;
 
     final uid = user.uid;
     final date = getTodayDateString();
     final meal = widget.meal.toLowerCase();
-
     final firestore = FirebaseFirestore.instance;
 
-    final mealDocRef = firestore
-        .collection("users")
-        .doc(uid)
-        .collection("nutritionLogs")
-        .doc(date)
-        .collection("foods")
-        .doc(meal);
+    // Show QuickAlert loading
+    QuickAlert.show(
+      context: context,
+      type: QuickAlertType.loading,
+      text: 'Adding meal...',
+      barrierDismissible: false,
+    );
 
-    final mealItemsRef = mealDocRef.collection("items");
+    try {
+      final mealDocRef = firestore
+          .collection("users")
+          .doc(uid)
+          .collection("nutritionLogs")
+          .doc(date)
+          .collection("foods")
+          .doc(meal);
 
-    final foodsDocRef = firestore
-        .collection("users")
-        .doc(uid)
-        .collection("nutritionLogs")
-        .doc(date)
-        .collection("foods")
-        .doc("totals");
+      final mealItemsRef = mealDocRef.collection("items");
 
-    final currentIntakeRef = firestore.collection("users").doc(uid);
+      final foodsDocRef = firestore
+          .collection("users")
+          .doc(uid)
+          .collection("nutritionLogs")
+          .doc(date)
+          .collection("foods")
+          .doc("totals");
 
-    await mealItemsRef.add({
-      "mealName": food["mealName"],
-      "totalCalories": food["totalCalories"],
-      "totalProtein": food["totalProtein"],
-      "totalCarbs": food["totalCarbs"],
-      "totalFat": food["totalFat"],
-      "type": "recipe",
-      "mealId": mealId,
-    });
+      final currentIntakeRef = firestore.collection("users").doc(uid);
 
-    final mealSnapshot = await mealDocRef.get();
-    final mealData = mealSnapshot.data() ?? {};
+      final totalCalories = (food["totalCalories"] ?? 0).toDouble();
+      final totalProtein = (food["totalProtein"] ?? 0).toDouble();
+      final totalCarbs = (food["totalCarbs"] ?? 0).toDouble();
+      final totalFat = (food["totalFat"] ?? 0).toDouble();
 
-    await mealDocRef.set({
-      "totalCalories": (mealData["totalCalories"] ?? 0) + food["totalCalories"],
-      "totalProtein": (mealData["totalProtein"] ?? 0) + food["totalProtein"],
-      "totalCarbs": (mealData["totalCarbs"] ?? 0) + food["totalCarbs"],
-      "totalFat": (mealData["totalFat"] ?? 0) + food["totalFat"],
-    }, SetOptions(merge: true));
+      // Add meal item
+      await mealItemsRef.add({
+        "mealName": food["mealName"] ?? "Unnamed Meal",
+        "totalCalories": totalCalories,
+        "totalProtein": totalProtein,
+        "totalCarbs": totalCarbs,
+        "totalFat": totalFat,
+        "type": "recipe",
+        "mealId": mealId,
+      });
 
-    final foodsSnapshot = await foodsDocRef.get();
-    final foodsData = foodsSnapshot.data() ?? {};
+      // Update meal totals
+      await mealDocRef.set({
+        "totalCalories": FieldValue.increment(totalCalories),
+        "totalProtein": FieldValue.increment(totalProtein),
+        "totalCarbs": FieldValue.increment(totalCarbs),
+        "totalFat": FieldValue.increment(totalFat),
+      }, SetOptions(merge: true));
 
-    await foodsDocRef.set({
-      "totalCalories":
-          (foodsData["totalCalories"] ?? 0) + food["totalCalories"],
-      "totalProtein": (foodsData["totalProtein"] ?? 0) + food["totalProtein"],
-      "totalCarbs": (foodsData["totalCarbs"] ?? 0) + food["totalCarbs"],
-      "totalFat": (foodsData["totalFat"] ?? 0) + food["totalFat"],
-    }, SetOptions(merge: true));
+      // Update daily totals
+      final foodsSnapshot = await foodsDocRef.get();
+      final foodsData = foodsSnapshot.data() ?? {};
 
-    final userSnapshot = await currentIntakeRef.get();
-    final userData = userSnapshot.data();
-    final intake = userData?["currentIntake"] ?? {};
+      await foodsDocRef.set({
+        "totalCalories": (foodsData["totalCalories"] ?? 0) + totalCalories,
+        "totalProtein": (foodsData["totalProtein"] ?? 0) + totalProtein,
+        "totalCarbs": (foodsData["totalCarbs"] ?? 0) + totalCarbs,
+        "totalFat": (foodsData["totalFat"] ?? 0) + totalFat,
+      }, SetOptions(merge: true));
 
-    await currentIntakeRef.set({
-      "currentIntake": {
-        "calories": (intake["calories"] ?? 0) + food["totalCalories"],
-        "protein": (intake["protein"] ?? 0) + food["totalProtein"],
-        "carbs": (intake["carbs"] ?? 0) + food["totalCarbs"],
-        "fat": (intake["fat"] ?? 0) + food["totalFat"],
-      },
-    }, SetOptions(merge: true));
+      // Update user's current intake
+      final userSnapshot = await currentIntakeRef.get();
+      final userData = userSnapshot.data();
+      final intake = userData?["currentIntake"] ?? {};
+
+      await currentIntakeRef.set({
+        "currentIntake": {
+          "calories": (intake["calories"] ?? 0) + totalCalories,
+          "protein": (intake["protein"] ?? 0) + totalProtein,
+          "carbs": (intake["carbs"] ?? 0) + totalCarbs,
+          "fat": (intake["fat"] ?? 0) + totalFat,
+        },
+      }, SetOptions(merge: true));
+
+      // Dismiss loading alert and show success
+      Navigator.of(context).pop(); // dismiss loading
+      QuickAlert.show(
+        context: context,
+        type: QuickAlertType.success,
+        text: 'Meal added successfully!',
+      );
+    } catch (e) {
+      // Dismiss loading alert and show error
+      Navigator.of(context).pop(); // dismiss loading
+      QuickAlert.show(
+        context: context,
+        type: QuickAlertType.error,
+        text: 'Failed to add meal: $e',
+      );
+    }
   }
 
   String getTodayDateString() {

@@ -54,18 +54,22 @@ class CompletedWorkoutScreen extends StatelessWidget {
               final reps = exercise["reps"] ?? 0;
               final status = exercise["status"] ?? "pending";
 
+              print(exercise);
+
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 6),
                 child: ListTile(
                   leading: Icon(
-                    status == "completed"
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: status == "completed" ? Colors.green : Colors.grey,
+                    Icons.radio_button_checked,
+                    color:
+                        status == "completed"
+                            ? Colors.green
+                            : status == "skipped"
+                            ? Colors.red
+                            : Colors.grey,
                   ),
                   title: Text(name),
                   subtitle: Text("$sets sets × $reps reps"),
-                  enabled: false,
                 ),
               );
             },

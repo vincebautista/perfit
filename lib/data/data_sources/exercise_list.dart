@@ -23,7 +23,7 @@ List<ExerciseModel> exercises = [
     id: "glute_bridge",
     name: "Glute Bridge",
     video: [
-      "assets/videos/male-Bodyweight-wall-sit-side-converted.mp4",
+      "assets/videos/male-Bodyweight-glute-bridge-side-converted.mp4",
       "assets/videos/male-Bodyweight-glute-bridge-front-converted.mp4",
     ],
     image: "assets/images/exercises/glute_bridge.jpg",

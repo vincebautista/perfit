@@ -7,9 +7,12 @@ import 'package:perfit/core/services/firebase_auth_service.dart';
 import 'package:perfit/core/services/notification_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
+import 'package:perfit/main.dart';
 import 'package:perfit/screens/change_password_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
+import 'package:perfit/screens/test_exercise.dart';
 import 'package:perfit/screens/test_mediapipe_screen.dart';
+import 'package:perfit/screens/thums_up_timer_screen.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -209,6 +212,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 TestMediapipeScreen(),
                               ),
                           child: const Text("Test Mediapipe"),
+                        ),
+                        Card(
+                          child: SwitchListTile(
+                            title: Text("Dark Mode"),
+                            value: themeNotifier.value == ThemeMode.dark,
+                            onChanged: (value) {
+                              themeNotifier.value =
+                                  value ? ThemeMode.dark : ThemeMode.light;
+                            },
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed:
+                              () => NavigationUtils.push(
+                                context,
+                                ThumbsUpTimerScreen(),
+                              ),
+                          child: const Text("Test ThumbsUpTimerScreen"),
+                        ),
+                        ElevatedButton(
+                          onPressed:
+                              () =>
+                                  NavigationUtils.push(context, TestExercise()),
+                          child: const Text("Test Exercise"),
                         ),
                         Spacer(),
                         ElevatedButton(
