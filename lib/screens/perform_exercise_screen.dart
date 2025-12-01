@@ -1,3 +1,4 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
 import 'package:perfit/data/data_sources/exercise_list.dart';
@@ -153,44 +154,102 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
               ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AspectRatio(
-                    aspectRatio: _videoController.value.aspectRatio,
-                    child: Chewie(controller: _chewieController!),
+                  Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: _videoController.value.aspectRatio,
+                        child: Chewie(controller: _chewieController!),
+                      ),
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Card(
+                          color: AppColors.primary,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.padding16,
+                              vertical: AppSizes.padding16 - 8,
+                            ),
+                            child: Text(
+                              exercise.difficulty,
+                              style: TextStyles.label,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Gap(AppSizes.gap15),
+                  Gap(AppSizes.gap10),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.padding16,
                     ),
-                    child: Text("Sets: ${widget.sets}", style: TextStyles.body),
+                    child: Card(
+                      color: AppColors.grey,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // SETS
+                            Column(
+                              children: [
+                                Text("SETS", style: TextStyles.label),
+                                Gap(6),
+                                Text(
+                                  "${widget.sets}",
+                                  style: TextStyles.subtitle.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            Container(
+                              height: 40,
+                              width: 1.2,
+                              color: Colors.grey.shade300,
+                            ),
+
+                            // REPS OR DURATION
+                            Column(
+                              children: [
+                                Text(
+                                  widget.reps != null ? "REPS" : "DURATION",
+                                  style: TextStyles.label,
+                                ),
+                                Gap(6),
+                                Text(
+                                  widget.reps != null
+                                      ? "${widget.reps}"
+                                      : "${widget.duration}s",
+                                  style: TextStyles.subtitle.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
+                  Gap(AppSizes.gap10),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.padding16,
                     ),
                     child: Text(
-                      widget.reps != null
-                          ? "Reps: ${widget.reps}"
-                          : "Duration: ${widget.duration}s",
-                      style: TextStyles.body,
+                      "Instructions",
+                      textAlign: TextAlign.center,
+                      style: TextStyles.subtitle.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  Gap(AppSizes.gap15),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.padding16,
-                    ),
-                    child: Text(
-                      "Difficulty: ${exercise.difficulty}",
-                      style: TextStyles.subtitle,
-                    ),
-                  ),
-                  Gap(AppSizes.gap15),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.padding16,
-                    ),
-                    child: Text("Instructions:", style: TextStyles.subtitle),
                   ),
                   Gap(AppSizes.gap10),
                   Expanded(
@@ -211,28 +270,38 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                     ),
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Gap(AppSizes.gap10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => skipExercise(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                      GestureDetector(
+                        onTap: () => skipExercise(),
+                        child: Card(
+                          color: AppColors.grey,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.padding16 * 3,
+                              vertical: AppSizes.padding16,
+                            ),
+                            child: Text("Skip"),
                           ),
-                          child: Text("Skip"),
                         ),
                       ),
-                      Gap(AppSizes.gap10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => startExercise(),
-                          child: Text("Start"),
+                      Gap(AppSizes.gap20),
+                      GestureDetector(
+                        onTap: () => startExercise(),
+                        child: Card(
+                          color: AppColors.primary,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.padding16 * 3,
+                              vertical: AppSizes.padding16,
+                            ),
+                            child: Text("Start"),
+                          ),
                         ),
                       ),
-                      Gap(AppSizes.gap10),
                     ],
                   ),
-                  Gap(AppSizes.gap15),
+                  Gap(AppSizes.gap10),
                 ],
               )
               : Center(child: CircularProgressIndicator()),

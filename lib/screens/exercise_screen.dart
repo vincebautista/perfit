@@ -1,3 +1,4 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
@@ -54,43 +55,37 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(exercise.name),
-        actions: [
-          TextButton(
-            onPressed: () {
-              final currentIndex = exercises.indexWhere(
-                (e) => e.id == exercise.id,
-              );
-
-              if (currentIndex != -1 && currentIndex < exercises.length - 1) {
-                final nextExercise = exercises[currentIndex + 1];
-
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => ExerciseScreen(id: nextExercise.id),
-                  ),
-                );
-              } else {
-                ValidationUtils.snackBar(
-                  context,
-                  "You've reached the last exercise!",
-                );
-              }
-            },
-            child: Text("Next"),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(exercise.name)),
       body:
           _chewieController != null && _videoController.value.isInitialized
               ? Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AspectRatio(
-                    aspectRatio: _videoController.value.aspectRatio,
-                    child: Chewie(controller: _chewieController!),
+                  Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: _videoController.value.aspectRatio,
+                        child: Chewie(controller: _chewieController!),
+                      ),
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Card(
+                          color: AppColors.primary,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.padding16,
+                              vertical: AppSizes.padding16 - 8,
+                            ),
+                            child: Text(
+                              exercise.difficulty,
+                              style: TextStyles.label,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   Gap(AppSizes.gap15),
                   Padding(
@@ -98,16 +93,12 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                       horizontal: AppSizes.padding16,
                     ),
                     child: Text(
-                      "Difficulty: ${exercise.difficulty}",
-                      style: TextStyles.subtitle,
+                      "Instructions",
+                      textAlign: TextAlign.center,
+                      style: TextStyles.subtitle.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  Gap(AppSizes.gap15),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.padding16,
-                    ),
-                    child: Text("Instructions:", style: TextStyles.subtitle),
                   ),
                   Gap(AppSizes.gap10),
                   Expanded(
@@ -128,6 +119,80 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                       },
                     ),
                   ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          final currentIndex = exercises.indexWhere(
+                            (e) => e.id == exercise.id,
+                          );
+
+                          if (currentIndex > 0) {
+                            final prevExercise = exercises[currentIndex - 1];
+
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => ExerciseScreen(id: prevExercise.id),
+                              ),
+                            );
+                          } else {
+                            ValidationUtils.snackBar(
+                              context,
+                              "You're already at the first exercise!",
+                            );
+                          }
+                        },
+                        child: Card(
+                          color: AppColors.grey,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.padding16 * 3,
+                              vertical: AppSizes.padding16,
+                            ),
+                            child: Text("Back"),
+                          ),
+                        ),
+                      ),
+                      Gap(AppSizes.gap20),
+                      GestureDetector(
+                        onTap: () {
+                          final currentIndex = exercises.indexWhere(
+                            (e) => e.id == exercise.id,
+                          );
+
+                          if (currentIndex != -1 &&
+                              currentIndex < exercises.length - 1) {
+                            final nextExercise = exercises[currentIndex + 1];
+
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => ExerciseScreen(id: nextExercise.id),
+                              ),
+                            );
+                          } else {
+                            ValidationUtils.snackBar(
+                              context,
+                              "You've reached the last exercise!",
+                            );
+                          }
+                        },
+                        child: Card(
+                          color: AppColors.primary,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.padding16 * 3,
+                              vertical: AppSizes.padding16,
+                            ),
+                            child: Text("Next"),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Gap(AppSizes.gap20),
                 ],
               )
               : Center(child: CircularProgressIndicator()),

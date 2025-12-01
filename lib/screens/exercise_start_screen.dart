@@ -1,15 +1,17 @@
 import 'dart:async';
 import 'package:gap/gap.dart';
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
-import 'package:perfit/data/models/exercise_metrics_model.dart';
 import 'package:perfit/data/models/exercise_model.dart';
+import 'package:perfit/data/models/exercise_metrics_model.dart';
 import 'package:perfit/screens/rest_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:perfit/widgets/circular_countdown.dart';
 import 'package:perfit/widgets/text_styles.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 
 class ExerciseStartScreen extends StatefulWidget {
   final ExerciseModel exercise;
@@ -20,6 +22,8 @@ class ExerciseStartScreen extends StatefulWidget {
   final String day;
   final List<ExerciseMetricsModel> exercises;
   final int currentIndex;
+  final int currentSet; // NEW
+  final bool skipCountdown;
 
   const ExerciseStartScreen({
     super.key,
@@ -31,6 +35,8 @@ class ExerciseStartScreen extends StatefulWidget {
     required this.day,
     required this.exercises,
     required this.currentIndex,
+    this.currentSet = 1,
+    this.skipCountdown = false,
   });
 
   @override
@@ -40,16 +46,18 @@ class ExerciseStartScreen extends StatefulWidget {
 class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
   late VideoPlayerController _videoController;
   ChewieController? _chewieController;
+
   bool isCountdownOver = false;
   int remainingTime = 0;
+  // int elapsedTime = 0;
+
   Timer? countdownTimer;
   Timer? exerciseTimer;
+  Timer? repTimer;
 
   int rest = 60;
   int countdown = 3;
-
-  int elapsedTime = 0;
-  Timer? repTimer;
+  int _startCountdown = 3;
   bool isRepExercise = false;
 
   @override
@@ -60,8 +68,8 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
 
     isRepExercise = widget.exercise.type == "rep";
 
+    // Initialize video
     _videoController = VideoPlayerController.asset(widget.exercise.video[0]);
-
     _videoController.initialize().then((_) {
       _chewieController = ChewieController(
         videoPlayerController: _videoController,
@@ -72,6 +80,33 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
       );
       setState(() {});
     });
+
+    if (widget.skipCountdown) {
+      // Skip countdown after rest
+      isCountdownOver = true;
+      remainingTime = widget.duration ?? 0;
+      // elapsedTime = 0;
+
+      if (widget.exercise.type == "time" && widget.duration != null) {
+        startExerciseTimer();
+      } else if (isRepExercise) {
+        startRepTimer();
+      }
+    }
+  }
+
+  Future<void> loadSettings() async {
+    final service = SettingService();
+    final restMap = await service.loadRest();
+    final countdownMap = await service.loadCountdown();
+
+    setState(() {
+      rest = restMap["rest"]!;
+      countdown = countdownMap["countdown"]!;
+      _startCountdown = countdownMap["countdown"]!;
+    });
+
+    if (!widget.skipCountdown) startCountdown();
   }
 
   void startCountdown() {
@@ -93,14 +128,6 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
     });
   }
 
-  void startRepTimer() {
-    repTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        elapsedTime++;
-      });
-    });
-  }
-
   void startExerciseTimer() {
     exerciseTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
@@ -113,18 +140,25 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
     });
   }
 
+  void startRepTimer() {
+    repTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        // elapsedTime++;
+      });
+    });
+  }
+
   void skipExercise() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder:
-          (context) => AlertDialog(
+          (_) => AlertDialog(
             title: Text("Skip exercise?"),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Gap(AppSizes.gap20),
                 Text("This action is not reversible."),
-                Gap(AppSizes.gap20),
                 Gap(AppSizes.gap20),
                 Row(
                   children: [
@@ -154,7 +188,6 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
         widget.day,
         widget.exercise.name,
       );
-
       await FirebaseFirestoreService().updateWorkoutDayCompletion(
         widget.planId,
         int.parse(widget.day),
@@ -162,46 +195,80 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => RestScreen(restSeconds: rest)),
+        MaterialPageRoute(
+          builder:
+              (_) => RestScreen(
+                restSeconds: rest,
+                currentSet: widget.currentSet,
+                totalSets: widget.sets,
+                exercise: widget.exercise,
+                reps: widget.reps,
+                duration: widget.duration,
+                planId: widget.planId,
+                day: widget.day,
+                exercises: widget.exercises,
+                skip: true,
+              ),
+        ),
       );
     }
   }
 
-  void finishExercise() async {
-    if (isRepExercise) {
-      repTimer?.cancel();
+  void nextSetOrFinish() async {
+    if (isRepExercise) repTimer?.cancel();
+    if (exerciseTimer != null) exerciseTimer?.cancel();
+
+    if (widget.currentSet < widget.sets) {
+      // Not last set → go to RestScreen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => RestScreen(
+                restSeconds: rest,
+                currentSet: widget.currentSet + 1,
+                totalSets: widget.sets,
+                exercise: widget.exercise,
+                reps: widget.reps,
+                duration: widget.duration,
+                planId: widget.planId,
+                day: widget.day,
+                exercises: widget.exercises,
+              ),
+        ),
+      );
+    } else {
+      // Last set → save to Firebase
+      await FirebaseFirestoreService().markExerciseCompleted(
+        widget.planId,
+        widget.day,
+        widget.exercise.name,
+        extraData: {"elapsedTime": 1},
+      );
+      await FirebaseFirestoreService().updateWorkoutDayCompletion(
+        widget.planId,
+        int.parse(widget.day),
+      );
+
+      // Go to RestScreen after finishing
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => RestScreen(
+                restSeconds: rest,
+                currentSet: widget.currentSet,
+                totalSets: widget.sets,
+                exercise: widget.exercise,
+                reps: widget.reps,
+                duration: widget.duration,
+                planId: widget.planId,
+                day: widget.day,
+                exercises: widget.exercises,
+              ),
+        ),
+      );
     }
-
-    await FirebaseFirestoreService().markExerciseCompleted(
-      widget.planId,
-      widget.day,
-      widget.exercise.name,
-      extraData: {"elapsedTime": elapsedTime},
-    );
-
-    await FirebaseFirestoreService().updateWorkoutDayCompletion(
-      widget.planId,
-      int.parse(widget.day),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => RestScreen(restSeconds: rest)),
-    );
-  }
-
-  Future<void> loadSettings() async {
-    final service = SettingService();
-
-    final restMap = await service.loadRest();
-    final countdownMap = await service.loadCountdown();
-
-    setState(() {
-      rest = restMap["rest"]!;
-      countdown = countdownMap["countdown"]!;
-    });
-
-    startCountdown();
   }
 
   @override
@@ -217,13 +284,13 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(title: Text(widget.exercise.name)),
       body: Center(
         child:
             countdown > 0 && !isCountdownOver
-                ? Text(
-                  "$countdown",
-                  style: TextStyle(fontSize: 80, fontWeight: FontWeight.bold),
+                ? CircularCountdown(
+                  secondsLeft: countdown,
+                  totalSeconds: _startCountdown,
                 )
                 : Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -231,79 +298,149 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
                   children: [
                     if (_chewieController != null &&
                         _videoController.value.isInitialized)
-                      AspectRatio(
-                        aspectRatio: _videoController.value.aspectRatio,
-                        child: Chewie(controller: _chewieController!),
+                      Stack(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: _videoController.value.aspectRatio,
+                            child: Chewie(controller: _chewieController!),
+                          ),
+                          Positioned(
+                            top: 10,
+                            left: 10,
+                            child: Card(
+                              color: AppColors.primary,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.padding16,
+                                  vertical: AppSizes.padding16 - 8,
+                                ),
+                                child: Text(
+                                  widget.exercise.difficulty,
+                                  style: TextStyles.label,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    Gap(AppSizes.gap20 * 2),
-                    Text(
-                      widget.exercise.name,
-                      textAlign: TextAlign.center,
-                      style: TextStyles.title,
+                    Gap(AppSizes.gap10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.padding16,
+                      ),
+                      child: Card(
+                        color: AppColors.grey,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Column(
+                                children: [
+                                  Text("SETS", style: TextStyles.label),
+                                  Gap(6),
+                                  Text(
+                                    "${widget.currentSet} / ${widget.sets}",
+                                    style: TextStyles.subtitle.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                height: 40,
+                                width: 1.2,
+                                color: Colors.grey.shade300,
+                              ),
+                              Column(
+                                children: [
+                                  Text(
+                                    widget.reps != null ? "REPS" : "DURATION",
+                                    style: TextStyles.label,
+                                  ),
+                                  Gap(6),
+                                  Text(
+                                    widget.reps != null
+                                        ? "${widget.reps}"
+                                        : "${widget.duration}s",
+                                    style: TextStyles.subtitle.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                    Gap(AppSizes.gap20 * 2),
+                    Gap(AppSizes.gap20),
                     if (widget.exercise.type == "time" &&
                         widget.duration != null)
-                      Text(
-                        "Time Left: ${remainingTime}s",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+                      CircularCountdown(
+                        secondsLeft: remainingTime,
+                        totalSeconds: widget.duration!,
                       ),
                     if (widget.exercise.type == "rep" && widget.reps != null)
                       Text(
-                        "Perform ${widget.sets} sets of ${widget.reps} reps",
+                        "Perform ${widget.sets} sets of ${widget.reps} reps \n NEED REDESIGN",
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                    Gap(AppSizes.gap20 * 2),
-                    if (isRepExercise)
-                      Text(
-                        "Elapsed Time: $elapsedTime s",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                    // if (isRepExercise)
+                    //   Text(
+                    //     "Elapsed Time: $elapsedTime s",
+                    //     style: TextStyle(
+                    //       fontSize: 18,
+                    //       fontWeight: FontWeight.bold,
+                    //     ),
+                    //     textAlign: TextAlign.center,
+                    //   ),
                     Spacer(),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Gap(20),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: skipExercise,
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 40,
-                                vertical: 15,
+                        GestureDetector(
+                          onTap: skipExercise,
+                          child: Card(
+                            color: AppColors.grey,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSizes.padding16 * 3,
+                                vertical: AppSizes.padding16,
                               ),
-                              backgroundColor: Colors.red,
+                              child: Text("Skip"),
                             ),
-                            child: Text("Skip"),
                           ),
                         ),
-                        Gap(20),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: finishExercise,
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 40,
-                                vertical: 15,
+                        Gap(AppSizes.gap20),
+                        GestureDetector(
+                          onTap: nextSetOrFinish,
+                          child: Card(
+                            color: AppColors.primary,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSizes.padding16 * 3,
+                                vertical: AppSizes.padding16,
+                              ),
+                              child: Text(
+                                widget.currentSet < widget.sets
+                                    ? "Next Set"
+                                    : "Finish",
                               ),
                             ),
-                            child: Text("Finish"),
                           ),
                         ),
-                        Gap(20),
                       ],
                     ),
+                    Gap(AppSizes.gap20),
                   ],
                 ),
       ),

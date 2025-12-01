@@ -9,6 +9,7 @@ import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/exercise_metrics_model.dart';
 import 'package:perfit/screens/assessment/gender_screen.dart';
 import 'package:perfit/screens/perform_exercise_screen.dart';
+import 'package:perfit/widgets/text_styles.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -86,6 +87,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       currentDay = fitnessPlan.currentDay;
       selectedDay = fitnessPlan.currentDay;
       planDuration = fitnessPlan.planDuration * 7;
+
+      currentWeekIndex = ((currentDay - 1) ~/ 7);
+
       _isFirstLoad = false;
     }
 
@@ -122,7 +126,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     return Row(
       children: [
         IconButton(
-          icon: Icon(Icons.arrow_left),
+          icon: Icon(Icons.arrow_left, color: AppColors.primary),
           onPressed:
               currentWeekIndex > 0
                   ? () => setState(() => currentWeekIndex--)
@@ -144,14 +148,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       margin: EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         color:
-                            day == selectedDay ? Colors.blue : Colors.grey[300],
+                            day == selectedDay
+                                ? AppColors.primary
+                                : AppColors.grey,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         "Day $day",
                         style: TextStyle(
-                          color:
-                              day == selectedDay ? Colors.white : Colors.black,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -162,7 +167,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           ),
         ),
         IconButton(
-          icon: Icon(Icons.arrow_right),
+          icon: Icon(Icons.arrow_right, color: AppColors.primary),
           onPressed:
               endDay < planDuration
                   ? () => setState(() => currentWeekIndex++)
@@ -211,16 +216,20 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            "Day $day - ${dayWorkout['split'] ?? 'Workout'} Day",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "$finishedCount / ${exercises.length} exercises finished",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "${dayWorkout['split'] ?? 'Workout'} Day",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "Progress: $finishedCount / ${exercises.length} finished",
+                textAlign: TextAlign.center,
+                style: TextStyles.caption,
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -236,16 +245,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 bool isToday = day == currentDay;
 
                 return Card(
+                  color:
+                      status == "pending" ? AppColors.grey : AppColors.surface,
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                      color:
-                          status == "completed"
-                              ? AppColors.green
-                              : status == "skipped"
-                              ? AppColors.red
-                              : Colors.transparent,
-                      width: 2,
-                    ),
+                    // side: BorderSide(
+                    //   color:
+                    //       status == "completed"
+                    //           ? AppColors.green
+                    //           : status == "skipped"
+                    //           ? AppColors.red
+                    //           : Colors.transparent,
+                    //   width: 2,
+                    // ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: ListTile(
@@ -253,11 +264,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ex.name,
                       style: TextStyle(
                         color:
-                            isPastDay
-                                ? Colors.grey
-                                : (status == "pending" && isToday
-                                    ? AppColors.white
-                                    : Colors.grey),
+                            status == "pending"
+                                ? AppColors.white
+                                : status == "completed"
+                                ? AppColors.green
+                                : AppColors.red,
                       ),
                     ),
                     subtitle: Text(
@@ -265,27 +276,27 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           ? "Sets: ${ex.sets} x Reps: ${ex.reps}"
                           : "Sets: ${ex.sets} x Duration: ${(ex as TimeExercise).duration}",
                     ),
-                    trailing:
-                        (() {
-                          final rawExercise = exercisesRaw.firstWhere(
-                            (e) => e['name'] == ex.name,
-                            orElse: () => null,
-                          );
+                    // trailing:
+                    //     (() {
+                    //       final rawExercise = exercisesRaw.firstWhere(
+                    //         (e) => e['name'] == ex.name,
+                    //         orElse: () => null,
+                    //       );
 
-                          if (rawExercise != null &&
-                              rawExercise.containsKey('elapsedTime') &&
-                              (rawExercise['elapsedTime'] ?? 0) > 0) {
-                            final elapsed = rawExercise['elapsedTime'];
-                            return Text(
-                              "${elapsed} s",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey,
-                              ),
-                            );
-                          }
-                          return null;
-                        })(),
+                    //       if (rawExercise != null &&
+                    //           rawExercise.containsKey('elapsedTime') &&
+                    //           (rawExercise['elapsedTime'] ?? 0) > 0) {
+                    //         final elapsed = rawExercise['elapsedTime'];
+                    //         return Text(
+                    //           "${elapsed} s",
+                    //           style: const TextStyle(
+                    //             fontWeight: FontWeight.bold,
+                    //             color: Colors.grey,
+                    //           ),
+                    //         );
+                    //       }
+                    //       return null;
+                    //     })(),
                     enabled: !isPastDay,
                     onTap: () {
                       if (isPastDay) return;
@@ -486,13 +497,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ),
                 );
               },
-              child: Text("Skip Day", style: TextStyle(color: Colors.white)),
+              child: Text(
+                "Skip Day",
+                style: TextStyle(color: AppColors.primary),
+              ),
             ),
         ],
       ),
       body: Column(
         children: [
-          Text("Week ${currentWeekIndex + 1}"),
+          Text("Week ${currentWeekIndex + 1}", style: TextStyles.body),
           weekDaySelector(),
           Expanded(child: workoutForDay(selectedDay)),
         ],
