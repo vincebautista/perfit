@@ -9,6 +9,9 @@ import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/main.dart';
 import 'package:perfit/screens/change_password_screen.dart';
+import 'package:perfit/screens/form_correction/barbell_row.dart';
+import 'package:perfit/screens/form_correction/crunches.dart';
+import 'package:perfit/screens/form_correction/push_up_screen.dart';
 import 'package:perfit/screens/form_correction/squats_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/screens/test_exercise.dart';
@@ -252,6 +255,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               () =>
                                   NavigationUtils.push(context, SquatsScreen()),
                           child: const Text("Nyah"),
+                        ),
+                        ElevatedButton(
+                          onPressed:
+                              () =>
+                                  NavigationUtils.push(context, PushUpScreen()),
+                          child: const Text("Push Nyah"),
+                        ),
+                        ElevatedButton(
+                          onPressed:
+                              () => NavigationUtils.push(
+                                context,
+                                CrunchesScreen(),
+                              ),
+                          child: const Text("Push Tristan"),
+                        ),
+                        ElevatedButton(
+                          onPressed:
+                              () => NavigationUtils.push(
+                                context,
+                                BarbellRowScreen(),
+                              ),
+                          child: const Text("Push lol"),
                         ),
                       ],
                     ),
