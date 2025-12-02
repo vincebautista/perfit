@@ -13,6 +13,7 @@ import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/widgets/last_7_days_chart.dart';
 import 'package:perfit/widgets/text_styles.dart';
 
+//tristy
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
