@@ -1,6 +1,7 @@
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/data/data_sources/exercise_list.dart';
 import 'package:perfit/data/models/exercise_metrics_model.dart';
 import 'package:perfit/data/models/exercise_model.dart';
@@ -41,7 +42,8 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
   late ExerciseModel exercise;
   late VideoPlayerController _videoController;
   ChewieController? _chewieController;
-
+  bool isDarkMode = true;
+  final SettingService _settingService = SettingService();
   @override
   void initState() {
     super.initState();
@@ -60,6 +62,15 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
       );
 
       setState(() {});
+    });
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
     });
   }
 
@@ -195,7 +206,7 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                       horizontal: AppSizes.padding16,
                     ),
                     child: Card(
-                      color: AppColors.grey,
+                      color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
                       elevation: 4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -222,7 +233,10 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                             Container(
                               height: 40,
                               width: 1.2,
-                              color: Colors.grey.shade300,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.black
+                                      : AppColors.lightgrey,
                             ),
 
                             // REPS OR DURATION
@@ -285,13 +299,23 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                       GestureDetector(
                         onTap: () => skipExercise(),
                         child: Card(
-                          color: AppColors.grey,
+                          color:
+                              isDarkMode ? AppColors.grey : AppColors.lightgrey,
+
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSizes.padding16 * 3,
                               vertical: AppSizes.padding16,
                             ),
-                            child: Text("Skip"),
+                            child: Text(
+                              "Skip",
+                              style: TextStyles.caption.copyWith(
+                                color:
+                                    isDarkMode
+                                        ? AppColors.black
+                                        : AppColors.lightgrey,
+                              ),
+                            ),
                           ),
                         ),
                       ),
