@@ -3,13 +3,17 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/camera_service.dart';
 import 'package:perfit/core/services/distance_service.dart';
 import 'package:perfit/core/services/gesture_service.dart';
 import 'package:perfit/core/services/pose_detection_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/exercise_summary_screen.dart';
+import 'package:perfit/widgets/text_styles.dart';
 
 class KneeExtensionSeatedPartialScreen extends StatefulWidget {
   const KneeExtensionSeatedPartialScreen({super.key});
@@ -52,6 +56,7 @@ class _KneeExtensionSeatedPartialScreenState
   int _rightCorrectCount = 0; // Number of correct reps
   int _rightWrongCount = 0; // Number of incorrect reps
   List<String> _feedback = []; // Feedback per rep
+  List<String> _allFeedbacks = [];
 
   // Form detection flags
   bool _rightStartedDown = false; // Leg bent start position detected
@@ -62,12 +67,15 @@ class _KneeExtensionSeatedPartialScreenState
   final double _kneeMaxExtendAngle = 160.0; // Maximum knee angle (leg extended)
 
   bool _isDisposed = false;
+  bool _lastRepCorrect = true;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
-    _loadCountdown();
+    Future.delayed(const Duration(seconds: 1), () async {
+      await _initCamera();
+      _loadCountdown();
+    });
   }
 
   Future<void> _loadCountdown() async {
@@ -172,11 +180,11 @@ class _KneeExtensionSeatedPartialScreenState
     const maxCm = 150;
 
     if (distanceCm < minCm) {
-      distanceStatus = "❌ Too Close! Move back";
+      distanceStatus = "Too Close! Move back";
     } else if (distanceCm > maxCm) {
-      distanceStatus = "❌ Too Far! Move closer";
+      distanceStatus = "Too Far! Move closer";
     } else {
-      distanceStatus = "✅ Perfect Distance! Stay in that position.";
+      distanceStatus = "Perfect Distance! Stay in that position.";
       currentStage = ExerciseStage.gestureDetection;
       handsStatus = "Raise your right hand above the head";
     }
@@ -189,20 +197,20 @@ class _KneeExtensionSeatedPartialScreenState
       onHoldProgress:
           (progress) =>
               countdownStatus =
-                  "✋ Raise your hand for 1 second… ${(progress * 100).toInt()}%",
+                  "Raise your right hand above the head… ${(progress * 100).toInt()}%",
       onHandsUpDetected: () {
-        handsStatus = "✅ Hands detected! Starting countdown...";
+        handsStatus = "Hands detected! Starting countdown...";
         countdownStatus = "";
       },
       onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s remaining",
       onCountdownComplete: () {
-        countdownStatus = "✅ Timer complete!";
+        countdownStatus = "Timer complete!";
         currentStage = ExerciseStage.formCorrection;
       },
     );
 
     if (!handsUp && !_gestureService.countdownRunning) {
-      handsStatus = "❌ Raise your hand!";
+      handsStatus = "Raise your hand!";
       countdownStatus = "";
     }
   }
@@ -255,10 +263,16 @@ class _KneeExtensionSeatedPartialScreenState
                 (correction.isEmpty ? "" : " | $correction"),
           );
 
-          if (isCorrect)
+          if (isCorrect) {
+            _lastRepCorrect = true;
             _rightCorrectCount++;
-          else
+            _allFeedbacks.add("Correct form!");
+          } else {
             _rightWrongCount++;
+            _feedback.add("Rep $_rightCurlCount: $correction");
+            _allFeedbacks.add(correction);
+            _lastRepCorrect = false;
+          }
 
           // Reset flags for next rep
           _rightStartedDown = false;
@@ -270,6 +284,10 @@ class _KneeExtensionSeatedPartialScreenState
             print(_feedback);
             await _cameraService.controller?.stopImageStream();
             if (!mounted || _isDisposed) return;
+
+            await Future.delayed(const Duration(seconds: 1));
+            if (!mounted || _isDisposed) return;
+
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -277,7 +295,7 @@ class _KneeExtensionSeatedPartialScreenState
                     (_) => ExerciseSummaryScreen(
                       correct: _rightCorrectCount,
                       wrong: _rightWrongCount,
-                      feedback: _feedback,
+                      feedbacks: _allFeedbacks,
                     ),
               ),
             );
@@ -307,100 +325,411 @@ class _KneeExtensionSeatedPartialScreenState
     }
 
     String displayMessage = "";
+    Color bgColor = AppColors.primary;
+
     switch (currentStage) {
       case ExerciseStage.distanceCheck:
         displayMessage = distanceStatus;
+        if (displayMessage.toLowerCase().contains("too")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("perfect")) {
+          bgColor = AppColors.green;
+        } else {
+          bgColor = AppColors.primary;
+        }
         break;
+
       case ExerciseStage.gestureDetection:
-        displayMessage =
-            countdownStatus.isNotEmpty ? countdownStatus : handsStatus;
+        displayMessage = handsStatus;
+        if (displayMessage.toLowerCase().contains("raise your hand")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("hands detected") ||
+            displayMessage.toLowerCase().contains("timer complete")) {
+          bgColor = AppColors.green;
+        } else {
+          bgColor = AppColors.primary;
+        }
         break;
       case ExerciseStage.formCorrection:
+        if (_allFeedbacks.isNotEmpty) {
+          displayMessage = _allFeedbacks.last;
+          bgColor = _lastRepCorrect ? AppColors.green : AppColors.red;
+        } else {
+          displayMessage = "Please perform the exercise.";
+          bgColor = AppColors.primary;
+        }
         break;
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Test Exercise")),
-      body: Stack(
+      appBar: AppBar(title: const Text("Knee Extension Seated Partial")),
+      body: Column(
         children: [
-          CameraPreview(_cameraService.controller!),
+          Container(
+            width: double.infinity,
+            color: bgColor,
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              displayMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                CameraPreview(_cameraService.controller!),
 
-          // Overlay messages
-          if (currentStage != ExerciseStage.formCorrection)
-            Positioned(
-              bottom: 150,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    displayMessage,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: CornerPainter(
+                      cornerLength: 60,
+                      strokeWidth: 5,
+                      padding: 50,
+                      topLeft: bgColor,
+                      topRight: bgColor,
+                      bottomLeft: bgColor,
+                      bottomRight: bgColor,
                     ),
                   ),
                 ),
-              ),
-            ),
 
-          if (currentStage == ExerciseStage.formCorrection)
-            Positioned(
-              top: 100,
-              left: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "Knee Angle: ${_currentKneeAngle.toStringAsFixed(1)}°",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+                // if (_lastPose != null && _cameraImageSize != null)
+                //   LayoutBuilder(
+                //     builder: (context, constraints) {
+                //       final widgetSize = Size( constraints.maxWidth, constraints.maxHeight, );
+                //       final controller = _cameraService.controller!;
+                //       final sensorOrientation =  controller.description.sensorOrientation;
+                //       final isFront = controller.description.lensDirection ==CameraLensDirection.front;
 
-          // Overlay rep counter
-          if (currentStage == ExerciseStage.formCorrection)
-            Positioned(
-              top: 20,
-              left: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "Reps: $_rightCurlCount\n✅ $_rightCorrectCount | ❌ $_rightWrongCount",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                //       return CustomPaint(
+                //         painter: PosePainter(
+                //           pose: _lastPose!,
+                //           imageSize:  _cameraImageSize!, // original frame size (width,height)
+                //           widgetSize:  widgetSize, // original frame size the area that CameraPreview occupies
+                //           sensorOrientation: sensorOrientation,
+                //           isFrontCamera: isFront,
+                //         ),
+                //         size: widgetSize,
+                //       );
+                //     },
+                //   ),
+              ],
+            ),
+          ),
+          Gap(AppSizes.gap10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.padding16),
+            child: Card(
+              color: AppColors.grey,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      children: [
+                        Text("CORRECT", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_rightCorrectCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1.2,
+                      color: Colors.grey.shade300,
+                    ),
+                    Column(
+                      children: [
+                        Text("WRONG", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_rightWrongCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
+          Gap(AppSizes.gap10),
         ],
       ),
     );
   }
 }
+
+class CornerPainter extends CustomPainter {
+  final double cornerLength;
+  final double strokeWidth;
+  final double padding;
+  final Color topLeft;
+  final Color topRight;
+  final Color bottomLeft;
+  final Color bottomRight;
+
+  CornerPainter({
+    this.cornerLength = 30,
+    this.strokeWidth = 4,
+    this.padding = 20,
+    required this.topLeft,
+    required this.topRight,
+    required this.bottomLeft,
+    required this.bottomRight,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.square
+          ..style = PaintingStyle.stroke;
+
+    // Top-left
+    paint.color = topLeft;
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding + cornerLength, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding, padding + cornerLength),
+      paint,
+    );
+
+    // Top-right
+    paint.color = topRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, padding),
+      Offset(size.width - padding, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, padding),
+      Offset(size.width - padding, padding + cornerLength),
+      paint,
+    );
+
+    // Bottom-left
+    paint.color = bottomLeft;
+    canvas.drawLine(
+      Offset(padding, size.height - padding - cornerLength),
+      Offset(padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, size.height - padding),
+      Offset(padding + cornerLength, size.height - padding),
+      paint,
+    );
+
+    // Bottom-right
+    paint.color = bottomRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, size.height - padding),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, size.height - padding - cornerLength),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// class PosePainter extends CustomPainter {
+//   final Pose pose;
+//   final Size imageSize; // camera image size (width,height) from frames
+//   final Size widgetSize; // size of the paint area (passed in paint)
+//   final int sensorOrientation; // controller.description.sensorOrientation
+//   final bool
+//   isFrontCamera; // controller.description.lensDirection == CameraLensDirection.front
+
+//   PosePainter({
+//     required this.pose,
+//     required this.imageSize,
+//     required this.widgetSize,
+//     required this.sensorOrientation,
+//     required this.isFrontCamera,
+//   });
+
+//   // paint style
+//   final Paint _bonePaint =
+//       Paint()
+//         ..color = Colors.greenAccent
+//         ..strokeWidth = 4
+//         ..strokeCap = StrokeCap.round;
+
+//   final Paint _landmarkPaint =
+//       Paint()
+//         ..color = Colors.greenAccent
+//         ..style = PaintingStyle.fill;
+
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     // Compute mapping constants
+//     // 1) determine effective image size after applying rotation
+//     final int rotation = (sensorOrientation % 360);
+//     final bool rotated = rotation == 90 || rotation == 270;
+//     final double imageW = rotated ? imageSize.height : imageSize.width;
+//     final double imageH = rotated ? imageSize.width : imageSize.height;
+
+//     // 2) compute scale used by CameraPreview (BoxFit.cover semantics)
+//     final double scale = math.max(
+//       widgetSize.width / imageW,
+//       widgetSize.height / imageH,
+//     );
+
+//     final double scaledImageW = imageW * scale;
+//     final double scaledImageH = imageH * scale;
+
+//     // 3) compute letterbox offset (center crop)
+//     final double dx = (widgetSize.width - scaledImageW) / 2;
+//     final double dy = (widgetSize.height - scaledImageH) / 2;
+
+//     Offset transformLandmark(PoseLandmark lm) {
+//       // landmark coordinates are in original camera image coordinate system
+//       double x = lm.x;
+//       double y = lm.y;
+
+//       // existing rotation mapping (kept as is for correct scaling/position)
+//       double rx, ry;
+//       final int rotation = sensorOrientation % 360;
+//       switch (rotation) {
+//         case 0:
+//           rx = x;
+//           ry = y;
+//           break;
+//         case 90:
+//           rx = y;
+//           ry = imageSize.width - x;
+//           break;
+//         case 180:
+//           rx = imageSize.width - x;
+//           ry = imageSize.height - y;
+//           break;
+//         case 270:
+//           rx = imageSize.height - y;
+//           ry = x;
+//           break;
+//         default:
+//           rx = x;
+//           ry = y;
+//       }
+
+//       // after rotation, apply front camera mirroring
+//       final double mappedImageW =
+//           (rotation == 90 || rotation == 270)
+//               ? imageSize.height
+//               : imageSize.width;
+//       if (isFrontCamera) {
+//         rx = mappedImageW - rx;
+//       }
+
+//       // --- NEW: rotate skeleton back by -90 degrees around the center ---
+//       final double centerX = mappedImageW / 2;
+//       final double centerY =
+//           ((rotation == 90 || rotation == 270)
+//               ? imageSize.width
+//               : imageSize.height) /
+//           2;
+
+//       // translate to origin
+//       double tempX = rx - centerX;
+//       double tempY = ry - centerY;
+
+//       // apply -90° rotation
+//       double rotatedX = tempX * 0 - tempY * 1; // cos(-90)=0, sin(-90)=-1
+//       double rotatedY = tempX * 1 + tempY * 0; // cos(-90)=0, sin(-90)=-1
+
+//       // translate back
+//       rx = rotatedX + centerX;
+//       ry = rotatedY + centerY;
+
+//       // scale to widget and add crop offset
+//       final double scale = math.max(
+//         widgetSize.width / mappedImageW,
+//         widgetSize.height /
+//             ((rotation == 90 || rotation == 270)
+//                 ? imageSize.width
+//                 : imageSize.height),
+//       );
+
+//       final double dx = (widgetSize.width - mappedImageW * scale) / 2;
+//       final double dy =
+//           (widgetSize.height -
+//               ((rotation == 90 || rotation == 270)
+//                       ? imageSize.width
+//                       : imageSize.height) *
+//                   scale) /
+//           2;
+
+//       final double widgetX = rx * scale + dx;
+//       final double widgetY = ry * scale + dy;
+
+//       return Offset(widgetX, widgetY);
+//     }
+
+//     // helper to get landmark safely
+//     Offset? lmPos(PoseLandmarkType t) {
+//       final lm = pose.landmarks[t];
+//       return lm == null ? null : transformLandmark(lm);
+//     }
+
+//     // draw bones (example set)
+//     List<List<PoseLandmarkType>> bones = [
+//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+//       [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+//       [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+//       [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+//       [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+//       [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+//       [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+//       [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+//     ];
+
+//     for (var b in bones) {
+//       final s = lmPos(b[0]);
+//       final e = lmPos(b[1]);
+//       if (s != null && e != null) {
+//         canvas.drawLine(s, e, _bonePaint);
+//       }
+//     }
+
+//     // draw landmarks
+//     for (var lm in pose.landmarks.values) {
+//       final p = transformLandmark(lm);
+//       canvas.drawCircle(p, 6, _landmarkPaint);
+//     }
+//   }
+
+//   @override
+//   bool shouldRepaint(covariant PosePainter old) => true;
+// }

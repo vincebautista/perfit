@@ -14,9 +14,6 @@ import 'package:perfit/screens/change_password_screen.dart';
 import 'package:perfit/screens/form_correction/curl_up_screen.dart';
 import 'package:perfit/screens/form_correction/knee_extension_seated_partial_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
-import 'package:perfit/screens/test_exercise.dart';
-import 'package:perfit/screens/test_mediapipe_screen.dart';
-import 'package:perfit/screens/thums_up_timer_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 
@@ -320,9 +317,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onPressed:
                                   () => NavigationUtils.push(
                                     context,
-                                    TestExercise(),
+                                    CurlUpScreen(),
                                   ),
-                              child: const Text("Test Exercise"),
+                              child: const Text("Curl Up Screen"),
                             ),
                             ElevatedButton(
                               onPressed:

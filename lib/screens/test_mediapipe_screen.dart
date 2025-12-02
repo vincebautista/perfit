@@ -197,7 +197,7 @@ class _TestMediapipeScreenState extends State<TestMediapipeScreen> {
                         (context) => ExerciseSummaryScreen(
                           correct: _rightCorrectCount,
                           wrong: _rightWrongCount,
-                          feedback: _feedback,
+                          feedbacks: _feedback,
                         ),
                   ),
                 );

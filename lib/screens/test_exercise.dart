@@ -295,7 +295,7 @@ class _TestExerciseState extends State<TestExercise> {
                   (_) => ExerciseSummaryScreen(
                     correct: _rightCorrectCount,
                     wrong: _rightWrongCount,
-                    feedback: _feedback,
+                    feedbacks: _feedback,
                   ),
             ),
           );
