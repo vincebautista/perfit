@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingService {
@@ -38,5 +39,16 @@ class SettingService {
 
     await prefs.setInt("hour", hour);
     await prefs.setInt("minute", minute);
+  }
+
+  Future<ThemeMode> loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDark = prefs.getBool("isDarkMode") ?? true;
+    return isDark ? ThemeMode.dark : ThemeMode.light;
+  }
+
+  Future<void> saveThemeMode(bool isDarkMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("isDarkMode", isDarkMode);
   }
 }

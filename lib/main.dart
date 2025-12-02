@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/services/notification_service.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/theme/app_theme.dart';
 import 'package:perfit/data/models/assessment_model.dart';
 import 'package:perfit/data/models/basket_provider_model.dart';
@@ -19,6 +20,9 @@ void main() async {
 
   await NotificationService.init();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final savedTheme = await SettingService().loadThemeMode();
+  themeNotifier.value = savedTheme;
 
   runApp(const MyApp());
 }

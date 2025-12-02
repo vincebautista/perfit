@@ -17,11 +17,12 @@ class Last7DaysStackedChart extends StatelessWidget {
         .reduce((a, b) => a > b ? a : b);
 
     return SizedBox(
-      height: 250,
+      height: 150, // original 250, divide by 2
       child: BarChart(
         BarChartData(
+          borderData: FlBorderData(show: false),
           alignment: BarChartAlignment.spaceAround,
-          maxY: maxY.toDouble() + 1,
+          maxY: maxY.toDouble() + 1, // keep original maxY
           gridData: FlGridData(show: false),
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -57,12 +58,11 @@ class Last7DaysStackedChart extends StatelessWidget {
                     x: index,
                     barRods: [
                       BarChartRodData(
-                        width: 22,
-                        toY: maxY.toDouble(), // Full height
+                        width: 40, // reduce width
+                        toY: maxY.toDouble(),
                         color: AppColors.primary,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(6),
-                          topRight: Radius.circular(6),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(40),
                         ),
                       ),
                     ],
@@ -73,27 +73,24 @@ class Last7DaysStackedChart extends StatelessWidget {
                   x: index,
                   barRods: [
                     BarChartRodData(
-                      width: 22,
+                      width: 40, // reduce width
                       toY:
                           (workout['completed'] +
                                   workout['skipped'] +
                                   workout['fallback'])
                               .toDouble(),
                       rodStackItems: [
-                        // Skipped exercises - red
                         BarChartRodStackItem(
                           0,
                           workout['skipped'].toDouble(),
                           Colors.red,
                         ),
-                        // Completed exercises - green
                         BarChartRodStackItem(
                           workout['skipped'].toDouble(),
                           (workout['skipped'] + workout['completed'])
                               .toDouble(),
                           Colors.green,
                         ),
-                        // Fallback - grey
                         BarChartRodStackItem(
                           (workout['skipped'] + workout['completed'])
                               .toDouble(),
@@ -104,10 +101,7 @@ class Last7DaysStackedChart extends StatelessWidget {
                           Colors.grey,
                         ),
                       ],
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(6),
-                        topRight: Radius.circular(6),
-                      ),
+                      borderRadius: const BorderRadius.all(Radius.circular(40)),
                     ),
                   ],
                 );

@@ -11,6 +11,8 @@ import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/main.dart';
 import 'package:perfit/screens/assessment/gender_screen.dart';
 import 'package:perfit/screens/change_password_screen.dart';
+import 'package:perfit/screens/form_correction/curl_up_screen.dart';
+import 'package:perfit/screens/form_correction/knee_extension_seated_partial_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/screens/test_exercise.dart';
 import 'package:perfit/screens/test_mediapipe_screen.dart';
@@ -234,9 +236,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 activeTrackColor: AppColors.surface,
                                 title: Text("Dark Mode"),
                                 value: themeNotifier.value == ThemeMode.dark,
-                                onChanged: (value) {
+                                onChanged: (value) async {
                                   themeNotifier.value =
                                       value ? ThemeMode.dark : ThemeMode.light;
+                                  await SettingService().saveThemeMode(value);
                                 },
                               ),
                             ),
@@ -309,12 +312,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             //       ),
                             //   child: const Text("Test ThumbsUpTimerScreen"),
                             // ),
-                            // ElevatedButton(
-                            //   onPressed:
-                            //       () =>
-                            //           NavigationUtils.push(context, TestExercise()),
-                            //   child: const Text("Test Exercise"),
-                            // ),
+                            ElevatedButton(
+                              onPressed:
+                                  () => NavigationUtils.push(
+                                    context,
+                                    TestExercise(),
+                                  ),
+                              child: const Text("Test Exercise"),
+                            ),
+                            ElevatedButton(
+                              onPressed:
+                                  () => NavigationUtils.push(
+                                    context,
+                                    KneeExtensionSeatedPartialScreen(),
+                                  ),
+                              child: const Text("Test Exercise"),
+                            ),
                           ],
                         ),
                       ],

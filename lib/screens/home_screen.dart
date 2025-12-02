@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/core/services/firebase_firestore_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/data_sources/exercise_list.dart';
 import 'package:perfit/data/models/exercise_model.dart';
+import 'package:perfit/data/models/user_model.dart';
 import 'package:perfit/screens/all_exercises_screen.dart';
 import 'package:perfit/screens/exercise_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
@@ -26,6 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> viewedExercises = [];
   String _selectedFilter = "All";
 
+  final FirebaseFirestoreService _service = FirebaseFirestoreService();
+  UserModel? userModel;
+
   final user = FirebaseAuth.instance.currentUser;
 
   @override
@@ -34,6 +39,26 @@ class _HomeScreenState extends State<HomeScreen> {
     _exercises = exercises;
     _filteredExercises = _exercises;
     fetchViewedExercises();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+
+    final doc = await _service.getUserData(firebaseUser.uid);
+    if (!doc.exists) return;
+
+    final data = doc.data() as Map<String, dynamic>;
+    setState(() {
+      userModel = UserModel(
+        uid: firebaseUser.uid,
+        fullname: data['fullname'] ?? '',
+        assessmentDone: data['assessmentDone'] ?? false,
+        activeFitnessPlan: data['activeFitnessPlan'],
+        pendingWorkout: data['pendingWorkout'],
+      );
+    });
   }
 
   Future<void> fetchViewedExercises() async {
@@ -113,24 +138,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Welcome section
-                  Text("Welcome to Perfit!", style: TextStyles.heading),
+                  Text(
+                    user == null
+                        ? "Welcome to Perfit!"
+                        : "Welcome back, ${userModel!.fullname.split(' ').first}!",
+                    style: TextStyles.heading.copyWith(fontSize: 24),
+                  ),
                   Text(
                     "Ready to perfect your form and build strength the right way?",
                     style: TextStyles.caption,
                   ),
-                  Gap(AppSizes.gap20),
+                  Gap(AppSizes.gap10),
 
                   // Weekly Summary
                   if (user != null &&
                       last7Workouts != null &&
                       last7Workouts.isNotEmpty)
                     Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          12,
+                        ), // rounded corners
+                        side: BorderSide(
+                          color: AppColors.white, // border color
+                          width: 0.5, // border width
+                        ),
+                      ),
                       color: AppColors.surface,
                       child: Padding(
                         padding: const EdgeInsets.all(AppSizes.padding16),
                         child: Column(
                           children: [
-                            Text("Weekly Summary", style: TextStyles.title),
+                            Text("Weekly Summary", style: TextStyles.subtitle),
                             Gap(AppSizes.gap10),
                             Last7DaysStackedChart(last7Workouts: last7Workouts),
                             Gap(AppSizes.gap10),
@@ -147,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                  Gap(AppSizes.gap20),
+                  Gap(AppSizes.gap10),
 
                   // Today's Workout
                   if (todayWorkout != null)
@@ -168,13 +207,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             title: Text(
                               "Today's Workout",
-                              style: TextStyles.body.copyWith(
+                              style: TextStyles.caption.copyWith(
                                 color: AppColors.white,
                               ),
                             ),
                             subtitle: Text(
                               "Day $currentDay - ${todayWorkout['split'] ?? 'Workout'}",
-                              style: TextStyles.subtitle.copyWith(
+                              style: TextStyles.body.copyWith(
                                 color: AppColors.white,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -189,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               },
                               child: Text(
-                                "view all",
+                                "View All",
                                 style: TextStyles.label.copyWith(
                                   color: AppColors.white,
                                 ),
@@ -197,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        Gap(AppSizes.gap20),
+                        Gap(AppSizes.gap10),
                       ],
                     ),
 
@@ -234,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  Gap(AppSizes.gap15),
+                  Gap(AppSizes.gap10),
 
                   // Exercises header
                   Row(

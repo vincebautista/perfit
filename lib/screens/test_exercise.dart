@@ -85,6 +85,8 @@ class _TestExerciseState extends State<TestExercise> {
     if (_isBusy) return;
     _isBusy = true;
 
+    _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
     try {
       final inputImage = _cameraImageToInputImage(
         image,
@@ -338,6 +340,12 @@ class _TestExerciseState extends State<TestExercise> {
         children: [
           CameraPreview(_cameraService.controller!),
 
+          // if (_lastPose != null && _cameraImageSize != null)
+          //   CustomPaint(
+          //     painter: PosePainter(_lastPose!, _cameraImageSize!),
+          //     size: Size.infinite,
+          //   ),
+
           // Overlay messages
           if (currentStage != ExerciseStage.formCorrection)
             Positioned(
@@ -394,59 +402,103 @@ class _TestExerciseState extends State<TestExercise> {
   }
 }
 
-class PosePainter extends CustomPainter {
-  final Pose pose;
-  final Size imageSize;
+// class PosePainter extends CustomPainter {
+//   final Pose pose;
+//   final Size imageSize;
 
-  PosePainter(this.pose, this.imageSize);
+//   PosePainter(this.pose, this.imageSize);
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = Colors.greenAccent
-          ..strokeWidth = 4
-          ..strokeCap = StrokeCap.round;
+//   // Per-landmark offsets (dx, dy). Start with 0,0 for all.
+//   final Map<PoseLandmarkType, Offset> landmarkAdjustments = {
+//     PoseLandmarkType.nose: Offset(0, 0),
+//     PoseLandmarkType.leftEyeInner: Offset(0, 0),
+//     PoseLandmarkType.leftEye: Offset(0, 0),
+//     PoseLandmarkType.leftEyeOuter: Offset(0, 0),
+//     PoseLandmarkType.rightEyeInner: Offset(0, 0),
+//     PoseLandmarkType.rightEye: Offset(0, 0),
+//     PoseLandmarkType.rightEyeOuter: Offset(0, 0),
+//     PoseLandmarkType.leftEar: Offset(0, 0),
+//     PoseLandmarkType.rightEar: Offset(0, 0),
+//     PoseLandmarkType.leftMouth: Offset(0, 0),
+//     PoseLandmarkType.rightMouth: Offset(0, 0),
+//     PoseLandmarkType.leftShoulder: Offset(-100, -350),
+//     PoseLandmarkType.rightShoulder: Offset(-50, -350),
+//     PoseLandmarkType.leftElbow: Offset(0, 0),
+//     PoseLandmarkType.rightElbow: Offset(0, 0),
+//     PoseLandmarkType.leftWrist: Offset(0, 0),
+//     PoseLandmarkType.rightWrist: Offset(0, 0),
+//     PoseLandmarkType.leftPinky: Offset(0, 0),
+//     PoseLandmarkType.rightPinky: Offset(0, 0),
+//     PoseLandmarkType.leftIndex: Offset(0, 0),
+//     PoseLandmarkType.rightIndex: Offset(0, 0),
+//     PoseLandmarkType.leftThumb: Offset(0, 0),
+//     PoseLandmarkType.rightThumb: Offset(0, 0),
+//     PoseLandmarkType.leftHip: Offset(0, 0),
+//     PoseLandmarkType.rightHip: Offset(0, 0),
+//     PoseLandmarkType.leftKnee: Offset(0, 0),
+//     PoseLandmarkType.rightKnee: Offset(0, 0),
+//     PoseLandmarkType.leftAnkle: Offset(0, 0),
+//     PoseLandmarkType.rightAnkle: Offset(0, 0),
+//     PoseLandmarkType.leftHeel: Offset(0, 0),
+//     PoseLandmarkType.rightHeel: Offset(0, 0),
+//     PoseLandmarkType.leftFootIndex: Offset(0, 0),
+//     PoseLandmarkType.rightFootIndex: Offset(0, 0),
+//   };
 
-    // Map from image coordinates to widget coordinates
-    double scaleX = size.width / imageSize.width;
-    double scaleY = size.height / imageSize.height;
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final paint =
+//         Paint()
+//           ..color = Colors.greenAccent
+//           ..strokeWidth = 4
+//           ..strokeCap = StrokeCap.round;
 
-    Offset toOffset(PoseLandmark landmark) {
-      return Offset(landmark.x * scaleX, landmark.y * scaleY);
-    }
+//     // Scale from image to widget
+//     double scaleX = size.width / imageSize.width;
+//     double scaleY = size.height / imageSize.height;
 
-    // List of bones (pairs of landmarks to connect)
-    List<List<PoseLandmarkType>> bones = [
-      [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
-      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
-      [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
-      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
-      [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
-      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
-      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
-      [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
-      [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
-      [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
-      [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
-      [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
-    ];
+//     Offset toOffset(PoseLandmark landmark) {
+//       // Flip X for front camera
+//       double flippedX = imageSize.width - landmark.x;
 
-    // Draw lines
-    for (var bone in bones) {
-      final start = pose.landmarks[bone[0]];
-      final end = pose.landmarks[bone[1]];
-      if (start != null && end != null) {
-        canvas.drawLine(toOffset(start), toOffset(end), paint);
-      }
-    }
+//       // Scale to widget
+//       Offset pos = Offset(flippedX * scaleX, landmark.y * scaleY);
 
-    // Draw landmarks as circles
-    for (var landmark in pose.landmarks.values) {
-      canvas.drawCircle(toOffset(landmark), 6, paint);
-    }
-  }
+//       // Apply per-landmark adjustment
+//       Offset adjustment = landmarkAdjustments[landmark.type] ?? Offset.zero;
+//       return pos.translate(adjustment.dx, adjustment.dy);
+//     }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
+//     // Draw bones
+//     List<List<PoseLandmarkType>> bones = [
+//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+//       [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+//       [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+//       [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+//       [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+//       [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+//       [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+//       [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+//     ];
+
+//     for (var bone in bones) {
+//       final start = pose.landmarks[bone[0]];
+//       final end = pose.landmarks[bone[1]];
+//       if (start != null && end != null) {
+//         canvas.drawLine(toOffset(start), toOffset(end), paint);
+//       }
+//     }
+
+//     // Draw landmarks
+//     for (var landmark in pose.landmarks.values) {
+//       canvas.drawCircle(toOffset(landmark), 6, paint);
+//     }
+//   }
+
+//   @override
+//   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+// }
