@@ -27,6 +27,8 @@ class SplashScreenState extends State<SplashScreen>
       final prefs = await SharedPreferences.getInstance();
       final hasSeenOnBoarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
+      if (!mounted) return;
+
       if (hasSeenOnBoarding) {
         Navigator.of(
           context,
@@ -41,8 +43,8 @@ class SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _controller.stop();
     _controller.dispose();
-
     super.dispose();
   }
 

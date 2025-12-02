@@ -114,6 +114,7 @@ class _MyMealScreenState extends State<MyMealScreen> {
     final firestore = FirebaseFirestore.instance;
 
     // Show QuickAlert loading
+    if (!mounted) return;
     QuickAlert.show(
       context: context,
       type: QuickAlertType.loading,
@@ -192,7 +193,9 @@ class _MyMealScreenState extends State<MyMealScreen> {
       }, SetOptions(merge: true));
 
       // Dismiss loading alert and show success
+      if (!mounted) return;
       Navigator.of(context).pop(); // dismiss loading
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.success,
@@ -200,7 +203,9 @@ class _MyMealScreenState extends State<MyMealScreen> {
       );
     } catch (e) {
       // Dismiss loading alert and show error
+      if (!mounted) return;
       Navigator.of(context).pop(); // dismiss loading
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,

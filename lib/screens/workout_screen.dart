@@ -51,6 +51,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Future<void> loadWorkoutPlan() async {
     if (user == null) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
         hasPlan = false;
@@ -63,6 +64,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
 
     if (activeFitnessPlanId == null) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
         hasPlan = false;
@@ -76,6 +78,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
 
     if (fitnessPlan == null) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
         hasPlan = false;
@@ -104,6 +107,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       activeFitnessPlanId!,
     );
 
+    if (!mounted) return;
     setState(() {
       hasPlan = true;
       isLoading = false;
@@ -113,7 +117,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget createWorkoutRoutineBtn() {
     return Center(
       child: ElevatedButton(
-        onPressed: () => NavigationUtils.push(context, GenderScreen()),
+        onPressed: () {
+          if (!mounted) return;
+          NavigationUtils.push(context, GenderScreen());
+        },
         child: Text("Create workout plan"),
       ),
     );
@@ -129,7 +136,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           icon: Icon(Icons.arrow_left, color: AppColors.primary),
           onPressed:
               currentWeekIndex > 0
-                  ? () => setState(() => currentWeekIndex--)
+                  ? () {
+                    if (!mounted) return;
+                    setState(() => currentWeekIndex--);
+                  }
                   : null,
         ),
         Expanded(
@@ -139,7 +149,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               children: [
                 for (int day = startDay; day <= endDay; day++)
                   GestureDetector(
-                    onTap: () => setState(() => selectedDay = day),
+                    onTap: () {
+                      if (!mounted) return;
+                      setState(() => selectedDay = day);
+                    },
                     child: Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: 12,
@@ -375,6 +388,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     // Move to next day locally
     if (day < planDuration) {
+      if (!mounted) return;
       setState(() {
         selectedDay = day + 1;
         currentDay = day + 1;
@@ -445,8 +459,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             ),
                             child: GestureDetector(
                               onTap: () async {
+                                if (!mounted) return;
                                 Navigator.pop(context);
                                 // 🔹 Show QuickAlert loading while skipping
+                                if (!mounted) return;
                                 QuickAlert.show(
                                   context: context,
                                   type: QuickAlertType.loading,
@@ -458,12 +474,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   await skipDay(selectedDay);
 
                                   // 🔹 Dismiss loading after done
+                                  if (!mounted) return;
                                   Navigator.of(
                                     context,
                                     rootNavigator: true,
                                   ).pop();
 
                                   // 🔹 Optional: show a success message
+                                  if (!mounted) return;
                                   QuickAlert.show(
                                     context: context,
                                     type: QuickAlertType.success,
@@ -473,10 +491,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     ),
                                   );
                                 } catch (e) {
+                                  if (!mounted) return;
                                   Navigator.of(
                                     context,
                                     rootNavigator: true,
                                   ).pop();
+                                  if (!mounted) return;
                                   QuickAlert.show(
                                     context: context,
                                     type: QuickAlertType.error,

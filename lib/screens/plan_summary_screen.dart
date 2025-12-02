@@ -278,12 +278,13 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
                       onPressed: () async {
                         await SettingService().saveReminder(6, 0);
                         await NotificationService.scheduleNotification(
-                          title: "Test",
-                          body: "Test",
+                          title: "Reminder",
+                          body: "Workout Reminder",
                           hour: 6,
                           minute: 0,
                         );
 
+                        if (!mounted) return;
                         NavigationUtils.pushAndRemoveUntil(
                           context,
                           MainNavigation(),

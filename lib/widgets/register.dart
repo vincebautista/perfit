@@ -128,7 +128,7 @@ class _RegisterState extends State<Register> {
     if (!key.currentState!.validate()) {
       return;
     }
-
+    if (!mounted) return;
     QuickAlert.show(
       context: context,
       type: QuickAlertType.confirm,
@@ -136,6 +136,7 @@ class _RegisterState extends State<Register> {
       confirmBtnText: "Yes",
       cancelBtnText: "No",
       onConfirmBtnTap: () {
+        if (!mounted) return;
         NavigationUtils.pop(context);
 
         register();
@@ -145,6 +146,7 @@ class _RegisterState extends State<Register> {
 
   void register() async {
     try {
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.loading,
@@ -173,7 +175,7 @@ class _RegisterState extends State<Register> {
           confirmPasswordCtrl,
         ],
       );
-
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.success,
@@ -185,6 +187,7 @@ class _RegisterState extends State<Register> {
         },
       );
     } on FirebaseAuthException catch (ex) {
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,
@@ -196,6 +199,7 @@ class _RegisterState extends State<Register> {
         },
       );
     } catch (ex) {
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,

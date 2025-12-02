@@ -228,6 +228,7 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
     );
 
     if (result == true) {
+      if (!mounted) return; // before setState
       // 🔹 Show QuickAlert loading
       QuickAlert.show(
         context: context,
@@ -239,6 +240,8 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
       // 🔹 Simulate a small delay to show loading effect
       await Future.delayed(const Duration(seconds: 1));
 
+      if (!mounted) return; // before setState
+
       // 🔹 Reset the meal state
       setState(() {
         isGenerated = false;
@@ -246,7 +249,9 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
       });
 
       // 🔹 Dismiss QuickAlert
-      Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
     }
   }
 
@@ -409,6 +414,7 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
   """;
 
     try {
+      if (!mounted) return;
       // 🔹 Show QuickAlert loading
       QuickAlert.show(
         context: context,
@@ -421,7 +427,9 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
       final response = await gemini.generateJson(prompt);
 
       // 🔹 Dismiss loading
-      Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
       print("🔹 Gemini Raw Response:\n$response");
 
@@ -440,6 +448,7 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
 
       final result = json.decode(cleaned);
 
+      if (!mounted) return;
       setState(() {
         generatedMeal = result;
         isGenerated = true;
@@ -513,6 +522,7 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
   // 🔹 Save meal to Firestore
   Future<void> saveMeal(MealProvider mealProvider, String name) async {
     try {
+      if (!mounted) return;
       // 🔹 Show QuickAlert loading
       QuickAlert.show(
         context: context,
@@ -554,16 +564,17 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
 
       mealProvider.clearMeal();
 
-      // 🔹 Dismiss QuickAlert
-      Navigator.of(context, rootNavigator: true).pop();
-
-      // 🔹 Show success message
-      ValidationUtils.snackBar(context, "Meal saved successfully!");
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ValidationUtils.snackBar(context, "Meal saved successfully!");
+        Navigator.of(context).pop();
+      }
     } catch (e) {
+      if (!mounted) return;
       // 🔹 Dismiss QuickAlert in case of error
       Navigator.of(context, rootNavigator: true).pop();
 
+      if (!mounted) return;
       ValidationUtils.snackBar(context, "Failed to save meal: $e");
       print("❌ Error saving meal: $e");
     }

@@ -65,7 +65,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => GenderScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -86,7 +86,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => AgeScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -107,7 +107,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => WeightScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -128,7 +128,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => HeightScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -149,7 +149,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => FitnessGoalScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -170,7 +170,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => TargetWeightScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -191,7 +191,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => BodyTypeScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -212,7 +212,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => PreviousExperienceScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -233,7 +233,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => WorkoutTypeScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -254,7 +254,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => TrainingLevelScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -275,7 +275,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => DailyActivityLevelScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(
@@ -296,7 +296,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                       builder: (_) => WorkoutCommitmentScreen(fromEdit: true),
                     ),
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     answers =
                         Provider.of<AssessmentModel>(

@@ -76,6 +76,7 @@ class _DailyActivityLevelScreenState extends State<DailyActivityLevelScreen> {
       elevation: AppSizes.gap10,
       child: ListTile(
         onTap: () {
+          if (!mounted) return;
           setState(() => selectedValue = value);
           saveToProvider(value);
         },

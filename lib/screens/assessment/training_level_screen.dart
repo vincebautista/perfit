@@ -84,6 +84,7 @@ class _TrainingLevelScreenState extends State<TrainingLevelScreen> {
   }
 
   void saveToProvider(String value) {
+    if (!mounted) return;
     setState(() {
       selectedLevel = value;
     });

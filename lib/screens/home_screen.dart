@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/data_sources/exercise_list.dart';
 import 'package:perfit/data/models/exercise_model.dart';
@@ -33,6 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final user = FirebaseAuth.instance.currentUser;
 
+  final SettingService _settingService = SettingService();
+  bool isDarkMode = true;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +44,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _filteredExercises = _exercises;
     fetchViewedExercises();
     _loadUser();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
   }
 
   Future<void> _loadUser() async {
@@ -50,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!doc.exists) return;
 
     final data = doc.data() as Map<String, dynamic>;
+    if (!mounted) return;
     setState(() {
       userModel = UserModel(
         uid: firebaseUser.uid,
@@ -142,11 +156,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     user == null
                         ? "Welcome to Perfit!"
                         : "Welcome back, ${userModel!.fullname.split(' ').first}!",
-                    style: TextStyles.heading.copyWith(fontSize: 24),
+                    style: TextStyles.heading.copyWith(fontSize: 20),
                   ),
                   Text(
-                    "Ready to perfect your form and build strength the right way?",
-                    style: TextStyles.caption,
+                    "Perfect your form and build strength the right way!",
+                    style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.lightgrey : AppColors.black,
+                    ),
                   ),
                   Gap(AppSizes.gap10),
 
@@ -160,16 +176,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           12,
                         ), // rounded corners
                         side: BorderSide(
-                          color: AppColors.white, // border color
+                          color:
+                              isDarkMode
+                                  ? AppColors.white
+                                  : Colors.transparent, // border color
                           width: 0.5, // border width
                         ),
                       ),
-                      color: AppColors.surface,
+                      color:
+                          isDarkMode ? AppColors.surface : AppColors.lightgrey,
                       child: Padding(
                         padding: const EdgeInsets.all(AppSizes.padding16),
                         child: Column(
                           children: [
-                            Text("Weekly Summary", style: TextStyles.subtitle),
+                            Text(
+                              "Weekly Summary",
+                              style: TextStyles.subtitle.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             Gap(AppSizes.gap10),
                             Last7DaysStackedChart(last7Workouts: last7Workouts),
                             Gap(AppSizes.gap10),
@@ -262,7 +287,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 backgroundColor:
                                     _selectedFilter == filter
                                         ? Theme.of(context).primaryColor
-                                        : AppColors.grey,
+                                        : isDarkMode
+                                        ? AppColors.grey
+                                        : AppColors.lightgrey,
                               ),
                               child: Text(
                                 filter,
@@ -289,7 +316,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Text(
                           "View All",
                           style: TextStyles.body.copyWith(
-                            color: AppColors.white,
+                            color:
+                                isDarkMode ? AppColors.white : AppColors.black,
                           ),
                         ),
                       ),
@@ -327,7 +355,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: GridTile(
                                 footer: Container(
                                   padding: const EdgeInsets.all(5),
-                                  color: AppColors.grey.withValues(alpha: 0.5),
+                                  color: AppColors.grey.withValues(
+                                    alpha: isDarkMode ? 0.5 : 0.8,
+                                  ),
                                   alignment: Alignment.center,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -335,7 +365,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     child: Text(
                                       exercise.name,
-                                      style: TextStyles.label,
+                                      style:
+                                          isDarkMode
+                                              ? TextStyles.label
+                                              : TextStyles.label.copyWith(
+                                                color: AppColors.white,
+                                              ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -407,7 +442,13 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: TextStyles.caption),
+        Text(
+          label,
+          style:
+              isDarkMode
+                  ? TextStyles.caption
+                  : TextStyles.caption.copyWith(color: AppColors.black),
+        ),
       ],
     );
   }

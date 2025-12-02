@@ -90,7 +90,7 @@ class _LoginState extends State<Login> {
     if (!key.currentState!.validate()) {
       return;
     }
-
+    if (!mounted) return;
     QuickAlert.show(context: context, type: QuickAlertType.loading);
 
     try {
@@ -99,11 +99,14 @@ class _LoginState extends State<Login> {
         password: passwordCtrl.text,
       );
 
+      if (!mounted) return;
       NavigationUtils.pop(context);
 
       NavigationUtils.pushAndRemoveUntil(context, MainNavigation());
     } on FirebaseAuthException catch (ex) {
+      if (!mounted) return;
       Navigator.pop(context);
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,

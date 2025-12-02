@@ -47,6 +47,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
   }
 
   void _prevMonth() {
+    if (!mounted) return;
     setState(() {
       if (selectedMonth == 1) {
         selectedMonth = 12;
@@ -58,6 +59,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
   }
 
   void _nextMonth() {
+    if (!mounted) return;
     setState(() {
       if (selectedMonth == 12) {
         selectedMonth = 1;
@@ -469,6 +471,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: () async {
+              if (!mounted) return;
               QuickAlert.show(
                 context: context,
                 type: QuickAlertType.loading,
@@ -546,6 +549,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
               } catch (e) {
                 print("Error generating PDF: $e");
               } finally {
+                if (!mounted) return;
                 Navigator.of(
                   context,
                   rootNavigator: true,
@@ -1122,7 +1126,10 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () {
+                            if (!mounted) return;
+                            Navigator.of(context).pop();
+                          },
                           child: const Text(
                             "Cancel",
                             style: TextStyle(color: AppColors.white),
@@ -1159,7 +1166,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                                       "kg": weight,
                                       "timestamp": FieldValue.serverTimestamp(),
                                     });
-
+                                if (!mounted) return;
                                 Navigator.of(context).pop();
                               }
                             },

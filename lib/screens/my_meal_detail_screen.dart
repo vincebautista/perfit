@@ -70,8 +70,9 @@ class _MyMealDetailScreenState extends State<MyMealDetailScreen> {
                   .collection("myMeals")
                   .doc(widget.id)
                   .delete();
-
+              if (!mounted) return;
               NavigationUtils.pop(context);
+              if (!mounted) return;
               ValidationUtils.snackBar(context, "Meal has been deleted.");
             },
             child: const Text(

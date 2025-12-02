@@ -115,6 +115,7 @@ class _WorkoutTypeScreenState extends State<WorkoutTypeScreen> {
   }
 
   void saveToProvider(String value) {
+    if (!mounted) return;
     setState(() {
       selectedType = value;
     });

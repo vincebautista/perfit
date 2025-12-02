@@ -48,6 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final countdownMap = await service.loadCountdown();
     final reminderMap = await service.loadReminder();
 
+    if (!mounted) return;
     setState(() {
       rest = restMap["rest"]!;
       countdown = countdownMap["countdown"]!;
@@ -65,6 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (picked != null) {
+      if (!mounted) return;
       setState(() => workoutReminder = picked);
 
       await SettingService().saveReminder(picked.hour, picked.minute);
@@ -155,6 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           title: "Rest Time",
                                           currentValue: rest,
                                           onSave: (newValue) async {
+                                            if (!mounted) return;
                                             setState(() => rest = newValue);
                                             await SettingService().saveRest(
                                               newValue,
@@ -183,6 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           title: "Countdown Timer",
                                           currentValue: countdown,
                                           onSave: (newValue) async {
+                                            if (!mounted) return;
                                             setState(
                                               () => countdown = newValue,
                                             );
@@ -380,6 +384,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onPressed: () {
                           final value = int.tryParse(controller.text);
                           if (value != null && value > 0) {
+                            if (!mounted) return;
                             onSave(value);
                             Navigator.pop(ctx);
                           }

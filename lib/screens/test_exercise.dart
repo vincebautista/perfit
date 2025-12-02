@@ -72,6 +72,8 @@ class _TestExerciseState extends State<TestExercise> {
   Future<void> _initCamera() async {
     await _cameraService.initCamera();
     _cameraService.startStream(_processCameraImage);
+
+    if (!mounted) return;
     setState(() => _isInitialized = true);
   }
 

@@ -1,5 +1,6 @@
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
 import 'package:perfit/data/data_sources/exercise_list.dart';
@@ -24,6 +25,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   late VideoPlayerController _videoController;
   ChewieController? _chewieController;
 
+  final SettingService _settingService = SettingService();
+  bool isDarkMode = true;
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +37,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     _videoController = VideoPlayerController.asset(exercise.video[0]);
 
     _videoController.initialize().then((_) {
+      if (!mounted) return;
       _chewieController = ChewieController(
         videoPlayerController: _videoController,
         autoPlay: false,
@@ -43,13 +48,23 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
       setState(() {});
     });
+
+    _loadTheme();
   }
 
   @override
   void dispose() {
-    _videoController.dispose();
     _chewieController?.dispose();
+    _videoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
   }
 
   @override
@@ -80,7 +95,12 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                             ),
                             child: Text(
                               exercise.difficulty,
-                              style: TextStyles.label,
+                              style: TextStyles.label.copyWith(
+                                color:
+                                    isDarkMode
+                                        ? AppColors.black
+                                        : AppColors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -131,6 +151,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                           if (currentIndex > 0) {
                             final prevExercise = exercises[currentIndex - 1];
 
+                            if (!mounted) return;
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
                                 builder:
@@ -138,6 +159,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                               ),
                             );
                           } else {
+                            if (!mounted) return;
                             ValidationUtils.snackBar(
                               context,
                               "You're already at the first exercise!",
@@ -151,7 +173,15 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                               horizontal: AppSizes.padding16 * 3,
                               vertical: AppSizes.padding16,
                             ),
-                            child: Text("Back"),
+                            child: Text(
+                              "Back",
+                              style: TextStyles.label.copyWith(
+                                color:
+                                    isDarkMode
+                                        ? AppColors.black
+                                        : AppColors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -166,6 +196,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                               currentIndex < exercises.length - 1) {
                             final nextExercise = exercises[currentIndex + 1];
 
+                            if (!mounted) return;
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
                                 builder:
@@ -173,6 +204,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                               ),
                             );
                           } else {
+                            if (!mounted) return;
                             ValidationUtils.snackBar(
                               context,
                               "You've reached the last exercise!",
@@ -186,7 +218,15 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                               horizontal: AppSizes.padding16 * 3,
                               vertical: AppSizes.padding16,
                             ),
-                            child: Text("Next"),
+                            child: Text(
+                              "Next",
+                              style: TextStyles.label.copyWith(
+                                color:
+                                    isDarkMode
+                                        ? AppColors.black
+                                        : AppColors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ),

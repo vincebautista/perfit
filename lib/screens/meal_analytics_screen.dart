@@ -50,6 +50,21 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
     today();
   }
 
+  Future<void> clearSummaries() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove('saved_weekly_date');
+    await prefs.remove('saved_weekly_total_calories');
+    await prefs.remove('saved_weekly_explanation');
+    await prefs.remove('saved_today_date');
+    await prefs.remove('saved_today_calories');
+    await prefs.remove('saved_today_explanation');
+
+    print(
+      "Cleared today_summary and past7days_summary from SharedPreferences.",
+    );
+  }
+
   List<String> getPast7DaysDates({bool excludeToday = false}) {
     DateTime today = DateTime.now();
     List<String> dates = [];
@@ -101,6 +116,8 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
     """;
 
       final summary = await geminiService.fetchFromGemini(prompt);
+
+      print(summary);
 
       prefs.setString('saved_weekly_date', todayString);
       prefs.setInt('saved_weekly_total_calories', fetchedTotal);
@@ -1085,8 +1102,6 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
       """;
 
       final response = await geminiService.fetchFromGemini(prompt);
-
-      print(response);
 
       prefs.setString('saved_today_date', todayString);
       prefs.setInt('saved_today_calories', fetchedCalories);

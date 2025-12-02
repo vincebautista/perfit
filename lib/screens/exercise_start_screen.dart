@@ -71,6 +71,7 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
     // Initialize video
     _videoController = VideoPlayerController.asset(widget.exercise.video[0]);
     _videoController.initialize().then((_) {
+      if (!mounted) return;
       _chewieController = ChewieController(
         videoPlayerController: _videoController,
         autoPlay: true,
@@ -100,6 +101,7 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
     final restMap = await service.loadRest();
     final countdownMap = await service.loadCountdown();
 
+    if (!mounted) return;
     setState(() {
       rest = restMap["rest"]!;
       countdown = countdownMap["countdown"]!;
@@ -111,6 +113,10 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
 
   void startCountdown() {
     countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         countdown--;
         if (countdown == 0) {
@@ -130,6 +136,10 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
 
   void startExerciseTimer() {
     exerciseTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         if (remainingTime > 0) {
           remainingTime--;
@@ -142,6 +152,10 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
 
   void startRepTimer() {
     repTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         // elapsedTime++;
       });
@@ -193,6 +207,7 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
         int.parse(widget.day),
       );
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -219,6 +234,7 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
     if (exerciseTimer != null) exerciseTimer?.cancel();
 
     if (widget.currentSet < widget.sets) {
+      if (!mounted) return;
       // Not last set → go to RestScreen
       Navigator.pushReplacement(
         context,
@@ -250,6 +266,7 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
         int.parse(widget.day),
       );
 
+      if (!mounted) return;
       // Go to RestScreen after finishing
       Navigator.pushReplacement(
         context,

@@ -142,6 +142,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                         IconButton(
                           onPressed: () {
                             if (searchCtrl.text.isEmpty) return;
+                            if (!mounted) return;
                             setState(() {
                               foodResult = searchFood(searchCtrl.text);
                             });
@@ -194,6 +195,8 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   void showFoodInfo(Map<String, dynamic> food) async {
     final fullFoodInfo = await fetchFoodInfo(food);
 
+    if (!mounted) return;
+
     if (fullFoodInfo == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Unable to fetch food information.")),
@@ -209,6 +212,8 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     final fat = (nutrients["FAT"]?["quantity"] ?? 0).toDouble();
 
     servingCtrl.text = "1";
+
+    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -272,6 +277,8 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                 ),
                 TextButton(
                   onPressed: () {
+                    if (!mounted) return;
+
                     if (widget.isFromMeal) {
                       addFoodToProvider(
                         food: fullFoodInfo,
@@ -281,8 +288,12 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                         totalCarbs: totalCarbs,
                         totalFat: totalFat,
                       );
+
+                      if (!mounted) return;
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
+
+                      if (!mounted) return;
                       ValidationUtils.snackBar(
                         context,
                         "added $quantity ${fullFoodInfo["food_name"]}",
@@ -296,7 +307,10 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                         totalCarbs: totalCarbs,
                         totalFat: totalFat,
                       );
+                      if (!mounted) return;
                       Navigator.of(context).pop();
+
+                      if (!mounted) return;
                       ValidationUtils.snackBar(
                         context,
                         "added $quantity grams ${fullFoodInfo["food_name"]}",
@@ -404,6 +418,8 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     required double totalFat,
   }) {
     final mealProvider = Provider.of<MealProvider>(context, listen: false);
+
+    if (!mounted) return;
 
     // Check if the food already exists
     final index = mealProvider.foods.indexWhere(

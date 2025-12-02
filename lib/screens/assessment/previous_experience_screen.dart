@@ -85,6 +85,7 @@ class _PreviousExperienceScreenState extends State<PreviousExperienceScreen> {
   }
 
   void saveToProvider(String value) {
+    if (!mounted) return;
     setState(() {
       selectedExperience = value;
     });

@@ -61,6 +61,8 @@ class _KneeExtensionSeatedPartialScreenState
   final double _kneeMinBentAngle = 120.0; // Minimum knee angle (foot down)
   final double _kneeMaxExtendAngle = 160.0; // Maximum knee angle (leg extended)
 
+  bool _isDisposed = false;
+
   @override
   void initState() {
     super.initState();
@@ -81,6 +83,7 @@ class _KneeExtensionSeatedPartialScreenState
 
   @override
   void dispose() {
+    _isDisposed = true;
     _cameraService.dispose();
     super.dispose();
   }
@@ -92,6 +95,7 @@ class _KneeExtensionSeatedPartialScreenState
     _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
 
     try {
+      if (_isDisposed) return;
       final inputImage = _cameraImageToInputImage(
         image,
         _cameraService.controller!.description.sensorOrientation,
@@ -116,7 +120,9 @@ class _KneeExtensionSeatedPartialScreenState
       }
     } finally {
       _isBusy = false;
-      if (mounted) setState(() {});
+      if (mounted && !_isDisposed) {
+        setState(() {});
+      }
     }
   }
 
@@ -263,7 +269,7 @@ class _KneeExtensionSeatedPartialScreenState
           if (_rightCurlCount >= 5) {
             print(_feedback);
             await _cameraService.controller?.stopImageStream();
-            if (!mounted) return;
+            if (!mounted || _isDisposed) return;
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(

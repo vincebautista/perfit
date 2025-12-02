@@ -47,6 +47,8 @@ class _AllExercisesScreenState extends State<AllExercisesScreen> {
             .collection("viewedExercises")
             .get();
 
+    if (!mounted) return;
+
     setState(() {
       viewedExercises = snapshot.docs.map((doc) => doc.id).toList();
     });
@@ -65,6 +67,8 @@ class _AllExercisesScreenState extends State<AllExercisesScreen> {
         .collection("viewedExercises")
         .doc(exerciseId)
         .set({"viewedAt": Timestamp.now()});
+
+    if (!mounted) return;
 
     setState(() {
       viewedExercises.add(exerciseId);
@@ -218,6 +222,7 @@ class _AllExercisesScreenState extends State<AllExercisesScreen> {
   }
 
   void filterExercises(String filter) {
+    if (!mounted) return;
     setState(() {
       _selectedFilter = filter;
 

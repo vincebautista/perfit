@@ -81,6 +81,7 @@ class _GenderScreenState extends State<GenderScreen> {
                                 groupValue: selectedGender,
                                 activeColor: Theme.of(context).primaryColor,
                                 onChanged: (value) {
+                                  if (!mounted) return;
                                   setState(() {
                                     selectedGender = value;
                                   });
@@ -119,6 +120,7 @@ class _GenderScreenState extends State<GenderScreen> {
                                 groupValue: selectedGender,
                                 activeColor: Theme.of(context).primaryColor,
                                 onChanged: (value) {
+                                  if (!mounted) return;
                                   setState(() {
                                     selectedGender = value;
                                   });

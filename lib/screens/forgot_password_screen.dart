@@ -65,6 +65,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!formKey.currentState!.validate()) return;
 
     try {
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.loading,
@@ -76,9 +77,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: emailCtrl.text.trim(),
       );
-
+      if (!mounted) return;
       Navigator.pop(context);
 
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.success,
@@ -86,13 +88,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         text: "Check your inbox for a password reset link.",
         confirmBtnText: "OK",
         onConfirmBtnTap: () {
+          if (!mounted) return;
           Navigator.pop(context);
           Navigator.pop(context);
         },
       );
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
 
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,

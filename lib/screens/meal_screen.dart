@@ -160,7 +160,7 @@ class _MealScreenState extends State<MealScreen> {
 
   void deleteFood(Map<String, dynamic> food) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null || !mounted) return;
 
     final uid = user.uid;
     final date = getTodayDateString();
@@ -168,6 +168,7 @@ class _MealScreenState extends State<MealScreen> {
     final foodId = food['id'];
 
     // Show loading
+    if (!mounted) return;
     QuickAlert.show(
       context: context,
       type: QuickAlertType.loading,
@@ -266,6 +267,7 @@ class _MealScreenState extends State<MealScreen> {
         });
 
     // Close loading
+    if (!mounted) return;
     NavigationUtils.pop(context);
   }
 

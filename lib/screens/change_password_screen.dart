@@ -147,6 +147,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           password: oldPasswordCtrl.text.trim(),
         );
 
+        if (!mounted) return;
         QuickAlert.show(
           context: context,
           type: QuickAlertType.loading,
@@ -158,6 +159,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         await user.reauthenticateWithCredential(credential);
         await user.updatePassword(newPasswordCtrl.text);
 
+        if (!mounted) return;
         QuickAlert.show(
           context: context,
           type: QuickAlertType.success,
@@ -165,6 +167,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           text: "Password changed successfully.",
           confirmBtnText: "OK",
           onConfirmBtnTap: () {
+            if (!mounted) return;
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
@@ -176,8 +179,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
 
+      if (!mounted) return;
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,

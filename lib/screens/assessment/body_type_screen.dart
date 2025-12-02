@@ -113,6 +113,7 @@ class _BodyTypeScreenState extends State<BodyTypeScreen> {
   }
 
   void saveToProvider(String value) {
+    if (!mounted) return;
     setState(() {
       selectedBodyType = value;
     });

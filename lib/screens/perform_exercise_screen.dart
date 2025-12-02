@@ -50,6 +50,7 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
     _videoController = VideoPlayerController.asset(exercise.video[0]);
 
     _videoController.initialize().then((_) {
+      if (!mounted) return;
       _chewieController = ChewieController(
         videoPlayerController: _videoController,
         autoPlay: false,
@@ -85,7 +86,10 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                 Row(
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context, false),
+                      onPressed: () {
+                        if (!mounted) return;
+                        Navigator.pop(context, false);
+                      },
                       child: Text("Cancel"),
                     ),
                     Expanded(
@@ -93,7 +97,10 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                         ),
-                        onPressed: () => Navigator.pop(context, true),
+                        onPressed: () {
+                          if (!mounted) return;
+                          Navigator.pop(context, true);
+                        },
                         child: Text("Skip"),
                       ),
                     ),
@@ -116,6 +123,8 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
         int.parse(widget.day),
       );
 
+      if (!mounted) return;
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => MainNavigation(initialIndex: 2)),
@@ -127,6 +136,7 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
   void startExercise() {
     print("Starting exercise: ${exercise.name}");
 
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(

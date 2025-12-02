@@ -75,6 +75,7 @@ class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
       elevation: AppSizes.gap10,
       child: ListTile(
         onTap: () {
+          if (!mounted) return;
           setState(() => selectedValue = value);
           saveToProvider(value);
         },

@@ -26,8 +26,9 @@ class _FoodScreenState extends State<FoodScreen> {
     super.initState();
 
     final user = FirebaseAuth.instance.currentUser;
-
-    uid = user!.uid;
+    if (user != null) {
+      uid = user.uid;
+    }
   }
 
   Future<Map<String, dynamic>> getNutritionPlan() async {
