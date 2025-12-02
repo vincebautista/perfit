@@ -36,20 +36,25 @@ class _SquatsScreenState extends State<SquatsScreen> {
   int countdown = 3;
 
   // Form correction variables
-  int _squatCount = 0;
-  int _correctCount = 0;
-  int _wrongCount = 0;
+  int _rightCurlCount = 0;
+  int _rightCorrectCount = 0;
+  int _rightWrongCount = 0;
   List<String> _feedback = [];
 
-  bool _startedDown = false;
-  bool _reachedBottom = false;
-  bool isAtBottom = false;
-  double _minKneeAngleDuringRep =
-      180.0; // Track minimum knee angle for depth check
+  bool _rightStartedDown = false;
+  bool _rightReachedUp = false;
+  double _rightMinElbowAngleDuringRep = 180.0;
+  double _rightMaxShoulderAngleDuringRep = 0.0;
 
-  // Feedback display
-  String feedback = "";
-  Color feedbackColor = Colors.green;
+  // Thresholds
+  final double _maxAllowedShoulderMovement = 60.0;
+  final double _downThreshold = 165.0;
+  final double _upThreshold = 50.0;
+  final double _shoulderBySideThreshold = 45.0;
+  final double _wristToShoulderTopRatio = 0.45;
+
+  Pose? _lastPose;
+  Size? _cameraImageSize;
 
   @override
   void initState() {
@@ -89,6 +94,7 @@ class _SquatsScreenState extends State<SquatsScreen> {
       if (poses.isEmpty) return;
 
       final pose = poses.first;
+      _lastPose = pose;
 
       switch (currentStage) {
         case ExerciseStage.distanceCheck:
@@ -188,196 +194,113 @@ class _SquatsScreenState extends State<SquatsScreen> {
     }
   }
 
-  // Helper function to calculate angle from three landmarks
-  double calculateAngle(PoseLandmark a, PoseLandmark b, PoseLandmark c) {
-    return _calculateAngle(
-      Offset(a.x, a.y),
-      Offset(b.x, b.y),
-      Offset(c.x, c.y),
-    );
-  }
-
   Future<void> _handleFormCorrection(Pose pose) async {
     final landmarks = pose.landmarks;
 
-    // Get required landmarks for squats
-    final leftHip = landmarks[PoseLandmarkType.leftHip];
-    final rightHip = landmarks[PoseLandmarkType.rightHip];
-    final leftKnee = landmarks[PoseLandmarkType.leftKnee];
-    final rightKnee = landmarks[PoseLandmarkType.rightKnee];
-    final leftAnkle = landmarks[PoseLandmarkType.leftAnkle];
-    final rightAnkle = landmarks[PoseLandmarkType.rightAnkle];
-    final leftShoulder = landmarks[PoseLandmarkType.leftShoulder];
     final rightShoulder = landmarks[PoseLandmarkType.rightShoulder];
+    final rightElbow = landmarks[PoseLandmarkType.rightElbow];
+    final rightWrist = landmarks[PoseLandmarkType.rightWrist];
+    final rightHip = landmarks[PoseLandmarkType.rightHip];
 
-    // Verify all required landmarks exist
-    if (leftHip == null ||
-        rightHip == null ||
-        leftKnee == null ||
-        rightKnee == null ||
-        leftAnkle == null ||
-        rightAnkle == null ||
-        leftShoulder == null ||
-        rightShoulder == null) {
-      feedback = "Please ensure all body parts are visible";
-      feedbackColor = Colors.orange;
-      return;
-    }
+    if (rightShoulder != null && rightElbow != null && rightWrist != null) {
+      final s = Offset(rightShoulder.x, rightShoulder.y);
+      final e = Offset(rightElbow.x, rightElbow.y);
+      final w = Offset(rightWrist.x, rightWrist.y);
 
-    // Calculate angles
-    double kneeAngleLeft = calculateAngle(leftHip, leftKnee, leftAnkle);
-    double kneeAngleRight = calculateAngle(rightHip, rightKnee, rightAnkle);
+      final double elbowAngle = _calculateAngle(s, e, w);
 
-    // Hip angle: shoulder-hip-knee
-    // ignore: unused_local_variable
-    double hipAngleLeft = calculateAngle(leftShoulder, leftHip, leftKnee);
-    // ignore: unused_local_variable
-    double hipAngleRight = calculateAngle(rightShoulder, rightHip, rightKnee);
+      final bool canCheckRightShoulder = rightHip != null;
+      final double rightShoulderAngle =
+          canCheckRightShoulder
+              ? _calculateAngle(Offset(rightHip.x, rightHip.y), s, e)
+              : 0.0;
 
-    // Torso angle: average of shoulder-hip angles (relative to vertical)
-    // Using hip as center, calculate angle between shoulder and vertical
-    final avgHip = Offset(
-      (leftHip.x + rightHip.x) / 2,
-      (leftHip.y + rightHip.y) / 2,
-    );
-    final avgShoulder = Offset(
-      (leftShoulder.x + rightShoulder.x) / 2,
-      (leftShoulder.y + rightShoulder.y) / 2,
-    );
-    // Torso angle: angle between vertical (downward) and shoulder-hip line
-    final vertical = Offset(0, 1);
-    final shoulderHip = Offset(
-      avgShoulder.dx - avgHip.dx,
-      avgShoulder.dy - avgHip.dy,
-    );
-    final dot = vertical.dx * shoulderHip.dx + vertical.dy * shoulderHip.dy;
-    final magVertical = math.sqrt(
-      vertical.dx * vertical.dx + vertical.dy * vertical.dy,
-    );
-    final magShoulderHip = math.sqrt(
-      shoulderHip.dx * shoulderHip.dx + shoulderHip.dy * shoulderHip.dy,
-    );
-    final cosine = dot / (magVertical * magShoulderHip);
-    double torsoAngle = math.acos(cosine.clamp(-1.0, 1.0)) * 180 / math.pi;
+      double torsoLenRight =
+          rightHip != null ? _distance(s, Offset(rightHip.x, rightHip.y)) : 1.0;
 
-    // Check if data is stable (both knees have similar angles)
-    final kneeAngleDiff = (kneeAngleLeft - kneeAngleRight).abs();
-    if (kneeAngleDiff > 30) {
-      feedback = "Please face the camera directly";
-      feedbackColor = Colors.orange;
-      return;
-    }
+      final double wristShoulderNormRight =
+          _distance(w, s) / (torsoLenRight > 0 ? torsoLenRight : 1.0);
+      final bool reachedTopByProximityRight =
+          wristShoulderNormRight <= _wristToShoulderTopRatio;
+      final bool reachedTopByAngleRight = elbowAngle <= _upThreshold;
+      final bool isArmUpRight =
+          reachedTopByAngleRight && reachedTopByProximityRight;
 
-    // Detect if at bottom position (knee angles in 80-110° range)
-    final avgKneeAngle = (kneeAngleLeft + kneeAngleRight) / 2;
-    isAtBottom = avgKneeAngle >= 80 && avgKneeAngle <= 110;
+      final bool upperArmBySideRight =
+          !canCheckRightShoulder ||
+          (rightShoulderAngle < _shoulderBySideThreshold);
+      final bool isArmDownRight =
+          (elbowAngle >= _downThreshold) && upperArmBySideRight;
 
-    // Initialize feedback
-    feedback = "";
-    feedbackColor = Colors.green;
-
-    // Form error detection
-    List<String> errors = [];
-
-    // 1. Back rounding: torsoAngle < 70° or > 110°
-    if (torsoAngle < 70 || torsoAngle > 110) {
-      errors.add("Keep your back straight");
-      feedbackColor = Colors.red;
-    }
-
-    // 2. Shallow squat: knee angles > 120° (never reached proper depth)
-    // Track minimum knee angle during the rep
-    if (_startedDown) {
-      _minKneeAngleDuringRep = math.min(_minKneeAngleDuringRep, avgKneeAngle);
-    }
-    // Check if they went deep enough (knee angle should be 80-110° at bottom)
-    if (_reachedBottom && _minKneeAngleDuringRep > 110) {
-      errors.add("Go deeper - lower your hips");
-      feedbackColor = Colors.red;
-    }
-
-    // 3. Knees caving in: lateral deviation > 15° measured by knee-over-ankle alignment
-    final double kneeTrackingLeft = _kneeTrackingAngle(leftKnee, leftAnkle);
-    final double kneeTrackingRight = _kneeTrackingAngle(rightKnee, rightAnkle);
-    final double kneeTrackingDiff =
-        (kneeTrackingLeft - kneeTrackingRight).abs();
-    if (isAtBottom &&
-        (kneeTrackingLeft.abs() > 15 ||
-            kneeTrackingRight.abs() > 15 ||
-            kneeTrackingDiff > 15)) {
-      errors.add("Keep your knees tracking over your toes");
-      feedbackColor = Colors.red;
-    }
-
-    // 4. Too much forward lean: hip too far in front of ankle
-    final avgAnkle = Offset(
-      (leftAnkle.x + rightAnkle.x) / 2,
-      (leftAnkle.y + rightAnkle.y) / 2,
-    );
-    final hipAnkleHorizontal = (avgHip.dx - avgAnkle.dx).abs();
-    final hipAnkleVertical = (avgHip.dy - avgAnkle.dy).abs();
-    if (hipAnkleVertical > 0) {
-      final forwardLeanRatio = hipAnkleHorizontal / hipAnkleVertical;
-      if (forwardLeanRatio > 0.5 && isAtBottom) {
-        errors.add("Keep your weight centered over your feet");
-        feedbackColor = Colors.red;
-      }
-    }
-
-    // Set feedback message
-    if (errors.isEmpty) {
-      if (isAtBottom) {
-        feedback = "✅ Good form!";
-      } else {
-        feedback = "Continue squatting";
-      }
-    } else {
-      feedback = errors.join(". ");
-    }
-
-    // Rep counting logic
-    if (!_startedDown && avgKneeAngle > 140) {
-      _startedDown = true;
-    }
-
-    if (_startedDown && !_reachedBottom && isAtBottom) {
-      _reachedBottom = true;
-    }
-
-    // Complete rep when returning to standing position
-    if (_startedDown && _reachedBottom && avgKneeAngle > 150) {
-      _squatCount++;
-
-      if (feedbackColor == Colors.green) {
-        _correctCount++;
-      } else {
-        _wrongCount++;
-        _feedback.add("Rep $_squatCount: ${errors.join(", ")}");
-      }
-
-      // Reset for next rep
-      _startedDown = false;
-      _reachedBottom = false;
-      _minKneeAngleDuringRep = 180.0;
-
-      // Stop after 5 reps
-      if (_squatCount >= 5) {
-        await _cameraService.controller?.stopImageStream();
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => ExerciseSummaryScreen(
-                  correct: _correctCount,
-                  wrong: _wrongCount,
-                  feedback: _feedback,
-                ),
-          ),
+      _rightMinElbowAngleDuringRep = math.min(
+        _rightMinElbowAngleDuringRep,
+        elbowAngle,
+      );
+      if (_rightStartedDown && canCheckRightShoulder) {
+        _rightMaxShoulderAngleDuringRep = math.max(
+          _rightMaxShoulderAngleDuringRep,
+          rightShoulderAngle,
         );
+      }
+
+      if (!_rightStartedDown && elbowAngle >= _downThreshold)
+        _rightStartedDown = true;
+      if (_rightStartedDown && !_rightReachedUp && elbowAngle <= 160.0)
+        _rightReachedUp = true;
+
+      if (_rightStartedDown && _rightReachedUp && isArmDownRight) {
+        _rightCurlCount++;
+
+        bool isCorrect = true;
+        String correction = "";
+
+        if (_rightMaxShoulderAngleDuringRep > _maxAllowedShoulderMovement) {
+          isCorrect = false;
+          correction = "Too much shoulder movement";
+        }
+        if (_rightMinElbowAngleDuringRep > _upThreshold) {
+          isCorrect = false;
+          correction = "Under-bending";
+        } else if (_rightMinElbowAngleDuringRep < 15) {
+          isCorrect = false;
+          correction = "Over-bending";
+        }
+
+        if (isCorrect) {
+          _rightCorrectCount++;
+        } else {
+          _rightWrongCount++;
+          _feedback.add("Rep $_rightCurlCount: $correction");
+        }
+
+        // Reset for next rep
+        _rightStartedDown = false;
+        _rightReachedUp = false;
+        _rightMinElbowAngleDuringRep = 180.0;
+        _rightMaxShoulderAngleDuringRep = 0.0;
+
+        // Stop after 5 reps
+        if (_rightCurlCount >= 5) {
+          await _cameraService.controller?.stopImageStream();
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => ExerciseSummaryScreen(
+                    correct: _rightCorrectCount,
+                    wrong: _rightWrongCount,
+                    feedback: _feedback,
+                  ),
+            ),
+          );
+        }
       }
     }
   }
+
+  double _distance(Offset a, Offset b) =>
+      math.sqrt(math.pow(a.dx - b.dx, 2) + math.pow(a.dy - b.dy, 2));
 
   double _calculateAngle(Offset a, Offset b, Offset c) {
     final ab = Offset(a.dx - b.dx, a.dy - b.dy);
@@ -387,12 +310,6 @@ class _SquatsScreenState extends State<SquatsScreen> {
     final magCB = math.sqrt(cb.dx * cb.dx + cb.dy * cb.dy);
     final cosine = dot / (magAB * magCB);
     return math.acos(cosine.clamp(-1.0, 1.0)) * 180 / math.pi;
-  }
-
-  double _kneeTrackingAngle(PoseLandmark knee, PoseLandmark ankle) {
-    final double dx = knee.x - ankle.x;
-    final double dy = (knee.y - ankle.y).abs() + 1e-9;
-    return math.atan2(dx, dy) * 180 / math.pi;
   }
 
   @override
@@ -460,37 +377,13 @@ class _SquatsScreenState extends State<SquatsScreen> {
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Reps: $_squatCount\n✅ $_correctCount | ❌ $_wrongCount",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (feedback.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: feedbackColor.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            feedback,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                child: Text(
+                  "Reps: $_rightCurlCount\n✅ $_rightCorrectCount | ❌ $_rightWrongCount",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

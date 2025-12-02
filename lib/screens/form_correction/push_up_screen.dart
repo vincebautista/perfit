@@ -37,24 +37,25 @@ class _PushUpScreenState extends State<PushUpScreen> {
   int countdown = 3;
 
   // Form correction variables
-  int _pushUpCount = 0;
-  int _correctCount = 0;
-  int _wrongCount = 0;
+  int _rightCurlCount = 0;
+  int _rightCorrectCount = 0;
+  int _rightWrongCount = 0;
   List<String> _feedback = [];
 
-  bool _startedDown = false;
-  bool _reachedBottom = false;
-  bool isBottom = false;
-  double _minElbowAngleDuringRep =
-      180.0; // Track minimum elbow angle for depth check
-  bool _isAtTop = false; // Track if at top position
-  bool _hitDepth = false;
-  bool _hitLockout = false;
-  bool _repHadError = false;
+  bool _rightStartedDown = false;
+  bool _rightReachedUp = false;
+  double _rightMinElbowAngleDuringRep = 180.0;
+  double _rightMaxShoulderAngleDuringRep = 0.0;
 
-  // Feedback display
-  String feedback = "";
-  Color feedbackColor = Colors.green;
+  // Thresholds
+  final double _maxAllowedShoulderMovement = 60.0;
+  final double _downThreshold = 165.0;
+  final double _upThreshold = 50.0;
+  final double _shoulderBySideThreshold = 45.0;
+  final double _wristToShoulderTopRatio = 0.45;
+
+  Pose? _lastPose;
+  Size? _cameraImageSize;
 
   @override
   void initState() {
@@ -94,6 +95,7 @@ class _PushUpScreenState extends State<PushUpScreen> {
       if (poses.isEmpty) return;
 
       final pose = poses.first;
+      _lastPose = pose;
 
       switch (currentStage) {
         case ExerciseStage.distanceCheck:
@@ -193,270 +195,113 @@ class _PushUpScreenState extends State<PushUpScreen> {
     }
   }
 
-  // Helper function to calculate angle from three landmarks
-  double calculateAngle(PoseLandmark a, PoseLandmark b, PoseLandmark c) {
-    return _calculateAngle(
-      Offset(a.x, a.y),
-      Offset(b.x, b.y),
-      Offset(c.x, c.y),
-    );
-  }
-
   Future<void> _handleFormCorrection(Pose pose) async {
     final landmarks = pose.landmarks;
 
-    // Get required landmarks for push-ups
-    final leftShoulder = landmarks[PoseLandmarkType.leftShoulder];
     final rightShoulder = landmarks[PoseLandmarkType.rightShoulder];
-    final leftElbow = landmarks[PoseLandmarkType.leftElbow];
     final rightElbow = landmarks[PoseLandmarkType.rightElbow];
-    final leftWrist = landmarks[PoseLandmarkType.leftWrist];
     final rightWrist = landmarks[PoseLandmarkType.rightWrist];
-    final leftHip = landmarks[PoseLandmarkType.leftHip];
     final rightHip = landmarks[PoseLandmarkType.rightHip];
 
-    // Verify all required landmarks exist
-    if (leftShoulder == null ||
-        rightShoulder == null ||
-        leftElbow == null ||
-        rightElbow == null ||
-        leftWrist == null ||
-        rightWrist == null ||
-        leftHip == null ||
-        rightHip == null) {
-      feedback = "Please ensure all body parts are visible";
-      feedbackColor = Colors.orange;
-      return;
-    }
+    if (rightShoulder != null && rightElbow != null && rightWrist != null) {
+      final s = Offset(rightShoulder.x, rightShoulder.y);
+      final e = Offset(rightElbow.x, rightElbow.y);
+      final w = Offset(rightWrist.x, rightWrist.y);
 
-    // Calculate angles
-    // Elbow angles: shoulder-elbow-wrist
-    double elbowAngleLeft = calculateAngle(leftShoulder, leftElbow, leftWrist);
-    double elbowAngleRight = calculateAngle(
-      rightShoulder,
-      rightElbow,
-      rightWrist,
-    );
-    final avgElbowAngle = (elbowAngleLeft + elbowAngleRight) / 2;
+      final double elbowAngle = _calculateAngle(s, e, w);
 
-    // Shoulder angle: hip-shoulder-elbow (calculated per requirements)
-    // ignore: unused_local_variable
-    double shoulderAngleLeft = calculateAngle(leftHip, leftShoulder, leftElbow);
-    // ignore: unused_local_variable
-    double shoulderAngleRight = calculateAngle(
-      rightHip,
-      rightShoulder,
-      rightElbow,
-    );
-    // ignore: unused_local_variable
-    final avgShoulderAngle = (shoulderAngleLeft + shoulderAngleRight) / 2;
+      final bool canCheckRightShoulder = rightHip != null;
+      final double rightShoulderAngle =
+          canCheckRightShoulder
+              ? _calculateAngle(Offset(rightHip.x, rightHip.y), s, e)
+              : 0.0;
 
-    // Elbow flaring angle: shoulder-elbow-wrist (to check if elbows are flaring out)
-    double elbowFlareAngleLeft = calculateAngle(
-      leftShoulder,
-      leftElbow,
-      leftWrist,
-    );
-    double elbowFlareAngleRight = calculateAngle(
-      rightShoulder,
-      rightElbow,
-      rightWrist,
-    );
-    final avgElbowFlareAngle = (elbowFlareAngleLeft + elbowFlareAngleRight) / 2;
+      double torsoLenRight =
+          rightHip != null ? _distance(s, Offset(rightHip.x, rightHip.y)) : 1.0;
 
-    // Hip angle: shoulder-hip-knee (but we'll use ankle as proxy for knee alignment)
-    // For push-ups, we check hip alignment relative to shoulder-ankle line
-    final leftAnkle = landmarks[PoseLandmarkType.leftAnkle];
-    final rightAnkle = landmarks[PoseLandmarkType.rightAnkle];
-    final bool hasAnkles = leftAnkle != null && rightAnkle != null;
-    double hipAngle = 180.0; // Default
-    if (hasAnkles) {
-      final avgShoulder = Offset(
-        (leftShoulder.x + rightShoulder.x) / 2,
-        (leftShoulder.y + rightShoulder.y) / 2,
+      final double wristShoulderNormRight =
+          _distance(w, s) / (torsoLenRight > 0 ? torsoLenRight : 1.0);
+      final bool reachedTopByProximityRight =
+          wristShoulderNormRight <= _wristToShoulderTopRatio;
+      final bool reachedTopByAngleRight = elbowAngle <= _upThreshold;
+      final bool isArmUpRight =
+          reachedTopByAngleRight && reachedTopByProximityRight;
+
+      final bool upperArmBySideRight =
+          !canCheckRightShoulder ||
+          (rightShoulderAngle < _shoulderBySideThreshold);
+      final bool isArmDownRight =
+          (elbowAngle >= _downThreshold) && upperArmBySideRight;
+
+      _rightMinElbowAngleDuringRep = math.min(
+        _rightMinElbowAngleDuringRep,
+        elbowAngle,
       );
-      final avgHip = Offset(
-        (leftHip.x + rightHip.x) / 2,
-        (leftHip.y + rightHip.y) / 2,
-      );
-      final avgAnkle = Offset(
-        (leftAnkle.x + rightAnkle.x) / 2,
-        (leftAnkle.y + rightAnkle.y) / 2,
-      );
-      // Hip angle: angle between shoulder-hip and hip-ankle
-      hipAngle = _calculateAngle(avgShoulder, avgHip, avgAnkle);
-    }
-
-    // Torso angle: shoulder-hip angle (should be close to 180° for straight back)
-    final avgShoulderPos = Offset(
-      (leftShoulder.x + rightShoulder.x) / 2,
-      (leftShoulder.y + rightShoulder.y) / 2,
-    );
-    final avgHipPos = Offset(
-      (leftHip.x + rightHip.x) / 2,
-      (leftHip.y + rightHip.y) / 2,
-    );
-    // Calculate angle between shoulder-hip line and horizontal
-    // Calculate shoulder-hip angle for back alignment check
-    final shoulderHipAngle = _calculateAngle(
-      avgShoulderPos,
-      avgHipPos,
-      Offset(avgHipPos.dx, avgHipPos.dy - 1), // Vertical reference
-    );
-
-    // Check if data is stable (both elbows have similar angles)
-    final elbowAngleDiff = (elbowAngleLeft - elbowAngleRight).abs();
-    if (elbowAngleDiff > 30) {
-      feedback = "Please ensure both arms are visible";
-      feedbackColor = Colors.orange;
-      return;
-    }
-
-    // Detect if at bottom position (elbow angles in 80-100° range)
-    isBottom = avgElbowAngle >= 80 && avgElbowAngle <= 100;
-
-    // Detect if at top position (elbow angles > 160°)
-    _isAtTop = avgElbowAngle > 160;
-
-    if (!_startedDown && avgElbowAngle < 150) {
-      _startedDown = true;
-      _hitDepth = false;
-      _hitLockout = false;
-      _repHadError = false;
-      _minElbowAngleDuringRep = avgElbowAngle;
-    }
-
-    if (_startedDown) {
-      _minElbowAngleDuringRep = math.min(
-        _minElbowAngleDuringRep,
-        avgElbowAngle,
-      );
-      if (isBottom) {
-        _hitDepth = true;
-      }
-      if (_isAtTop) {
-        _hitLockout = true;
-      }
-    }
-
-    // Initialize feedback
-    feedback = "";
-    feedbackColor = Colors.green;
-
-    // Form error detection
-    List<String> errors = [];
-
-    // 1. Sagging hips: hipAngle < 160° (hips too low)
-    if (hipAngle < 160) {
-      errors.add("Keep your hips up - don't sag");
-      feedbackColor = Colors.red;
-    }
-
-    // 2. Piking hips: hipAngle > 195° (hips too high)
-    if (hipAngle > 195) {
-      errors.add("Lower your hips - keep body straight");
-      feedbackColor = Colors.red;
-    }
-
-    // 3. Elbows flaring: shoulder-elbow-wrist angle < 45° (elbows too wide)
-    // The elbow flare angle should be larger (arms more vertical) for good form
-    if (avgElbowFlareAngle < 45) {
-      errors.add("Keep elbows closer to your body");
-      feedbackColor = Colors.red;
-    }
-
-    // 4. Not reaching depth: elbow angles must reach 80-100° range
-    if (_startedDown && !_hitDepth && avgElbowAngle < 140) {
-      errors.add("Go deeper - lower your chest more");
-      feedbackColor = Colors.red;
-    }
-
-    // 5. Not locking out: elbow angles must reach > 160° at top
-    if (_reachedBottom && !_hitLockout && !_isAtTop && avgElbowAngle > 140) {
-      errors.add("Fully extend your arms at the top");
-      feedbackColor = Colors.red;
-    }
-
-    // 6. Back alignment: torso angle should be 165°-180°
-    // For push-ups, we check if shoulder-hip line is straight (close to 180°)
-    if (shoulderHipAngle < 165 || shoulderHipAngle > 195) {
-      errors.add("Keep your back straight");
-      feedbackColor = Colors.red;
-    }
-
-    // 7. Hip alignment relative to torso (hips should not deviate > 15°)
-    if (hasAnkles) {
-      final hipTorsoDeviation = (hipAngle - shoulderHipAngle).abs();
-      if (hipTorsoDeviation > 15) {
-        errors.add("Move your hips in line with your torso");
-        feedbackColor = Colors.red;
-      }
-    }
-
-    // Set feedback message
-    if (errors.isEmpty) {
-      if (isBottom) {
-        feedback = "✅ Good form!";
-      } else if (avgElbowAngle > 160) {
-        feedback = "✅ Good form!";
-      } else {
-        feedback = "Continue push-up";
-      }
-    } else {
-      feedback = errors.join(". ");
-    }
-
-    // Rep counting logic
-    if (_startedDown && !_reachedBottom && isBottom) {
-      _reachedBottom = true;
-    }
-
-    // Track if this rep has produced any issues
-    if (_startedDown && errors.isNotEmpty) {
-      _repHadError = true;
-    }
-
-    // Complete rep when returning to top position with lockout
-    if (_startedDown && _reachedBottom && _isAtTop && _hitDepth) {
-      _pushUpCount++;
-
-      if (!_repHadError && _hitDepth && _hitLockout) {
-        _correctCount++;
-      } else {
-        _wrongCount++;
-        final issueMessage =
-            errors.isNotEmpty
-                ? errors.join(", ")
-                : "Maintain full range of motion";
-        _feedback.add("Rep $_pushUpCount: $issueMessage");
-      }
-
-      // Reset for next rep
-      _startedDown = false;
-      _reachedBottom = false;
-      _hitDepth = false;
-      _hitLockout = false;
-      _repHadError = false;
-      _minElbowAngleDuringRep = 180.0;
-
-      // Stop after 5 reps
-      if (_pushUpCount >= 5) {
-        await _cameraService.controller?.stopImageStream();
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => ExerciseSummaryScreen(
-                  correct: _correctCount,
-                  wrong: _wrongCount,
-                  feedback: _feedback,
-                ),
-          ),
+      if (_rightStartedDown && canCheckRightShoulder) {
+        _rightMaxShoulderAngleDuringRep = math.max(
+          _rightMaxShoulderAngleDuringRep,
+          rightShoulderAngle,
         );
+      }
+
+      if (!_rightStartedDown && elbowAngle >= _downThreshold)
+        _rightStartedDown = true;
+      if (_rightStartedDown && !_rightReachedUp && elbowAngle <= 160.0)
+        _rightReachedUp = true;
+
+      if (_rightStartedDown && _rightReachedUp && isArmDownRight) {
+        _rightCurlCount++;
+
+        bool isCorrect = true;
+        String correction = "";
+
+        if (_rightMaxShoulderAngleDuringRep > _maxAllowedShoulderMovement) {
+          isCorrect = false;
+          correction = "Too much shoulder movement";
+        }
+        if (_rightMinElbowAngleDuringRep > _upThreshold) {
+          isCorrect = false;
+          correction = "Under-bending";
+        } else if (_rightMinElbowAngleDuringRep < 15) {
+          isCorrect = false;
+          correction = "Over-bending";
+        }
+
+        if (isCorrect) {
+          _rightCorrectCount++;
+        } else {
+          _rightWrongCount++;
+          _feedback.add("Rep $_rightCurlCount: $correction");
+        }
+
+        // Reset for next rep
+        _rightStartedDown = false;
+        _rightReachedUp = false;
+        _rightMinElbowAngleDuringRep = 180.0;
+        _rightMaxShoulderAngleDuringRep = 0.0;
+
+        // Stop after 5 reps
+        if (_rightCurlCount >= 5) {
+          await _cameraService.controller?.stopImageStream();
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => ExerciseSummaryScreen(
+                    correct: _rightCorrectCount,
+                    wrong: _rightWrongCount,
+                    feedback: _feedback,
+                  ),
+            ),
+          );
+        }
       }
     }
   }
+
+  double _distance(Offset a, Offset b) =>
+      math.sqrt(math.pow(a.dx - b.dx, 2) + math.pow(a.dy - b.dy, 2));
 
   double _calculateAngle(Offset a, Offset b, Offset c) {
     final ab = Offset(a.dx - b.dx, a.dy - b.dy);
@@ -533,37 +378,13 @@ class _PushUpScreenState extends State<PushUpScreen> {
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Reps: $_pushUpCount\n✅ $_correctCount | ❌ $_wrongCount",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (feedback.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: feedbackColor.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            feedback,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                child: Text(
+                  "Reps: $_rightCurlCount\n✅ $_rightCorrectCount | ❌ $_rightWrongCount",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
