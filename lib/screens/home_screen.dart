@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Welcome section
-                  Text("Welcome to Perfit!", style: TextStyles.heading),
+                  Text("Welcome to Perfithguygty!", style: TextStyles.heading),
                   Text(
                     "Ready to perfect your form and build strength the right way?",
                     style: TextStyles.caption,
