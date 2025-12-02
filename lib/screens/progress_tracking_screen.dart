@@ -605,6 +605,8 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                 );
               }
 
+              
+
               return StreamBuilder<QuerySnapshot>(
                 stream:
                     FirebaseFirestore.instance

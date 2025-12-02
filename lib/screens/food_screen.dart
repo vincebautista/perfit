@@ -1,6 +1,7 @@
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
+import 'package:perfit/screens/assessment/gender_screen.dart';
 import 'package:perfit/screens/meal_analytics_screen.dart';
 import 'package:perfit/screens/meal_screen.dart';
 import 'package:perfit/screens/nutrition_dashboard.dart';
@@ -64,7 +65,30 @@ class _FoodScreenState extends State<FoodScreen> {
           }
 
           if (nutritionPlanSnapshot.hasError) {
-            return Center(child: Text("Error: ${nutritionPlanSnapshot.error}"));
+            return Center(
+              child: GestureDetector(
+                onTap: () => NavigationUtils.push(context, GenderScreen()),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.primary, // line color
+                      width: 1.0, // line thickness
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      8,
+                    ), // optional: rounded corners
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSizes.padding16,
+                    vertical: AppSizes.padding16 / 2,
+                  ),
+                  child: Text(
+                    "Create Fitness Plan",
+                    style: TextStyles.body.copyWith(color: AppColors.primary),
+                  ),
+                ),
+              ),
+            );
           }
 
           final nutritionPlan = nutritionPlanSnapshot.data;

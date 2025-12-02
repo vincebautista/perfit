@@ -29,13 +29,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> viewedExercises = [];
   String _selectedFilter = "All";
 
-  final FirebaseFirestoreService _service = FirebaseFirestoreService();
-  UserModel? userModel;
-
   final user = FirebaseAuth.instance.currentUser;
 
   final SettingService _settingService = SettingService();
-  
+
   bool isDarkMode = true;
 
   @override
@@ -44,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _exercises = exercises;
     _filteredExercises = _exercises;
     fetchViewedExercises();
-    _loadUser();
     _loadTheme();
   }
 
@@ -53,26 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     setState(() {
       isDarkMode = mode == ThemeMode.dark;
-    });
-  }
-
-  Future<void> _loadUser() async {
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) return;
-
-    final doc = await _service.getUserData(firebaseUser.uid);
-    if (!doc.exists) return;
-
-    final data = doc.data() as Map<String, dynamic>;
-    if (!mounted) return;
-    setState(() {
-      userModel = UserModel(
-        uid: firebaseUser.uid,
-        fullname: data['fullname'] ?? '',
-        assessmentDone: data['assessmentDone'] ?? false,
-        activeFitnessPlan: data['activeFitnessPlan'],
-        pendingWorkout: data['pendingWorkout'],
-      );
     });
   }
 
@@ -146,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 data['last7Workouts'] as List<Map<String, dynamic>>;
             final todayWorkout = data['todayWorkout'];
             final currentDay = data['currentDay'] ?? 1;
+            final fullname = data["fullname"];
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(AppSizes.padding16),
@@ -154,9 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   // Welcome section
                   Text(
-                    user == null
-                        ? "Welcome to Perfit!"
-                        : "Welcome back, ${userModel!.fullname.split(' ').first}!",
+                    fullname != ""
+                        ? "Welcome back, ${fullname.split(' ').first}!"
+                        : "Welcome to Perfit!",
                     style: TextStyles.heading.copyWith(fontSize: 20),
                   ),
                   Text(
@@ -457,11 +434,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<Map<String, dynamic>> _fetchAllData() async {
     final last7Workouts = await fetchLast7DaysWorkouts();
     final todayWorkoutData = await fetchTodayWorkoutForUI();
+    final fullname = await fetchUserName();
+
     return {
       'last7Workouts': last7Workouts,
       'todayWorkout': todayWorkoutData?['todayWorkout'],
       'currentDay': todayWorkoutData?['currentDay'],
+      'fullname': fullname["fullname"],
     };
+  }
+
+  Future<Map<String, dynamic>> fetchUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return {'fullname': ""};
+
+    final userDoc =
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .get();
+    if (!userDoc.exists) return {'fullname': ""};
+
+    final userData = userDoc.data() ?? {};
+    final fullname = userData['fullname'];
+
+    return {'fullname': fullname};
   }
 
   // --- Keep your existing fetchTodayWorkoutForUI & fetchLast7DaysWorkouts methods below ---
@@ -503,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
     };
   }
 
-  Future<List<Map<String, dynamic>>?> fetchLast7DaysWorkouts() async {
+  Future<List<Map<String, dynamic>>> fetchLast7DaysWorkouts() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
 
@@ -536,11 +533,10 @@ class _HomeScreenState extends State<HomeScreen> {
     for (int day = startDay; day <= currentDay; day++) {
       final workoutDoc =
           await planRef.collection("workouts").doc(day.toString()).get();
-      if (!workoutDoc.exists) continue;
+      final workoutData = workoutDoc.exists ? workoutDoc.data() : null;
 
-      final workoutData = workoutDoc.data() ?? {};
       final exercises =
-          workoutData['exercises'] != null
+          workoutData != null && workoutData['exercises'] != null
               ? List<Map<String, dynamic>>.from(
                 (workoutData['exercises'] as List).map(
                   (e) => Map<String, dynamic>.from(e as Map),
@@ -557,7 +553,23 @@ class _HomeScreenState extends State<HomeScreen> {
         'completed': completed,
         'skipped': skipped,
         'fallback': fallback,
-        'type': workoutData['type'] ?? 'Workout',
+        'type': workoutData?['type'] ?? 'Workout',
+      });
+    }
+
+    // PAD missing days at the beginning to always have 7 items
+    while (last7Workouts.length < 7) {
+      int nextDay =
+          last7Workouts.isNotEmpty
+              ? last7Workouts.last['day'] + 1
+              : 1; // fallback if list empty
+
+      last7Workouts.add({
+        'day': nextDay,
+        'completed': 0,
+        'skipped': 0,
+        'fallback': 0,
+        'type': 'Pending',
       });
     }
 

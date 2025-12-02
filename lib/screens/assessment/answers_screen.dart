@@ -317,7 +317,7 @@ class _AnswersScreenState extends State<AnswersScreen> {
                             (context) => AlertDialog(
                               title: Text("Important Notice"),
                               content: Text(
-                                "If you have any illness, injuries, or disabilities, please consult a professional before using this app.",
+                                "If you have any illness, injuries, or disabilities, please consult a professional.",
                               ),
                               actions: [
                                 TextButton(

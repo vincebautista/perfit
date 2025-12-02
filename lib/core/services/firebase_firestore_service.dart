@@ -31,6 +31,19 @@ class FirebaseFirestoreService {
     FitnessPlanModel fitnessPlan,
     List<Map<String, dynamic>> workouts,
   ) async {
+    // 1. Check if there's an active fitness plan
+    final activePlanId = await getActiveFitnessPlan(uid);
+    if (activePlanId != null || activePlanId == "") {
+      // 2. Mark the existing plan as cancelled
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('fitnessPlan')
+          .doc(activePlanId)
+          .update({'status': 'cancelled'});
+    }
+
+    // 3. Create the new plan
     final planRef = await _firestore
         .collection('users')
         .doc(uid)
