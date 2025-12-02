@@ -125,7 +125,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       last7Workouts != null &&
                       last7Workouts.isNotEmpty)
                     Card(
-                      color: AppColors.surface,
+                      // Light Mode: Use theme-aware surface color
+                      color:
+                          Theme.of(context).brightness == Brightness.light
+                              ? AppColors.surfaceLight
+                              : AppColors.surface,
                       child: Padding(
                         padding: const EdgeInsets.all(AppSizes.padding16),
                         child: Column(
@@ -160,6 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.primary,
                           child: ListTile(
                             leading: CircleAvatar(
+                              // Light Mode: White background works for both themes on primary card
                               backgroundColor: AppColors.white,
                               child: Icon(
                                 Icons.calendar_today_outlined,
@@ -168,12 +173,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             title: Text(
                               "Today's Workout",
+                              // Light Mode: White text on primary background works for both themes
                               style: TextStyles.body.copyWith(
                                 color: AppColors.white,
                               ),
                             ),
                             subtitle: Text(
                               "Day $currentDay - ${todayWorkout['split'] ?? 'Workout'}",
+                              // Light Mode: White text on primary background
                               style: TextStyles.subtitle.copyWith(
                                 color: AppColors.white,
                                 fontWeight: FontWeight.w900,
@@ -190,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                               child: Text(
                                 "view all",
+                                // Light Mode: White text on primary background
                                 style: TextStyles.label.copyWith(
                                   color: AppColors.white,
                                 ),
@@ -223,6 +231,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 backgroundColor:
                                     _selectedFilter == filter
                                         ? Theme.of(context).primaryColor
+                                        // Light Mode: Use lighter grey for unselected buttons
+                                        : Theme.of(context).brightness ==
+                                            Brightness.light
+                                        ? AppColors.lightgrey
                                         : AppColors.grey,
                               ),
                               child: Text(
@@ -249,8 +261,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                         child: Text(
                           "View All",
+                          // Light Mode: Use theme-aware text color
                           style: TextStyles.body.copyWith(
-                            color: AppColors.white,
+                            color:
+                                Theme.of(context).textTheme.bodyMedium?.color,
                           ),
                         ),
                       ),
@@ -288,7 +302,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: GridTile(
                                 footer: Container(
                                   padding: const EdgeInsets.all(5),
-                                  color: AppColors.grey.withValues(alpha: 0.5),
+                                  // Light Mode: Use theme-aware overlay color
+                                  color: (Theme.of(context).brightness ==
+                                              Brightness.light
+                                          ? AppColors.lightgrey
+                                          : AppColors.grey)
+                                      .withValues(alpha: 0.5),
                                   alignment: Alignment.center,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(

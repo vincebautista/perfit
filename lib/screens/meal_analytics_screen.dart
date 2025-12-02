@@ -1345,7 +1345,12 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
                                 ? [
                                   PieChartSectionData(
                                     value: 100,
-                                    color: AppColors.grey,
+                                    // Light Mode: Use theme-aware grey
+                                    color:
+                                        Theme.of(context).brightness ==
+                                                Brightness.light
+                                            ? AppColors.lightgrey
+                                            : AppColors.grey,
                                     showTitle: false,
                                     radius: 100,
                                   ),
@@ -1376,6 +1381,7 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
                                     value: snacksPercent,
                                     title:
                                         "${snacksPercent.toStringAsFixed(2)}%",
+                                    // Light Mode: surfaceLight works for both themes
                                     color: AppColors.surfaceLight,
                                     radius: 150,
                                   ),
@@ -1713,7 +1719,11 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
 
   Widget Overview({required String title, required String text}) {
     return Card(
-      color: AppColors.surface,
+      // Light Mode: Use theme-aware surface color
+      color:
+          Theme.of(context).brightness == Brightness.light
+              ? AppColors.surfaceLight
+              : AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.padding16),
         child: Column(

@@ -252,11 +252,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     title: Text(
                       ex.name,
                       style: TextStyle(
+                        // Light Mode: Use theme-aware text color
                         color:
                             isPastDay
                                 ? Colors.grey
                                 : (status == "pending" && isToday
-                                    ? AppColors.white
+                                    ? Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium?.color ??
+                                        AppColors.white
                                     : Colors.grey),
                       ),
                     ),
@@ -418,9 +422,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context), // cancel
-                            child: const Text(
+                            child: Text(
                               "Cancel",
-                              style: TextStyle(color: AppColors.white),
+                              // Light Mode: Use theme-aware text color
+                              style: TextStyle(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.color ??
+                                    AppColors.white,
+                              ),
                             ),
                           ),
                           Container(
@@ -478,7 +489,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               },
                               child: Text(
                                 "Skip",
-                                style: TextStyle(color: AppColors.white),
+                                // Light Mode: Use theme-aware text color
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium?.color ??
+                                      AppColors.white,
+                                ),
                               ),
                             ),
                           ),

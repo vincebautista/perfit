@@ -92,6 +92,9 @@ class _AllExercisesScreenState extends State<AllExercisesScreen> {
                       backgroundColor:
                           _selectedFilter == "All"
                               ? Theme.of(context).primaryColor
+                              // Light Mode: Use lighter grey for unselected buttons
+                              : Theme.of(context).brightness == Brightness.light
+                              ? AppColors.lightgrey
                               : AppColors.grey,
                     ),
                     child: Text("All", style: TextStyles.buttonSmall),
@@ -167,7 +170,12 @@ class _AllExercisesScreenState extends State<AllExercisesScreen> {
                               child: GridTile(
                                 footer: Container(
                                   padding: EdgeInsets.all(5),
-                                  color: AppColors.grey.withValues(alpha: 0.5),
+                                  // Light Mode: Use theme-aware overlay color
+                                  color: (Theme.of(context).brightness ==
+                                              Brightness.light
+                                          ? AppColors.lightgrey
+                                          : AppColors.grey)
+                                      .withValues(alpha: 0.5),
                                   alignment: Alignment.center,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(

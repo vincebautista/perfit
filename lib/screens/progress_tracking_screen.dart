@@ -686,7 +686,12 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                                 child: Text(
                                   "Add Log",
                                   style: TextStyles.caption.copyWith(
-                                    color: AppColors.white,
+                                    // Light Mode: Use theme-aware text color
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium?.color ??
+                                        AppColors.white,
                                   ),
                                 ),
                               ),
@@ -820,7 +825,13 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                                               child: Text(
                                                 dayNum.toString(),
                                                 style: TextStyle(
-                                                  color: AppColors.white,
+                                                  // Light Mode: Use theme-aware text color
+                                                  color:
+                                                      Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium
+                                                          ?.color ??
+                                                      AppColors.white,
                                                 ),
                                               ),
                                             ),
@@ -1123,9 +1134,13 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text(
+                          child: Text(
                             "Cancel",
-                            style: TextStyle(color: AppColors.white),
+                            // Light Mode: Use theme-aware text color
+                            style: TextStyle(
+                              color:
+                                  Theme.of(context).textTheme.bodyMedium?.color,
+                            ),
                           ),
                         ),
                         Container(
@@ -1313,7 +1328,11 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
 
   Widget Overview({required String title, required String text}) {
     return Card(
-      color: AppColors.surface,
+      // Light Mode: Use theme-aware surface color
+      color:
+          Theme.of(context).brightness == Brightness.light
+              ? AppColors.surfaceLight
+              : AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.padding16),
         child: Column(

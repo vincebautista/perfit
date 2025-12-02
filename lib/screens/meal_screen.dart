@@ -67,7 +67,10 @@ class _MealScreenState extends State<MealScreen> {
                 ),
             child: Text(
               "My Meals",
-              style: TextStyles.body.copyWith(color: AppColors.white),
+              // Light Mode: Use theme-aware text color
+              style: TextStyles.body.copyWith(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
             ),
           ),
         ],

@@ -56,17 +56,23 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
                     context,
                     AddFoodScreen(meal: widget.meal, isFromMeal: true),
                   ),
-              child: const Text(
+              child: Text(
                 "Add Food",
-                style: TextStyle(color: AppColors.white),
+                // Light Mode: Use theme-aware text color
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
             ),
           if (isGenerated)
             TextButton(
               onPressed: () => showSaveDialog(mealProvider), // 🔹 NEW
-              child: const Text(
+              child: Text(
                 "Save",
-                style: TextStyle(color: AppColors.white),
+                // Light Mode: Use theme-aware text color
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
             ),
         ],
@@ -159,7 +165,11 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
                   itemBuilder: (context, index) {
                     final food = ingredients[index];
                     return Card(
-                      color: AppColors.surface,
+                      // Light Mode: Use theme-aware surface color
+                      color:
+                          Theme.of(context).brightness == Brightness.light
+                              ? AppColors.surfaceLight
+                              : AppColors.surface,
                       child: ListTile(
                         title: Text("${food.quantity} grams ${food.foodName}"),
                         subtitle: Text(
@@ -211,9 +221,12 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text(
+                child: Text(
                   "Cancel",
-                  style: TextStyle(color: AppColors.white),
+                  // Light Mode: Use theme-aware text color
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                 ),
               ),
               TextButton(
@@ -262,7 +275,11 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
     return List.generate(
       stepList.length,
       (index) => Card(
-        color: AppColors.surface,
+        // Light Mode: Use theme-aware surface color
+        color:
+            Theme.of(context).brightness == Brightness.light
+                ? AppColors.surfaceLight
+                : AppColors.surface,
         margin: const EdgeInsets.symmetric(vertical: 6),
         child: ListTile(
           leading: CircleAvatar(
@@ -480,9 +497,12 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
+                child: Text(
                   "Cancel",
-                  style: TextStyle(color: AppColors.white),
+                  // Light Mode: Use theme-aware text color
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                 ),
               ),
               Container(
@@ -501,6 +521,7 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
                   },
                   child: const Text(
                     "Save",
+                    // Light Mode: White text on primary background works for both themes
                     style: TextStyle(color: AppColors.white),
                   ),
                 ),

@@ -47,7 +47,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             Gap(AppSizes.gap20 * 2),
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.grey, width: 2),
+                // Light Mode: Use theme-aware border color
+                border: Border.all(
+                  color:
+                      Theme.of(context).brightness == Brightness.light
+                          ? AppColors.lightgrey
+                          : AppColors.grey,
+                  width: 2,
+                ),
                 borderRadius: BorderRadius.all(
                   Radius.circular(AppSizes.circleRadius),
                 ),

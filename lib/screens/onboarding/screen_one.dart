@@ -40,6 +40,7 @@ class ScreenOne extends StatelessWidget {
                         ),
                     child: Text(
                       "Skip",
+                      // Light Mode: White text works on dark background images for both themes
                       style: TextStyles.buttonSmall.copyWith(
                         color: AppColors.white,
                       ),
@@ -66,9 +67,24 @@ class ScreenOne extends StatelessWidget {
                     color: Theme.of(context).primaryColor,
                   ),
                   Gap(AppSizes.gap10),
-                  Circle(height: 10, width: 10, color: AppColors.grey),
+                  // Light Mode: Use theme-aware indicator colors
+                  Circle(
+                    height: 10,
+                    width: 10,
+                    color:
+                        Theme.of(context).brightness == Brightness.light
+                            ? AppColors.lightgrey
+                            : AppColors.grey,
+                  ),
                   Gap(AppSizes.gap10),
-                  Circle(height: 10, width: 10, color: AppColors.grey),
+                  Circle(
+                    height: 10,
+                    width: 10,
+                    color:
+                        Theme.of(context).brightness == Brightness.light
+                            ? AppColors.lightgrey
+                            : AppColors.grey,
+                  ),
                   Spacer(),
                   ElevatedButton(
                     onPressed:

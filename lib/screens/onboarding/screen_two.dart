@@ -47,6 +47,7 @@ class ScreenTwo extends StatelessWidget {
                         ),
                     child: Text(
                       "Skip",
+                      // Light Mode: White text works on dark background images
                       style: TextStyles.buttonSmall.copyWith(
                         color: AppColors.white,
                       ),
@@ -64,7 +65,15 @@ class ScreenTwo extends StatelessWidget {
               Gap(AppSizes.gap20),
               Row(
                 children: [
-                  Circle(height: 10, width: 10, color: AppColors.grey),
+                  // Light Mode: Use theme-aware indicator colors
+                  Circle(
+                    height: 10,
+                    width: 10,
+                    color:
+                        Theme.of(context).brightness == Brightness.light
+                            ? AppColors.lightgrey
+                            : AppColors.grey,
+                  ),
                   Gap(AppSizes.gap10),
                   Circle(
                     height: 10,
@@ -72,7 +81,14 @@ class ScreenTwo extends StatelessWidget {
                     color: Theme.of(context).primaryColor,
                   ),
                   Gap(AppSizes.gap10),
-                  Circle(height: 10, width: 10, color: AppColors.grey),
+                  Circle(
+                    height: 10,
+                    width: 10,
+                    color:
+                        Theme.of(context).brightness == Brightness.light
+                            ? AppColors.lightgrey
+                            : AppColors.grey,
+                  ),
                   Spacer(),
                   ElevatedButton(
                     onPressed:
