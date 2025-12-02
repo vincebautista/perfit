@@ -9,6 +9,7 @@ import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/main.dart';
 import 'package:perfit/screens/change_password_screen.dart';
+import 'package:perfit/screens/form_correction/squats_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/screens/test_exercise.dart';
 import 'package:perfit/screens/test_mediapipe_screen.dart';
@@ -245,6 +246,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             NavigationUtils.push(context, MainNavigation());
                           },
                           child: Text("LOGOUT"),
+                        ),
+                        ElevatedButton(
+                          onPressed:
+                              () =>
+                                  NavigationUtils.push(context, SquatsScreen()),
+                          child: const Text("Nyah"),
                         ),
                       ],
                     ),
