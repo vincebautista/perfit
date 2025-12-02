@@ -5,6 +5,7 @@ import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/exercise_service.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/exercise_metrics_model.dart';
 import 'package:perfit/screens/assessment/gender_screen.dart';
@@ -38,7 +39,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Map<String, String> exerciseStatus = {};
   bool _isFirstLoad = true;
-
+  final SettingService _settingService = SettingService();
+  bool isDarkMode = true;
   @override
   void initState() {
     super.initState();
@@ -47,6 +49,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     user = FirebaseAuth.instance.currentUser;
 
     loadWorkoutPlan();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
   }
 
   Future<void> loadWorkoutPlan() async {
@@ -163,7 +174,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         color:
                             day == selectedDay
                                 ? AppColors.primary
-                                : AppColors.grey,
+                                : AppColors.lightgrey,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -240,7 +251,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               Text(
                 "Progress: $finishedCount / ${exercises.length} finished",
                 textAlign: TextAlign.center,
-                style: TextStyles.caption,
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.lightgrey : AppColors.black,
+                ),
               ),
             ],
           ),
@@ -258,8 +271,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 bool isToday = day == currentDay;
 
                 return Card(
-                  color:
-                      status == "pending" ? AppColors.grey : AppColors.surface,
+                  color: isDarkMode ? AppColors.black : AppColors.lightgrey,
+
                   shape: RoundedRectangleBorder(
                     // side: BorderSide(
                     //   color:
@@ -280,7 +293,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             status == "pending"
                                 ? AppColors.white
                                 : status == "completed"
-                                ? AppColors.green
+                                ? Colors.green[800]
                                 : AppColors.red,
                       ),
                     ),
