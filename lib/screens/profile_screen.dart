@@ -32,14 +32,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int rest = 60;
   int countdown = 3;
   TimeOfDay? workoutReminder;
+final SettingService _settingService = SettingService();  
 
+bool isDarkMode = true;
   @override
   void initState() {
     super.initState();
 
     loadSettings();
+    _loadTheme();
   }
-
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
+  }
   Future<void> loadSettings() async {
     final service = SettingService();
 
@@ -145,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Text(user.email!, style: TextStyles.caption),
                             Gap(AppSizes.gap20 * 2),
                             Card(
-                              color: AppColors.grey,
+                             color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
                               child: ListTile(
                                 title: Text("Rest Time"),
                                 trailing: Row(
@@ -174,7 +183,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Card(
-                              color: AppColors.grey,
+                                                           color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+
                               child: ListTile(
                                 title: Text("Countdown Timer"),
                                 trailing: Row(
@@ -204,7 +214,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Card(
-                              color: AppColors.grey,
+                                                          color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+
                               child: ListTile(
                                 title: Text("Workout Reminder"),
                                 trailing: Row(
@@ -225,7 +236,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Card(
-                              color: AppColors.grey,
+                                                           color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+
                               child: ListTile(
                                 onTap:
                                     () => NavigationUtils.push(
@@ -258,7 +270,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Card(
-                              color: AppColors.grey,
+                                                           color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+
                               child: SwitchListTile(
                                 activeColor: AppColors.primary,
                                 activeTrackColor: AppColors.surface,
