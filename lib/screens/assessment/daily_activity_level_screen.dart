@@ -43,7 +43,7 @@ class _DailyActivityLevelScreenState extends State<DailyActivityLevelScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AssessmentProgressBar(currentValue: 13),
+              AssessmentProgressBar(currentValue: 12),
               Expanded(
                 child: Column(
                   spacing: AppSizes.gap10,

@@ -8,7 +8,7 @@ class AssessmentProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = currentValue / 12;
+    final percent = currentValue / 13;
 
     return LinearProgressIndicator(
       value: percent.clamp(0.0, 1.0),

@@ -95,11 +95,25 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
         fat: fat!.round(),
       );
 
+      int workoutCount;
+      if (userAnswers["workoutCommitment"] is String) {
+        workoutCount = int.parse(userAnswers["workoutCommitment"]);
+      } else {
+        workoutCount = userAnswers["workoutCommitment"] as int;
+      }
+      List<int> workoutDays = List.generate(workoutCount, (i) => i + 1);
+      List<int> restDays = List.generate(
+        7 - workoutCount,
+        (i) => workoutCount + i + 1,
+      );
+
       FitnessPlanModel fitnessPlan = FitnessPlanModel(
         planDuration: planDuration!,
         currentDay: 1,
         nutritionPlan: nutritionPlan,
         initialAssessment: userAnswers,
+        workoutDays: workoutDays,
+        restDays: restDays,
       );
 
       String generatedTarget = await exerciseService.generateTarget(

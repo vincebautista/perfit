@@ -37,7 +37,7 @@ class _WorkoutTypeScreenState extends State<WorkoutTypeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (!widget.fromEdit) AssessmentProgressBar(currentValue: 11),
+              if (!widget.fromEdit) AssessmentProgressBar(currentValue: 9),
               Expanded(
                 child: Column(
                   spacing: AppSizes.gap10,

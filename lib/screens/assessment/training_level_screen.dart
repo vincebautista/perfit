@@ -37,7 +37,7 @@ class _TrainingLevelScreenState extends State<TrainingLevelScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (!widget.fromEdit) AssessmentProgressBar(currentValue: 12),
+              if (!widget.fromEdit) AssessmentProgressBar(currentValue: 10),
               Expanded(
                 child: Column(
                   spacing: AppSizes.gap10,

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/setting_service.dart';
@@ -13,8 +15,19 @@ import 'package:chewie/chewie.dart';
 
 class ExerciseScreen extends StatefulWidget {
   final String id;
+  final bool fromWorkoutScreen;
+  final String? planId;
+  final int? selectedDay;
+  final String? exerciseName;
 
-  const ExerciseScreen({super.key, required this.id});
+  const ExerciseScreen({
+    super.key,
+    required this.id,
+    this.fromWorkoutScreen = false,
+    this.planId,
+    this.selectedDay,
+    this.exerciseName,
+  });
 
   @override
   State<ExerciseScreen> createState() => _ExerciseScreenState();
@@ -70,7 +83,110 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(exercise.name)),
+      appBar: AppBar(
+        title: Text(exercise.name),
+        actions: [
+          if (widget.fromWorkoutScreen)
+            TextButton(
+              onPressed: () async {
+                final result = await showDialog<Map<String, int>>(
+                  context: context,
+                  builder: (context) {
+                    int sets = 3;
+                    int repsOrDuration = 10;
+
+                    return AlertDialog(
+                      title: Text("Add Exercise"),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(labelText: "Sets"),
+                            onChanged: (val) => sets = int.tryParse(val) ?? 3,
+                          ),
+                          Gap(AppSizes.gap15),
+                          TextField(
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: "Reps / Duration",
+                            ),
+                            onChanged:
+                                (val) =>
+                                    repsOrDuration = int.tryParse(val) ?? 10,
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context, {
+                              'sets': sets,
+                              'repsOrDuration': repsOrDuration,
+                            });
+                          },
+                          child: Text(
+                            "Add",
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (result != null) {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null ||
+                      widget.planId == null ||
+                      widget.selectedDay == null)
+                    return;
+
+                  final workoutDocRef = FirebaseFirestore.instance
+                      .collection("users")
+                      .doc(user.uid)
+                      .collection("fitnessPlan")
+                      .doc(widget.planId)
+                      .collection("workouts")
+                      .doc(widget.selectedDay.toString());
+
+                  // Append exercise to the exercises array
+                  await workoutDocRef.update({
+                    "exercises": FieldValue.arrayUnion([
+                      {
+                        "name": widget.exerciseName,
+                        "sets": result['sets'],
+                        "reps": result['repsOrDuration'],
+                        "status": "pending",
+                        "elapsedTime": 0,
+                        "rest": 60, // default rest, or you can ask
+                      },
+                    ]),
+                  });
+
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Exercise added to Day ${widget.selectedDay}!",
+                      ),
+                    ),
+                  );
+
+                  Navigator.pop(context); // go back to workout screen
+                }
+              },
+              child: Text(
+                "Add to Workout",
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+        ],
+      ),
       body:
           _chewieController != null && _videoController.value.isInitialized
               ? Column(

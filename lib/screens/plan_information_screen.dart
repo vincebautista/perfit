@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 
 class PlanInformationScreen extends StatefulWidget {
@@ -145,7 +146,7 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
             : Colors.red;
 
     return Card(
-      color: color.withOpacity(0.15),
+      color: AppColors.grey,
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -195,7 +196,7 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
               child: CircularProgressIndicator(
                 value: progress,
                 strokeWidth: 8,
-                color: Colors.blue,
+                color: AppColors.primary,
                 backgroundColor: Colors.grey.shade300,
               ),
             ),
@@ -245,11 +246,20 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              "Initial Assessment",
-              style: Theme.of(context).textTheme.titleLarge,
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  "Initial Assessment",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             _info("Age", assessment["age"]),
@@ -281,9 +291,20 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Required Daily Intake",
-              style: Theme.of(context).textTheme.titleLarge,
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(
+                  12,
+                ), // adjust the radius as needed
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  "Required Daily Intake",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             _info("Calories", intake["calorieTarget"]),
@@ -300,10 +321,25 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(value?.toString() ?? "-"),
+          SizedBox(
+            width: 120, // fixed width for labels
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value?.toString() ?? "-",
+              softWrap: true,
+              textAlign: TextAlign.right,
+              overflow:
+                  TextOverflow.visible, // will wrap instead of overflowing
+            ),
+          ),
         ],
       ),
     );

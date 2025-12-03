@@ -10,6 +10,17 @@ enum DayType { workout, rest }
 class ExerciseService {
   final geminiService = GeminiApiService();
 
+  // Convert weekday text to index
+  final Map<String, int> weekdayToIndex = {
+    "Monday": 0,
+    "Tuesday": 1,
+    "Wednesday": 2,
+    "Thursday": 3,
+    "Friday": 4,
+    "Saturday": 5,
+    "Sunday": 6,
+  };
+
   int calculateWeeks({
     required double weight,
     required double targetWeight,
@@ -20,16 +31,12 @@ class ExerciseService {
     if (goal == "Lose fat") {
       double weightDifference = weight - targetWeight;
 
-      double calorieDeficit =
-          weightDifference * 7700; //7700 is approximate kcal in 1kg
-
-      int days = (calorieDeficit / 500).ceil(); //500 calorie deficit per day
-
+      double calorieDeficit = weightDifference * 7700;
+      int days = (calorieDeficit / 500).ceil();
       weeks = (days / 7).ceil();
     } else if (goal == "Build muscle") {
       double weightDifference = targetWeight - weight;
-
-      weeks = (weightDifference / 0.3).ceil(); //0.3kg kg gain per week
+      weeks = (weightDifference / 0.3).ceil();
     } else if (goal == "General health and fitness") {
       weeks = 8;
     }
@@ -51,148 +58,112 @@ class ExerciseService {
   }
 
   double calculateTDEE({required double bmr, required String activityLevel}) {
-    if (activityLevel == "Sedentary") {
-      return bmr * 1.2;
-    } else if (activityLevel == "Lightly active") {
-      return bmr * 1.375;
-    } else if (activityLevel == "Moderately active") {
-      return bmr * 1.55;
-    } else {
-      return bmr * 1.725;
-    }
+    if (activityLevel == "Sedentary") return bmr * 1.2;
+    if (activityLevel == "Lightly active") return bmr * 1.375;
+    if (activityLevel == "Moderately active") return bmr * 1.55;
+    return bmr * 1.725;
   }
 
   String determineFinalActivityLevel({
     required String dailyActivityLevel,
     required int workoutDays,
   }) {
-    if (dailyActivityLevel == "Sedentary") {
-      if (workoutDays >= 5) {
-        return "Very active";
-      } else {
-        return "Moderately active";
-      }
-    } else if (dailyActivityLevel == "Lightly active") {
-      if (workoutDays >= 5) {
-        return "Very active";
-      } else {
-        return "Moderately active";
-      }
+    if (dailyActivityLevel == "Sedentary" ||
+        dailyActivityLevel == "Lightly active") {
+      return workoutDays >= 5 ? "Very active" : "Moderately active";
     } else {
       return "Very active";
     }
   }
 
-  List<DayType> getWeeklySchedule(int workoutCommitment) {
-    switch (workoutCommitment) {
-      case 4:
-        return [
-          DayType.workout,
-          DayType.workout,
-          DayType.rest,
-          DayType.workout,
-          DayType.workout,
-          DayType.rest,
-          DayType.rest,
-        ];
-      case 5:
-        return [
-          DayType.workout,
-          DayType.workout,
-          DayType.workout,
-          DayType.rest,
-          DayType.workout,
-          DayType.workout,
-          DayType.rest,
-        ];
-      case 6:
-        return [
-          DayType.workout,
-          DayType.workout,
-          DayType.workout,
-          DayType.workout,
-          DayType.workout,
-          DayType.workout,
-          DayType.rest,
-        ];
-      default:
-        return [
-          DayType.workout,
-          DayType.workout,
-          DayType.rest,
-          DayType.workout,
-          DayType.workout,
-          DayType.rest,
-          DayType.rest,
-        ];
+  /// 🔥 Create dynamic WEEK schedule from user selections
+  List<DayType> buildWeeklySchedule(FitnessPlanModel fitnessPlan) {
+    List<DayType> schedule = List.filled(7, DayType.workout);
+
+    // convert rest days (names → index)
+    for (int day in fitnessPlan.restDays) {
+      int idx = day - 1; // convert day number to index (1→0)
+      if (idx >= 0 && idx < 7) {
+        schedule[idx] = DayType.rest;
+      }
     }
+
+    // all other days automatically become workout days
+    return schedule;
   }
 
-  List<String> getWeeklySplits(int workoutCommitment) {
-    if (workoutCommitment == 4) {
-      return [
-        "Upper Body",
-        "Lower Body",
-        "Rest",
-        "Push",
-        "Pull",
-        "Rest",
-        "Rest",
-      ];
-    } else if (workoutCommitment == 5) {
-      return [
-        "Push",
-        "Pull",
-        "Legs",
-        "Rest",
-        "Upper Body",
-        "Lower Body",
-        "Rest",
-      ];
-    } else if (workoutCommitment == 6) {
-      return [
-        "Push",
-        "Pull",
-        "Legs",
-        "Upper Body",
-        "Lower Body",
-        "Full Body",
-        "Rest",
-      ];
-    } else {
-      return [
-        "Full Body",
-        "Full Body",
-        "Rest",
-        "Full Body",
-        "Full Body",
-        "Rest",
-        "Rest",
-      ];
-    }
+  /// 🔥 Simple dynamic split generator (consistent per week)
+  List<String> generateSplits(FitnessPlanModel fitnessPlan) {
+    int workoutCount = fitnessPlan.workoutDays.length;
+
+    if (workoutCount == 1) return ["Full Body"];
+    if (workoutCount == 2) return ["Upper Body", "Lower Body"];
+    if (workoutCount == 3) return ["Push", "Pull", "Legs"];
+    if (workoutCount == 4) return ["Upper", "Lower", "Push", "Pull"];
+    if (workoutCount == 5)
+      return ["Push", "Pull", "Legs", "Upper", "Full Body"];
+    if (workoutCount == 6)
+      return ["Push", "Pull", "Legs", "Upper", "Lower", "Full Body"];
+
+    return ["Full Body"];
+  }
+
+  List<String> createDynamicWeeklySplits(List<DayType> schedule) {
+    int push = 0, pull = 0, legs = 0;
+
+    return schedule.map((day) {
+      if (day == DayType.rest) return "Rest";
+
+      if (push == pull && pull == legs) {
+        push++;
+        return "Push";
+      } else if (push > pull) {
+        pull++;
+        return "Pull";
+      } else {
+        legs++;
+        return "Legs";
+      }
+    }).toList();
+  }
+
+  List<DayType> createDynamicWeeklySchedule({
+    required List<String> restDays,
+    required List<String> allDays,
+  }) {
+    return allDays.map((dayName) {
+      return restDays.contains(dayName) ? DayType.rest : DayType.workout;
+    }).toList();
   }
 
   Future<String> generateTarget(FitnessPlanModel fitnessPlan) async {
     final userAnswers = fitnessPlan.initialAssessment;
+
     String availableExercises = formatExercisesForPrompt(
       userAnswers["workoutLocation"],
     );
 
-    final weeklySchedule = getWeeklySchedule(
-      int.parse(userAnswers["workoutCommitment"]),
-    );
+    // 🔥 dynamic based on user-select rest days
+    final weeklySchedule = buildWeeklySchedule(fitnessPlan);
+    final weeklySplits = generateSplits(fitnessPlan);
 
-    final weeklySplits = getWeeklySplits(
-      int.parse(userAnswers["workoutCommitment"]),
-    );
-
-    final weeklyScheduleString =
+    final workoutDaysString =
         weeklySchedule
-            .map((d) => d == DayType.workout ? "Workout" : "Rest")
+            .asMap()
+            .entries
+            .where((e) => e.value == DayType.workout)
+            .map((e) => e.key + 1)
             .toList()
             .toString();
 
-    final weeklySplitsString = weeklySplits.toString();
+    final restDaysString =
+        weeklySchedule
+            .asMap()
+            .entries
+            .where((e) => e.value == DayType.rest)
+            .map((e) => e.key + 1)
+            .toList()
+            .toString();
 
     int totalWeeks = fitnessPlan.planDuration;
     int batchSize = 4;
@@ -206,60 +177,55 @@ class ExerciseService {
               ? totalWeeks
               : startWeek + batchSize - 1;
 
-      // Calculate the start and end day for this batch
       int startDay = dayCounter;
       int endDay = startDay + ((endWeek - startWeek + 1) * 7) - 1;
 
       String prompt = '''
-    You are an expert fitness coach creating a workout plan for Days $startDay–$endDay. Respond ONLY in JSON.
+You are an expert fitness coach creating a workout plan for Days $startDay–$endDay. Respond ONLY in JSON.
 
-    Client Profile:
-    - Gender: ${userAnswers["gender"]}
-    - Age: ${userAnswers["age"]}
-    - Height: ${userAnswers["height"]} cm
-    - Weight: ${userAnswers["weight"]} kg
-    - Target Weight: ${userAnswers["targetWeight"] ?? userAnswers["weight"]} kg
-    - Body Type: ${userAnswers["bodyType"]}
-    - Fitness Goal: ${userAnswers["fitnessGoal"]}
-    - Training Level: ${userAnswers["trainingLevel"]}
-    - Workout Commitment: ${userAnswers["workoutCommitment"]} days a week
-    - Experience: ${userAnswers["previousExperience"]}
-    - Workout Location: ${userAnswers["workoutLocation"]}
-    - Activity Level: ${userAnswers["activityLevel"]}
+Client Profile:
+- Gender: ${userAnswers["gender"]}
+- Age: ${userAnswers["age"]}
+- Height: ${userAnswers["height"]} cm
+- Weight: ${userAnswers["weight"]} kg
+- Target Weight: ${userAnswers["targetWeight"] ?? userAnswers["weight"]} kg
+- Body Type: ${userAnswers["bodyType"]}
+- Fitness Goal: ${userAnswers["fitnessGoal"]}
+- Training Level: ${userAnswers["trainingLevel"]}
+- Experience: ${userAnswers["previousExperience"]}
+- Workout Location: ${userAnswers["workoutLocation"]}
 
-    Workout Schedule (Weekly): $weeklyScheduleString
-    Split Schedule (Weekly): $weeklySplitsString
+Workout Days (day numbers): $workoutDaysString
+Rest Days (day numbers): $restDaysString
 
-    Workout Exercises to use:
-    $availableExercises
+Workout Exercises to use:
+$availableExercises
 
-    Rules:
-    - ALWAYS AND ONLY use exercises from the "Workout Exercises to use" list provided below. Do NOT invent or suggest any other exercises.
-    - Just use the exact exercise name as provided in the list (e.g., "Wall Sit", not "Wall Sit (Legs)").
-    - Follow the split schedule for each workout day.
-    - Include both workout and rest days in the JSON.
-    - Use 5–8 exercises per workout day.
-    - Always include exact sets, reps (for rep-based), or duration (for time-based).
-    - Day numbers must continue across all weeks (e.g., 1–28, 29–56, etc.).
-    
-    - No explanations, markdown, or text outside the JSON.
+Rules:
+- ONLY generate workouts on the listed Workout Days; all other days MUST be Rest.
+- Each workout day must include 5–8 exercises.
+- Choose split types from: ${weeklySplits.toString()}
+- Include exact sets, reps, rest, or duration.
+- Day numbers must continue across all weeks.
+- Do NOT add exercises not listed.
+- No explanations — only valid JSON.
 
-    Output Format:
-    [
-      {
-        "day": $startDay,
-        "type": "Workout",
-        "split": "Lower Body",
-        "exercises": [
-          {"name": "Bodyweight Squat", "sets": 3, "rest": 60, "reps": 10}
-        ]
-      },
-      {
-        "day": ${startDay + 1},
-        "type": "Rest"
-      }
+Output Format:
+[
+  {
+    "day": $startDay,
+    "type": "Workout",
+    "split": "Lower Body",
+    "exercises": [
+      {"name": "Bodyweight Squat", "sets": 3, "rest": 60, "reps": 10}
     ]
-    ''';
+  },
+  {
+    "day": ${startDay + 1},
+    "type": "Rest"
+  }
+]
+''';
 
       final rawResponse = await geminiService.fetchFromGemini(prompt);
 
@@ -275,12 +241,10 @@ class ExerciseService {
 
           if (parsed is List) {
             mergedDays.addAll(parsed.cast<Map<String, dynamic>>());
-          } else {
-            print("Unexpected JSON format: $cleaned");
           }
         } catch (e) {
           print("JSON parsing error: $e");
-          print("Raw response: $rawResponse");
+          print("Raw: $rawResponse");
         }
       }
 
@@ -291,10 +255,7 @@ class ExerciseService {
   }
 
   String formatList(List<dynamic>? list) {
-    if (list == null || list.isEmpty) {
-      return "None";
-    }
-
+    if (list == null || list.isEmpty) return "None";
     return list.join(", ");
   }
 
@@ -317,25 +278,14 @@ class ExerciseService {
 
   String formatExercisesForPrompt(String workoutLocation) {
     final locationFiltered =
-        exercises.where((e) {
-          return e.location == workoutLocation;
-        }).toList();
+        exercises.where((e) => e.location == workoutLocation).toList();
 
-    return locationFiltered
-        .map((e) {
-          return "- ${e.name}";
-        })
-        .join("\n");
+    return locationFiltered.map((e) => "- ${e.name}").join("\n");
   }
 
   int parseDuration(dynamic value) {
     if (value == null) return 0;
-
-    final str = value.toString();
-    final match = RegExp(r'\d+').firstMatch(str);
-    if (match != null) {
-      return int.tryParse(match.group(0)!) ?? 0;
-    }
-    return 0;
+    final match = RegExp(r'\d+').firstMatch(value.toString());
+    return match != null ? int.parse(match.group(0)!) : 0;
   }
 }

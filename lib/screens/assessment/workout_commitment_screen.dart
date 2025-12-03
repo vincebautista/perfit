@@ -3,6 +3,7 @@ import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/assessment_model.dart';
 import 'package:perfit/screens/assessment/answers_screen.dart';
+import 'package:perfit/screens/assessment/rest_day_selection_screen.dart';
 import 'package:perfit/widgets/assessment_progress_bar.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:flutter/material.dart';
@@ -19,18 +20,27 @@ class WorkoutCommitmentScreen extends StatefulWidget {
 }
 
 class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
-  String? selectedValue;
+  int? selectedDays;
+  List<String> restDays = [];
+
+  final List<String> weekDays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
 
   @override
   void initState() {
     super.initState();
-    // preload previous answer if editing
-    final currentValue =
-        Provider.of<AssessmentModel>(
-          context,
-          listen: false,
-        ).answers["workoutCommitment"];
-    selectedValue = currentValue;
+
+    // load previous answers
+    final model = Provider.of<AssessmentModel>(context, listen: false);
+    selectedDays = model.answers["workoutDays"];
+    restDays = (model.answers["restDays"] as List?)?.cast<String>() ?? [];
   }
 
   @override
@@ -43,7 +53,7 @@ class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AssessmentProgressBar(currentValue: 14),
+              AssessmentProgressBar(currentValue: 13),
               Expanded(
                 child: Column(
                   spacing: AppSizes.gap10,
@@ -55,9 +65,9 @@ class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
                       style: TextStyles.subtitle,
                       textAlign: TextAlign.center,
                     ),
-                    buildOption("4", "4 days"),
-                    buildOption("5", "5 days"),
-                    buildOption("6", "6 days"),
+
+                    // 🔥 dynamic list from 1–7
+                    for (int i = 1; i <= 7; i++) buildOption(i),
                   ],
                 ),
               ),
@@ -68,19 +78,22 @@ class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
     );
   }
 
-  Widget buildOption(String value, String label) {
-    final isSelected = selectedValue == value;
+  Widget buildOption(int value) {
+    final isSelected = selectedDays == value;
+
     return Card(
-      color: isSelected ? AppColors.primary : null, // 🔹 highlight
+      color: isSelected ? AppColors.primary : null,
       elevation: AppSizes.gap10,
       child: ListTile(
         onTap: () {
           if (!mounted) return;
-          setState(() => selectedValue = value);
-          saveToProvider(value);
+          setState(() => selectedDays = value);
+
+          // open rest day selector
+          openRestDaySelector(value);
         },
         title: Text(
-          label,
+          "$value day${value == 1 ? '' : 's'}",
           style: TextStyles.body.copyWith(
             color: isSelected ? AppColors.white : null,
           ),
@@ -90,16 +103,38 @@ class _WorkoutCommitmentScreenState extends State<WorkoutCommitmentScreen> {
     );
   }
 
-  void saveToProvider(String value) {
-    Provider.of<AssessmentModel>(
+  Future<void> openRestDaySelector(int days) async {
+    final result = await Navigator.push<List<String>>(
       context,
-      listen: false,
-    ).updateAnswer("workoutCommitment", value);
+      MaterialPageRoute(
+        builder:
+            (_) => RestDaySelectionScreen(
+              workoutDays: days,
+              selectedRestDays: restDays,
+            ),
+      ),
+    );
+
+    if (result != null) {
+      restDays = result;
+      saveToProvider();
+    }
+  }
+
+  void saveToProvider() {
+    final provider = Provider.of<AssessmentModel>(context, listen: false);
+
+    provider.updateAnswer("workoutDays", selectedDays);
+    provider.updateAnswer("restDays", restDays);
+    provider.updateAnswer("workoutCommitment", "$selectedDays");
 
     if (widget.fromEdit) {
       Navigator.pop(context);
     } else {
-      NavigationUtils.push(context, AnswersScreen());
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AnswersScreen()),
+      );
     }
   }
 }

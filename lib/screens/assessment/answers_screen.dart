@@ -31,18 +31,19 @@ class AnswersScreen extends StatefulWidget {
 
 class _AnswersScreenState extends State<AnswersScreen> {
   Map<String, dynamic> answers = {};
-final SettingService _settingService = SettingService();  
+  final SettingService _settingService = SettingService();
 
-bool isDarkMode = true;
+  bool isDarkMode = true;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
 
     answers = Provider.of<AssessmentModel>(context, listen: false).answers;
-    
-_loadTheme();
+
+    _loadTheme();
   }
+
   Future<void> _loadTheme() async {
     final mode = await _settingService.loadThemeMode();
     if (!mounted) return;
@@ -71,9 +72,12 @@ _loadTheme();
               Text("Gender: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["gender"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["gender"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -94,9 +98,12 @@ _loadTheme();
               Text("Age: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["age"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["age"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -117,9 +124,12 @@ _loadTheme();
               Text("Weight: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["weight"]} kg",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["weight"]} kg",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -140,9 +150,12 @@ _loadTheme();
               Text("Height: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["height"]} cm",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["height"]} cm",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -163,9 +176,12 @@ _loadTheme();
               Text("Fitness Goal: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["fitnessGoal"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["fitnessGoal"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -186,9 +202,12 @@ _loadTheme();
               Text("Target Weight: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["targetWeight"] ?? 0} kg",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["targetWeight"] ?? 0} kg",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -209,9 +228,12 @@ _loadTheme();
               Text("Body Type: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["bodyType"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["bodyType"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -232,9 +254,12 @@ _loadTheme();
               Text("Fitness Experience: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["previousExperience"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["previousExperience"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -255,9 +280,12 @@ _loadTheme();
               Text("Workout Type: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["workoutLocation"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["workoutLocation"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -278,9 +306,12 @@ _loadTheme();
               Text("Training Level: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["trainingLevel"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["trainingLevel"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -301,9 +332,12 @@ _loadTheme();
               Text("Daily Activity Level: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["activityLevel"]}",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text: "${answers["activityLevel"]}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -324,9 +358,14 @@ _loadTheme();
               Text("Workout Commitment: ", style: TextStyles.body),
               Gap(AppSizes.gap10 - 5),
               FullWidthBorderText(
-                text: "${answers["workoutCommitment"]} days a week",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),
+                text:
+                    "${answers["workoutDays"] ?? 0} day${(answers["workoutDays"] ?? 0) > 1 ? 's' : ''} a week"
+                    "${(answers["restDays"] != null && (answers["restDays"] as List).isNotEmpty) ? ' (Rest: ${(answers["restDays"] as List).join(', ')})' : ''}",
+                style: TextStyles.caption.copyWith(
+                  color: isDarkMode ? AppColors.white : AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 onEdit: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -352,9 +391,17 @@ _loadTheme();
                         barrierDismissible: false,
                         builder:
                             (context) => AlertDialog(
-                              title: Text("Important Notice",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
-                    ),),
+                              title: Text(
+                                "Important Notice",
+                                style: TextStyles.caption.copyWith(
+                                  color:
+                                      isDarkMode
+                                          ? AppColors.white
+                                          : AppColors.black,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               content: Text(
                                 "If you have any illness, injuries, or disabilities, please consult a professional.",
                               ),

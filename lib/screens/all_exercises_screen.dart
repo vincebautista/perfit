@@ -11,7 +11,16 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 class AllExercisesScreen extends StatefulWidget {
-  const AllExercisesScreen({super.key});
+  final bool fromWorkoutScreen;
+  final String? planId;
+  final int? selectedDay;
+
+  const AllExercisesScreen({
+    super.key,
+    this.fromWorkoutScreen = false,
+    this.planId,
+    this.selectedDay,
+  });
 
   @override
   State<AllExercisesScreen> createState() => _AllExercisesScreenState();
@@ -159,10 +168,14 @@ class _AllExercisesScreenState extends State<AllExercisesScreen> {
                             onTap: () {
                               NavigationUtils.push(
                                 context,
-                                ExerciseScreen(id: exercise.id),
+                                ExerciseScreen(
+                                  id: exercise.id,
+                                  fromWorkoutScreen: widget.fromWorkoutScreen,
+                                  planId: widget.planId,
+                                  selectedDay: widget.selectedDay,
+                                  exerciseName: exercise.name,
+                                ),
                               );
-
-                              saveViewedExercise(exercise.id);
                             },
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(

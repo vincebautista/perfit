@@ -8,6 +8,7 @@ import 'package:perfit/core/services/firebase_firestore_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/data/models/exercise_metrics_model.dart';
+import 'package:perfit/screens/all_exercises_screen.dart';
 import 'package:perfit/screens/assessment/gender_screen.dart';
 import 'package:perfit/screens/perform_exercise_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
@@ -557,6 +558,23 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           Expanded(child: workoutForDay(selectedDay)),
         ],
       ),
+      floatingActionButton:
+          hasPlan && selectedDay == currentDay
+              ? FloatingActionButton(
+                backgroundColor: AppColors.primary,
+                onPressed: () {
+                  NavigationUtils.push(
+                    context,
+                    AllExercisesScreen(
+                      fromWorkoutScreen: true,
+                      planId: activeFitnessPlanId,
+                      selectedDay: selectedDay,
+                    ),
+                  );
+                },
+                child: Icon(Icons.add),
+              )
+              : null,
     );
   }
 }
