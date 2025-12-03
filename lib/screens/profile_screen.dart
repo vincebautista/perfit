@@ -14,6 +14,7 @@ import 'package:perfit/screens/change_password_screen.dart';
 import 'package:perfit/screens/form_correction/curl_up_screen.dart';
 import 'package:perfit/screens/form_correction/knee_extension_seated_partial_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
+import 'package:perfit/screens/plan_history_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 
@@ -126,7 +127,10 @@ bool isDarkMode = true;
                             onPressed: () {
                               _authService.logout();
 
-                              NavigationUtils.push(context, MainNavigation());
+                              if (!mounted) return;
+                              setState(() {
+                                NavigationUtils.push(context, MainNavigation());
+                              });
                             },
                             icon: Icon(Icons.logout, color: AppColors.white),
                           ),
@@ -237,6 +241,17 @@ bool isDarkMode = true;
                                 onTap:
                                     () => NavigationUtils.push(
                                       context,
+                                      PlanHistoryScreen(),
+                                    ),
+                                title: Text("Plan History"),
+                              ),
+                            ),
+                            Card(
+                              color: AppColors.grey,
+                              child: ListTile(
+                                onTap:
+                                    () => NavigationUtils.push(
+                                      context,
                                       ChangePasswordScreen(),
                                     ),
                                 title: Text("Change Password"),
@@ -326,22 +341,22 @@ bool isDarkMode = true;
                             //       ),
                             //   child: const Text("Test ThumbsUpTimerScreen"),
                             // ),
-                            ElevatedButton(
-                              onPressed:
-                                  () => NavigationUtils.push(
-                                    context,
-                                    CurlUpScreen(),
-                                  ),
-                              child: const Text("Curl Up Screen"),
-                            ),
-                            ElevatedButton(
-                              onPressed:
-                                  () => NavigationUtils.push(
-                                    context,
-                                    KneeExtensionSeatedPartialScreen(),
-                                  ),
-                              child: const Text("Test Exercise"),
-                            ),
+                            // ElevatedButton(
+                            //   onPressed:
+                            //       () => NavigationUtils.push(
+                            //         context,
+                            //         CurlUpScreen(),
+                            //       ),
+                            //   child: const Text("Curl Up Screen"),
+                            // ),
+                            // ElevatedButton(
+                            //   onPressed:
+                            //       () => NavigationUtils.push(
+                            //         context,
+                            //         KneeExtensionSeatedPartialScreen(),
+                            //       ),
+                            //   child: const Text("Test Exercise"),
+                            // ),
                           ],
                         ),
                       ],

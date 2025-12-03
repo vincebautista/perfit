@@ -356,7 +356,7 @@ _loadTheme();
                       color: isDarkMode ? AppColors.white : AppColors.black,fontSize: 16,fontWeight: FontWeight.bold
                     ),),
                               content: Text(
-                                "If you have any illness, injuries, or disabilities, please consult a professional before using this app.",
+                                "If you have any illness, injuries, or disabilities, please consult a professional.",
                               ),
                               actions: [
                                 TextButton(

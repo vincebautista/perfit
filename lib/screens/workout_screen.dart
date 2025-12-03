@@ -127,12 +127,25 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Widget createWorkoutRoutineBtn() {
     return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          if (!mounted) return;
-          NavigationUtils.push(context, GenderScreen());
-        },
-        child: Text("Create workout plan"),
+      child: GestureDetector(
+        onTap: () => NavigationUtils.push(context, GenderScreen()),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: AppColors.primary, // line color
+              width: 1.0, // line thickness
+            ),
+            borderRadius: BorderRadius.circular(8), // optional: rounded corners
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSizes.padding16,
+            vertical: AppSizes.padding16 / 2,
+          ),
+          child: Text(
+            "Generate New Plan",
+            style: TextStyles.body.copyWith(color: AppColors.primary),
+          ),
+        ),
       ),
     );
   }
