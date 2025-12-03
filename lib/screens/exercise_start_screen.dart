@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -234,6 +235,7 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
     if (exerciseTimer != null) exerciseTimer?.cancel();
 
     if (widget.currentSet < widget.sets) {
+      print("Going to next set");
       if (!mounted) return;
       // Not last set → go to RestScreen
       Navigator.pushReplacement(
@@ -254,6 +256,8 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
         ),
       );
     } else {
+      print("Im here 1");
+
       // Last set → save to Firebase
       await FirebaseFirestoreService().markExerciseCompleted(
         widget.planId,
@@ -261,6 +265,15 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
         widget.exercise.name,
         extraData: {"elapsedTime": 1},
       );
+      print("Im here 1");
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestoreService().incrementBadges(
+          user.uid,
+          widget.planId,
+        );
+      }
+      print("Im here 1");
       await FirebaseFirestoreService().updateWorkoutDayCompletion(
         widget.planId,
         int.parse(widget.day),

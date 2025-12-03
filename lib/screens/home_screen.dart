@@ -40,8 +40,66 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _exercises = exercises;
     _filteredExercises = _exercises;
+    _incrementStreakBadges();
     fetchViewedExercises();
     _loadTheme();
+  }
+
+  Future<void> _incrementStreakBadges() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Get active fitness plan
+    final userDoc =
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .get();
+
+    final fitnessPlanId = userDoc.data()?['activeFitnessPlan'];
+    if (fitnessPlanId == null || fitnessPlanId == "") return;
+
+    await incrementDailyStreaks(user.uid, fitnessPlanId);
+  }
+
+  Future<void> incrementDailyStreaks(String uid, String fitnessPlanId) async {
+    final streakBadgeIds = ["7dayStreak", "30dayStreak"];
+
+    for (var badgeId in streakBadgeIds) {
+      final badgeRef = FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("fitnessPlan")
+          .doc(fitnessPlanId)
+          .collection("badges")
+          .doc(badgeId);
+
+      final snapshot = await badgeRef.get();
+      if (!snapshot.exists) continue;
+
+      final data = snapshot.data()!;
+      final lastUpdated = data['lastUpdated'] as Timestamp?;
+      final today = DateTime.now();
+
+      // Compare dates ignoring time
+      bool updatedToday =
+          lastUpdated != null &&
+          lastUpdated.toDate().year == today.year &&
+          lastUpdated.toDate().month == today.month &&
+          lastUpdated.toDate().day == today.day;
+
+      if (!updatedToday) {
+        int stat = (data['stat'] ?? 0) + 1;
+        int requiredStats = data['requiredStats'] ?? 1;
+        bool completed = stat >= requiredStats;
+
+        await badgeRef.update({
+          'stat': stat,
+          'completed': completed,
+          'lastUpdated': Timestamp.now(),
+        });
+      }
+    }
   }
 
   Future<void> _loadTheme() async {
@@ -528,9 +586,9 @@ class _HomeScreenState extends State<HomeScreen> {
     int currentDay = planData['currentDay'] ?? 1;
 
     List<Map<String, dynamic>> last7Workouts = [];
-    int startDay = (currentDay - 6) > 0 ? currentDay - 6 : 1;
 
-    for (int day = startDay; day <= currentDay; day++) {
+    // Always loop from day 1 to day 7
+    for (int day = 1; day <= 7; day++) {
       final workoutDoc =
           await planRef.collection("workouts").doc(day.toString()).get();
       final workoutData = workoutDoc.exists ? workoutDoc.data() : null;
@@ -548,28 +606,15 @@ class _HomeScreenState extends State<HomeScreen> {
       int skipped = exercises.where((e) => e['status'] == 'skipped').length;
       int fallback = exercises.length - completed - skipped;
 
+      // If day is in the future, mark as Pending
+      bool isFuture = day > currentDay;
+
       last7Workouts.add({
         'day': day,
-        'completed': completed,
-        'skipped': skipped,
-        'fallback': fallback,
-        'type': workoutData?['type'] ?? 'Workout',
-      });
-    }
-
-    // PAD missing days at the beginning to always have 7 items
-    while (last7Workouts.length < 7) {
-      int nextDay =
-          last7Workouts.isNotEmpty
-              ? last7Workouts.last['day'] + 1
-              : 1; // fallback if list empty
-
-      last7Workouts.add({
-        'day': nextDay,
-        'completed': 0,
-        'skipped': 0,
-        'fallback': 0,
-        'type': 'Pending',
+        'completed': isFuture ? 0 : completed,
+        'skipped': isFuture ? 0 : skipped,
+        'fallback': isFuture ? 0 : fallback,
+        'type': isFuture ? 'Pending' : workoutData?['type'] ?? 'Workout',
       });
     }
 

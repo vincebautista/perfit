@@ -309,4 +309,66 @@ class FirebaseFirestoreService {
       await markExerciseSkipped(planId, day.toString(), ex['name']);
     }
   }
+
+  Future<void> incrementBadges(String uid, String fitnessPlanId) async {
+    print(
+      "incrementBadges called for uid: $uid, fitnessPlanId: $fitnessPlanId",
+    );
+
+    // -------------------------------
+    // Increment 10-day and 30-day food log badges
+    final planSnapshot = await _firestore.collection("users").doc(uid).get();
+    final activePlanId = planSnapshot.data()?['activeFitnessPlan'];
+    final date = getTodayDateString();
+    print("Active Plan ID: $activePlanId, Today: $date");
+
+    if (activePlanId != null && activePlanId != "") {
+      final badgesRef = _firestore
+          .collection("users")
+          .doc(uid)
+          .collection("fitnessPlan")
+          .doc(activePlanId)
+          .collection("badges");
+
+      for (var badgeId in ["firstWorkout", "100workouts"]) {
+        final badgeDoc = badgesRef.doc(badgeId);
+        final badgeSnapshot = await badgeDoc.get();
+
+        if (!badgeSnapshot.exists) {
+          print("Badge $badgeId does not exist");
+          continue;
+        }
+
+        final badgeData = badgeSnapshot.data()!;
+        final lastUpdated = badgeData["lastUpdated"] as String?;
+        print("Badge $badgeId data: $badgeData, lastUpdated: $lastUpdated");
+
+        // Only increment once per day
+        if (lastUpdated == date) {
+          print("Badge $badgeId already updated today, skipping...");
+          continue;
+        }
+
+        final currentStat = (badgeData["stat"] ?? 0) as int;
+        final requiredStats = (badgeData["requiredStats"] ?? 0) as int;
+        final newStat = currentStat + 1;
+
+        print(
+          "Updating badge $badgeId: currentStat=$currentStat, newStat=$newStat, requiredStats=$requiredStats",
+        );
+
+        await badgeDoc.update({
+          "stat": newStat,
+          "lastUpdated": date,
+          "completed": newStat >= requiredStats,
+        });
+
+        print(
+          "Badge $badgeId updated: stat=$newStat, completed=${newStat >= requiredStats}",
+        );
+      }
+    } else {
+      print("No active fitness plan found for user $uid");
+    }
+  }
 }

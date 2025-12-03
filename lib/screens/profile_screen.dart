@@ -10,6 +10,7 @@ import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/main.dart';
 import 'package:perfit/screens/assessment/gender_screen.dart';
+import 'package:perfit/screens/badge_screen.dart';
 import 'package:perfit/screens/change_password_screen.dart';
 import 'package:perfit/screens/form_correction/curl_up_screen.dart';
 import 'package:perfit/screens/form_correction/knee_extension_seated_partial_screen.dart';
@@ -229,6 +230,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onTap:
                                     () => NavigationUtils.push(
                                       context,
+                                      BadgeScreen(),
+                                    ),
+                                title: Text("Badges"),
+                              ),
+                            ),
+                            Card(
+                              color: AppColors.grey,
+                              child: ListTile(
+                                onTap:
+                                    () => NavigationUtils.push(
+                                      context,
                                       PlanHistoryScreen(),
                                     ),
                                 title: Text("Plan History"),
@@ -343,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             //         KneeExtensionSeatedPartialScreen(),
                             //       ),
                             //   child: const Text("Test Exercise"),
-                            // ),
+                            // ), 
                           ],
                         ),
                       ],

@@ -69,16 +69,22 @@ class Last7DaysStackedChart extends StatelessWidget {
                   );
                 }
 
+                double total =
+                    (workout['completed'] +
+                            workout['skipped'] +
+                            workout['fallback'])
+                        .toDouble();
+
+                // if total is 0 (future day), give it a minimal placeholder
+                if (total == 0) total = 5;
+
                 return BarChartGroupData(
                   x: index,
                   barRods: [
                     BarChartRodData(
+                      color: Colors.grey,
                       width: 40, // reduce width
-                      toY:
-                          (workout['completed'] +
-                                  workout['skipped'] +
-                                  workout['fallback'])
-                              .toDouble(),
+                      toY: total,
                       rodStackItems: [
                         BarChartRodStackItem(
                           0,

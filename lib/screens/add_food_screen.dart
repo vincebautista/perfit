@@ -407,6 +407,38 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
           "totalCarbs": FieldValue.increment(totalCarbs),
           "totalFat": FieldValue.increment(totalFat),
         }, SetOptions(merge: true));
+
+    // -------------------------------
+    // Update 10-day and 30-day food log badges
+    final planDoc =
+        await FirebaseFirestore.instance.collection("users").doc(uid).get();
+
+    final activePlanId = planDoc.data()?['activeFitnessPlan'];
+    if (activePlanId == null || activePlanId == "") return;
+
+    final badgesRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("fitnessPlan")
+        .doc(activePlanId)
+        .collection("badges");
+
+    for (var badgeId in ["10dayfoodlog", "30dayfoodlog"]) {
+      final badgeDoc = badgesRef.doc(badgeId);
+      final badgeSnapshot = await badgeDoc.get();
+
+      if (!badgeSnapshot.exists) continue;
+
+      final badgeData = badgeSnapshot.data()!;
+      final lastUpdated = badgeData["lastUpdated"] as String?;
+      if (lastUpdated == date) continue; // already incremented today
+
+      await badgeDoc.update({
+        "stat": FieldValue.increment(1),
+        "lastUpdated": date,
+        "completed": (badgeData["stat"] + 1) >= badgeData["requiredStats"],
+      });
+    }
   }
 
   void addFoodToProvider({

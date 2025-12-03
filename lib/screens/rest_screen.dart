@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/firebase_firestore_service.dart';
@@ -70,6 +71,16 @@ class _RestScreenState extends State<RestScreen> {
           widget.exercise.name,
           extraData: {"elapsedTime": 0},
         );
+
+        print("Im here 1");
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await FirebaseFirestoreService().incrementBadges(
+            user.uid,
+            widget.planId,
+          );
+        }
+
         await FirebaseFirestoreService().updateWorkoutDayCompletion(
           widget.planId,
           int.parse(widget.day),

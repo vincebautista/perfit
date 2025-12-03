@@ -73,6 +73,7 @@ flutter:
     - assets/videos/
     - assets/videos/loading/walk_animation.mp4
     - assets/images/exercises/
+    - assets/images/badges/
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
   # An image asset can refer to one or more resolution-specific "variants", see

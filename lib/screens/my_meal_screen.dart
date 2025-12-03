@@ -192,6 +192,42 @@ class _MyMealScreenState extends State<MyMealScreen> {
         },
       }, SetOptions(merge: true));
 
+      // -------------------------------
+      // Increment 10-day and 30-day food log badges
+      final planSnapshot = await firestore.collection("users").doc(uid).get();
+      final activePlanId = planSnapshot.data()?['activeFitnessPlan'];
+      if (activePlanId != null && activePlanId != "") {
+        final badgesRef = firestore
+            .collection("users")
+            .doc(uid)
+            .collection("fitnessPlan")
+            .doc(activePlanId)
+            .collection("badges");
+
+        for (var badgeId in ["10dayfoodlog", "30dayfoodlog"]) {
+          final badgeDoc = badgesRef.doc(badgeId);
+          final badgeSnapshot = await badgeDoc.get();
+
+          if (!badgeSnapshot.exists) continue;
+
+          final badgeData = badgeSnapshot.data()!;
+          final lastUpdated = badgeData["lastUpdated"] as String?;
+
+          // Only increment once per day
+          if (lastUpdated == date) continue;
+
+          final currentStat = (badgeData["stat"] ?? 0) as int;
+          final requiredStats = (badgeData["requiredStats"] ?? 0) as int;
+          final newStat = currentStat + 1;
+
+          await badgeDoc.update({
+            "stat": newStat,
+            "lastUpdated": date,
+            "completed": newStat >= requiredStats,
+          });
+        }
+      }
+
       // Dismiss loading alert and show success
       if (!mounted) return;
       Navigator.of(context).pop(); // dismiss loading
