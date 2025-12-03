@@ -13,6 +13,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:perfit/core/services/gemini_api_service.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:printing/printing.dart';
 import 'package:quickalert/models/quickalert_type.dart';
@@ -40,7 +41,9 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
 
   // Cached profile/plan
   Map<String, dynamic>? _cachedFitnessPlan;
+final SettingService _settingService = SettingService();  
 
+bool isDarkMode = true;
   @override
   void initState() {
     super.initState();
@@ -48,6 +51,14 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
     uid = user?.uid;
     // preload something if needed
     today();
+    _loadTheme();
+  }
+ Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
   }
 
   Future<void> clearSummaries() async {
@@ -1456,25 +1467,25 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
                 ListTile(
                   title: const Text("Total Calories"),
                   trailing: Text(
-                    "${(data["todayTotalCalories"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetCalories"] as num).toDouble().toStringAsFixed(1)}",
+                    "${(data["todayTotalCalories"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetCalories"] as num).toDouble().toStringAsFixed(1)}",style: TextStyle(fontSize: 14),
                   ),
                 ),
                 ListTile(
                   title: const Text("Total Protein"),
                   trailing: Text(
-                    "${(data["todayTotalProtein"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetProtein"] as num).toDouble().toStringAsFixed(1)}",
+                    "${(data["todayTotalProtein"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetProtein"] as num).toDouble().toStringAsFixed(1)}",style: TextStyle(fontSize: 14),
                   ),
                 ),
                 ListTile(
                   title: const Text("Total Carbs"),
                   trailing: Text(
-                    "${(data["todayTotalCarbs"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetCarbs"] as num).toDouble().toStringAsFixed(1)}",
+                    "${(data["todayTotalCarbs"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetCarbs"] as num).toDouble().toStringAsFixed(1)}",style: TextStyle(fontSize: 14),
                   ),
                 ),
                 ListTile(
                   title: const Text("Total Fat"),
                   trailing: Text(
-                    "${(data["todayTotalFat"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetFat"] as num).toDouble().toStringAsFixed(1)}",
+                    "${(data["todayTotalFat"] as num).toDouble().toStringAsFixed(1)} / ${(data["targetFat"] as num).toDouble().toStringAsFixed(1)}",style: TextStyle(fontSize: 14),
                   ),
                 ),
               ],
@@ -1728,7 +1739,7 @@ class _MealAnalyticsScreenState extends State<MealAnalyticsScreen> {
 
   Widget Overview({required String title, required String text}) {
     return Card(
-      color: AppColors.surface,
+      color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.padding16),
         child: Column(

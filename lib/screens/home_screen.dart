@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final user = FirebaseAuth.instance.currentUser;
 
   final SettingService _settingService = SettingService();
-  
+
   bool isDarkMode = true;
 
   @override

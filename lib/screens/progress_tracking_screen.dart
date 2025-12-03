@@ -9,6 +9,7 @@ import 'package:gap/gap.dart';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/gemini_api_service.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/completed_workout_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
@@ -36,7 +37,9 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
   Map<String, dynamic>? _cachedFitnessPlan;
 
   final geminiService = GeminiApiService();
+final SettingService _settingService = SettingService();  
 
+bool isDarkMode = true;
   @override
   void initState() {
     // TODO: implement initState
@@ -44,6 +47,14 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
 
     final user = FirebaseAuth.instance.currentUser;
     uid = user?.uid;
+    _loadTheme();
+  }
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
   }
 
   void _prevMonth() {
@@ -1320,7 +1331,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
 
   Widget Overview({required String title, required String text}) {
     return Card(
-      color: AppColors.surface,
+      color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.padding16),
         child: Column(
