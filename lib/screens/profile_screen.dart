@@ -283,35 +283,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 title: Text("Change Password"),
                               ),
                             ),
-                            Card(
-                              color: AppColors.grey,
-                              child: ListTile(
-                                onTap:
-                                    () => NavigationUtils.push(
-                                      context,
-                                      CurlUpScreen(),
-                                    ),
-                                title: Text("Curl Up Form Correction"),
-                              ),
-                            ),
                             // Card(
-                            //   color:
-                            //       isDarkMode
-                            //           ? AppColors.grey
-                            //           : AppColors.lightgrey,
-
-                            //   child: SwitchListTile(
-                            //     activeColor: AppColors.primary,
-                            //     activeTrackColor: AppColors.surface,
-                            //     title: Text("Dark Mode"),
-                            //     value: themeNotifier.value == ThemeMode.dark,
-                            //     onChanged: (value) async {
-                            //       themeNotifier.value =
-                            //           value ? ThemeMode.dark : ThemeMode.light;
-                            //       await SettingService().saveThemeMode(value);
-                            //     },
+                            //   color: AppColors.grey,
+                            //   child: ListTile(
+                            //     onTap:
+                            //         () => NavigationUtils.push(
+                            //           context,
+                            //           CurlUpScreen(),
+                            //         ),
+                            //     title: Text("Curl Up Form Correction"),
                             //   ),
                             // ),
+                            Card(
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
+
+                              child: SwitchListTile(
+                                activeColor: AppColors.primary,
+                                activeTrackColor: AppColors.surface,
+                                title: Text("Dark Mode"),
+                                value: themeNotifier.value == ThemeMode.dark,
+                                onChanged: (value) async {
+                                  themeNotifier.value =
+                                      value ? ThemeMode.dark : ThemeMode.light;
+                                  await SettingService().saveThemeMode(value);
+                                },
+                              ),
+                            ),
                             Spacer(),
                             GestureDetector(
                               onTap:
