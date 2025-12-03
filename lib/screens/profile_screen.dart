@@ -355,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             //         KneeExtensionSeatedPartialScreen(),
                             //       ),
                             //   child: const Text("Test Exercise"),
-                            // ), 
+                            // ),
                           ],
                         ),
                       ],
