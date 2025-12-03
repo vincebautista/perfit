@@ -300,7 +300,7 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                         onTap: () => skipExercise(),
                         child: Card(
                           color:
-                              isDarkMode ? AppColors.grey : AppColors.lightgrey,
+                              isDarkMode ? AppColors.lightgrey : AppColors.grey,
 
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
