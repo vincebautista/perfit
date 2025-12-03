@@ -273,7 +273,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Card(
-                              color: AppColors.grey,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
                               child: ListTile(
                                 onTap:
                                     () => NavigationUtils.push(
