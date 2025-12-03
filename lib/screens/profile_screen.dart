@@ -32,9 +32,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int rest = 60;
   int countdown = 3;
   TimeOfDay? workoutReminder;
-final SettingService _settingService = SettingService();  
+  final SettingService _settingService = SettingService();
 
-bool isDarkMode = true;
+  bool isDarkMode = true;
   @override
   void initState() {
     super.initState();
@@ -42,6 +42,7 @@ bool isDarkMode = true;
     loadSettings();
     _loadTheme();
   }
+
   Future<void> _loadTheme() async {
     final mode = await _settingService.loadThemeMode();
     if (!mounted) return;
@@ -49,6 +50,7 @@ bool isDarkMode = true;
       isDarkMode = mode == ThemeMode.dark;
     });
   }
+
   Future<void> loadSettings() async {
     final service = SettingService();
 
@@ -154,7 +156,10 @@ bool isDarkMode = true;
                             Text(user.email!, style: TextStyles.caption),
                             Gap(AppSizes.gap20 * 2),
                             Card(
-                             color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
                               child: ListTile(
                                 title: Text("Rest Time"),
                                 trailing: Row(
@@ -183,7 +188,10 @@ bool isDarkMode = true;
                               ),
                             ),
                             Card(
-                                                           color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
 
                               child: ListTile(
                                 title: Text("Countdown Timer"),
@@ -214,7 +222,10 @@ bool isDarkMode = true;
                               ),
                             ),
                             Card(
-                                                          color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
 
                               child: ListTile(
                                 title: Text("Workout Reminder"),
@@ -236,7 +247,10 @@ bool isDarkMode = true;
                               ),
                             ),
                             Card(
-                                                           color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
 
                               child: ListTile(
                                 onTap:
@@ -270,20 +284,34 @@ bool isDarkMode = true;
                               ),
                             ),
                             Card(
-                                                           color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
-
-                              child: SwitchListTile(
-                                activeColor: AppColors.primary,
-                                activeTrackColor: AppColors.surface,
-                                title: Text("Dark Mode"),
-                                value: themeNotifier.value == ThemeMode.dark,
-                                onChanged: (value) async {
-                                  themeNotifier.value =
-                                      value ? ThemeMode.dark : ThemeMode.light;
-                                  await SettingService().saveThemeMode(value);
-                                },
+                              color: AppColors.grey,
+                              child: ListTile(
+                                onTap:
+                                    () => NavigationUtils.push(
+                                      context,
+                                      CurlUpScreen(),
+                                    ),
+                                title: Text("Curl Up Form Correction"),
                               ),
                             ),
+                            // Card(
+                            //   color:
+                            //       isDarkMode
+                            //           ? AppColors.grey
+                            //           : AppColors.lightgrey,
+
+                            //   child: SwitchListTile(
+                            //     activeColor: AppColors.primary,
+                            //     activeTrackColor: AppColors.surface,
+                            //     title: Text("Dark Mode"),
+                            //     value: themeNotifier.value == ThemeMode.dark,
+                            //     onChanged: (value) async {
+                            //       themeNotifier.value =
+                            //           value ? ThemeMode.dark : ThemeMode.light;
+                            //       await SettingService().saveThemeMode(value);
+                            //     },
+                            //   ),
+                            // ),
                             Spacer(),
                             GestureDetector(
                               onTap:

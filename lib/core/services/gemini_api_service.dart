@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class GeminiApiService {
-  final String API_KEY = "AIzaSyBnG43pJIMeD_qrt5AkUmc5vkJOwEcf6cQ";
+  final String API_KEY = "a";
   final String API_URL =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnG43pJIMeD_qrt5AkUmc5vkJOwEcf6cQ';
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=a';
 
   Future<String?> fetchFromGemini(String prompt) async {
     final headers = {'Content-Type': 'application/json'};
