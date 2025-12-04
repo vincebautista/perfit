@@ -14,6 +14,10 @@ import 'package:perfit/screens/badge_screen.dart';
 import 'package:perfit/screens/change_password_screen.dart';
 import 'package:perfit/screens/form_correction/curl_up_screen.dart';
 import 'package:perfit/screens/form_correction/knee_extension_seated_partial_screen.dart';
+import 'package:perfit/screens/form_correction/push_up_screen.dart';
+import 'package:perfit/screens/form_correction/squats_screen.dart';
+import 'package:perfit/screens/form_correction/crunches.dart';
+import 'package:perfit/screens/form_correction/barbell_row.dart';
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/screens/plan_history_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
@@ -304,6 +308,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 },
                               ),
                             ),
+                            Card(
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
+                              child: ListTile(
+                                onTap: () => _showFormCorrectionScreens(context),
+                                title: Text("Form Correction Screens"),
+                                trailing: Icon(Icons.arrow_forward_ios),
+                              ),
+                            ),
                             Spacer(),
                             GestureDetector(
                               onTap:
@@ -333,7 +348,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                             ),
-
+  Spacer(),
+  
                             // ElevatedButton(
                             //   onPressed: () async {
                             //     await NotificationService.showImmediateTestNotification();
@@ -403,6 +419,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           return WelcomeGuest();
         },
+      ),
+    );
+  }
+
+  void _showFormCorrectionScreens(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? AppColors.grey : AppColors.lightgrey,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(AppSizes.padding20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Form Correction Screens",
+              style: TextStyles.subtitle,
+            ),
+            Gap(AppSizes.gap20),
+            ListTile(
+              title: Text("Curl Up"),
+              onTap: () {
+                Navigator.pop(context);
+                NavigationUtils.push(context, CurlUpScreen());
+              },
+            ),
+            ListTile(
+              title: Text("Knee Extension Seated Partial"),
+              onTap: () {
+                Navigator.pop(context);
+                NavigationUtils.push(context, KneeExtensionSeatedPartialScreen());
+              },
+            ),
+            ListTile(
+              title: Text("Push Up"),
+              onTap: () {
+                Navigator.pop(context);
+                NavigationUtils.push(context, PushUpScreen());
+              },
+            ),
+            ListTile(
+              title: Text("Squats"),
+              onTap: () {
+                Navigator.pop(context);
+                NavigationUtils.push(context, SquatsScreen());
+              },
+            ),
+            ListTile(
+              title: Text("Crunches"),
+              onTap: () {
+                Navigator.pop(context);
+                NavigationUtils.push(context, CrunchesScreen());
+              },
+            ),
+            ListTile(
+              title: Text("Barbell Row"),
+              onTap: () {
+                Navigator.pop(context);
+                NavigationUtils.push(context, BarbellRowScreen());
+              },
+            ),
+            Gap(AppSizes.gap20),
+             ListTile(
+              title: Text("Barbell Row"),
+              onTap: () {
+                Navigator.pop(context);
+                NavigationUtils.push(context, BarbellRowScreen());
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
