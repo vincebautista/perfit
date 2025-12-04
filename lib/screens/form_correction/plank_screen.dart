@@ -1,14 +1,57 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/core/services/camera_service.dart';
+import 'package:perfit/core/services/distance_service.dart';
+import 'package:perfit/core/services/gesture_service.dart';
+import 'package:perfit/core/services/pose_detection_service.dart';
+import 'package:perfit/core/services/setting_service.dart';
+import 'package:perfit/screens/exercise_summary_screen.dart';
+import 'package:perfit/widgets/text_styles.dart';
 
-class PlankFormCorrection {
-  /// True once the plank has stabilized in a good position for a short time.
-  bool isHolding = false;
+class PlankScreen extends StatefulWidget {
+  const PlankScreen({super.key});
 
-  String feedback = "";
-  Color feedbackColor = Colors.green;
+  @override
+  State<PlankScreen> createState() => _PlankScreenState();
+}
 
+enum ExerciseStage { distanceCheck, gestureDetection, formCorrection }
+
+class _PlankScreenState extends State<PlankScreen> {
+  final CameraService _cameraService = CameraService();
+  final PoseDetectionService _poseService = PoseDetectionService();
+  final DistanceService _distanceService = DistanceService();
+  final GestureService _gestureService = GestureService();
+
+  bool _isInitialized = false;
+  bool _isBusy = false;
+
+  ExerciseStage currentStage = ExerciseStage.distanceCheck;
+
+  String distanceStatus = "Checking distance...";
+  String handsStatus = "Raise your right hand above the head";
+  String countdownStatus = "";
+  int countdown = 3;
+
+  // Form correction variables
+  int _plankCount = 0;
+  int _correctCount = 0;
+  int _wrongCount = 0;
+  List<String> _feedback = [];
+  List<String> _allFeedbacks = [];
+
+  bool _isHolding = false;
+  DateTime? _holdStartTime;
+  final Duration _holdDuration = const Duration(seconds: 3);
+
+  // Stability tracking
   double? _previousTorsoAngle;
   double? _previousHipAngle;
   double? _previousShoulderAngle;
@@ -16,188 +59,337 @@ class PlankFormCorrection {
   double _hipDrift = 0;
   double _shoulderDrift = 0;
 
-  /// Main entry point – call each frame with the current pose landmarks.
-  void handleFormCorrection(List<PoseLandmark> landmarks) {
-    String feedback = "";
-    Color feedbackColor = Colors.green;
+  // Thresholds
+  final double _minTorsoAngle = 165.0;
+  final double _maxTorsoAngle = 180.0;
+  final double _maxHipTorsoDiff = 10.0;
+  final double _minShoulderAngle = 70.0;
+  final double _maxShoulderAngle = 100.0;
+  final double _minElbowAngle = 80.0;
+  final double _maxElbowAngle = 100.0;
+  final double _maxKneeImbalance = 20.0;
+  final double _maxTorsoDrift = 4.0;
+  final double _maxHipDrift = 4.0;
+  final double _maxShoulderDrift = 4.0;
 
-    // Index landmarks by type for easier access.
-    final map = <PoseLandmarkType, PoseLandmark>{
-      for (final l in landmarks) l.type: l,
-    };
+  Pose? _lastPose;
+  Size? _cameraImageSize;
 
-    final requiredTypes = <PoseLandmarkType>[
-      PoseLandmarkType.leftShoulder,
-      PoseLandmarkType.rightShoulder,
-      PoseLandmarkType.leftElbow,
-      PoseLandmarkType.rightElbow,
-      PoseLandmarkType.leftHip,
-      PoseLandmarkType.rightHip,
-      PoseLandmarkType.leftKnee,
-      PoseLandmarkType.rightKnee,
-      PoseLandmarkType.leftAnkle,
-      PoseLandmarkType.rightAnkle,
-    ];
+  bool _lastRepCorrect = true;
 
-    if (requiredTypes.any((t) => map[t] == null)) {
-      this.feedback = "Make sure your full body is visible to the camera.";
-      this.feedbackColor = Colors.orange;
-      return;
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 1), () async {
+      await _initCamera();
+      _loadCountdown();
+    });
+  }
+
+  Future<void> _loadCountdown() async {
+    final countdownData = await SettingService().loadCountdown();
+    countdown = countdownData["countdown"] ?? 3;
+  }
+
+  Future<void> _initCamera() async {
+    await _cameraService.initCamera();
+    _cameraService.startStream(_processCameraImage);
+
+    if (!mounted) return;
+    setState(() => _isInitialized = true);
+  }
+
+  @override
+  void dispose() {
+    _cameraService.dispose();
+    super.dispose();
+  }
+
+  Future<void> _processCameraImage(CameraImage image) async {
+    if (_isBusy) return;
+    _isBusy = true;
+
+    _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
+    try {
+      final inputImage = _cameraImageToInputImage(
+        image,
+        _cameraService.controller!.description.sensorOrientation,
+      );
+
+      final poses = await _poseService.detectPoses(inputImage);
+      if (poses.isEmpty) return;
+
+      final pose = poses.first;
+      _lastPose = pose;
+
+      switch (currentStage) {
+        case ExerciseStage.distanceCheck:
+          _handleDistanceCheck(pose);
+          break;
+        case ExerciseStage.gestureDetection:
+          _handleGestureDetection(pose);
+          break;
+        case ExerciseStage.formCorrection:
+          await _handleFormCorrection(pose);
+          break;
+      }
+    } finally {
+      _isBusy = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  InputImage _cameraImageToInputImage(CameraImage image, int rotation) {
+    final width = image.width;
+    final height = image.height;
+    final uvRowStride = image.planes[1].bytesPerRow;
+    final uvPixelStride = image.planes[1].bytesPerPixel!;
+
+    final nv21 = Uint8List(width * height * 3 ~/ 2);
+
+    for (int i = 0; i < height; i++) {
+      nv21.setRange(
+        i * width,
+        (i + 1) * width,
+        image.planes[0].bytes,
+        i * image.planes[0].bytesPerRow,
+      );
     }
 
-    final leftShoulder = map[PoseLandmarkType.leftShoulder]!;
-    final rightShoulder = map[PoseLandmarkType.rightShoulder]!;
-    final leftElbow = map[PoseLandmarkType.leftElbow]!;
-    final rightElbow = map[PoseLandmarkType.rightElbow]!;
-    final leftHip = map[PoseLandmarkType.leftHip]!;
-    final rightHip = map[PoseLandmarkType.rightHip]!;
-    final leftKnee = map[PoseLandmarkType.leftKnee]!;
-    final rightKnee = map[PoseLandmarkType.rightKnee]!;
-    final leftAnkle = map[PoseLandmarkType.leftAnkle]!;
-    final rightAnkle = map[PoseLandmarkType.rightAnkle]!;
+    int uvIndex = 0;
+    for (int i = 0; i < height ~/ 2; i++) {
+      for (int j = 0; j < width ~/ 2; j++) {
+        final u = image.planes[1].bytes[i * uvRowStride + j * uvPixelStride];
+        final v = image.planes[2].bytes[i * uvRowStride + j * uvPixelStride];
+        nv21[width * height + uvIndex++] = v;
+        nv21[width * height + uvIndex++] = u;
+      }
+    }
 
-    // --- Required angles (general spec) ---
-    double kneeAngleLeft = calculateAngle(leftHip, leftKnee, leftAnkle);
-    double kneeAngleRight = calculateAngle(rightHip, rightKnee, rightAnkle);
-    double hipAngleLeft = calculateAngle(leftShoulder, leftHip, leftKnee);
-    double hipAngleRight = calculateAngle(rightShoulder, rightHip, rightKnee);
+    return InputImage.fromBytes(
+      bytes: nv21,
+      metadata: InputImageMetadata(
+        size: Size(width.toDouble(), height.toDouble()),
+        rotation:
+            InputImageRotationValue.fromRawValue(rotation) ??
+            InputImageRotation.rotation0deg,
+        format: InputImageFormat.nv21,
+        bytesPerRow: image.planes[0].bytesPerRow,
+      ),
+    );
+  }
 
-    // Torso alignment: shoulder–hip line vs horizontal.
-    double torsoAngle = _torsoAngleFromHorizontal(
-      leftShoulder,
-      rightShoulder,
-      leftHip,
-      rightHip,
+  void _handleDistanceCheck(Pose pose) {
+    final distanceCm = _distanceService.computeSmoothedDistance(pose);
+    const minCm = 100;
+    const maxCm = 150;
+
+    if (distanceCm < minCm) {
+      distanceStatus = "Too Close! Move back";
+    } else if (distanceCm > maxCm) {
+      distanceStatus = "Too Far! Move closer";
+    } else {
+      distanceStatus = "Perfect Distance! Stay in that position.";
+      currentStage = ExerciseStage.gestureDetection;
+      handsStatus = "Raise your right hand above the head";
+    }
+  }
+
+  void _handleGestureDetection(Pose pose) {
+    final handsUp = _gestureService.update(
+      pose,
+      startCountdown: countdown,
+      onHoldProgress:
+          (progress) =>
+              countdownStatus = "Raise your hand… ${(progress * 100).toInt()}%",
+      onHandsUpDetected: () {
+        handsStatus = "Hands detected! Starting countdown...";
+        countdownStatus = "";
+      },
+      onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s",
+      onCountdownComplete: () {
+        countdownStatus = "Timer complete!";
+        currentStage = ExerciseStage.formCorrection;
+      },
     );
 
-    // Elbow angles (forearm plank).
-    // Initialize elbow angles with a neutral value; will be updated if wrists exist.
-    double elbowAngleLeft = 90;
-    double elbowAngleRight = 90;
-
-    // Shoulder stacking: vertical angle of shoulder relative to elbow and hip.
-    double shoulderAngle =
-        (calculateAngle(leftElbow, leftShoulder, leftHip) +
-            calculateAngle(rightElbow, rightShoulder, rightHip)) /
-        2;
-
-    double hipAngle = (hipAngleLeft + hipAngleRight) / 2;
-
-    // For this implementation, elbows are bent to about 90° – use elbow‑shoulder‑hip
-    // as general elbow metric; knees included only for stability / redundancy.
-    // Recompute elbow angles correctly using wrists for completeness if present.
-    if (map[PoseLandmarkType.leftWrist] != null &&
-        map[PoseLandmarkType.rightWrist] != null) {
-      final leftWrist = map[PoseLandmarkType.leftWrist]!;
-      final rightWrist = map[PoseLandmarkType.rightWrist]!;
-      elbowAngleLeft = calculateAngle(leftShoulder, leftElbow, leftWrist);
-      elbowAngleRight = calculateAngle(rightShoulder, rightElbow, rightWrist);
+    if (!handsUp && !_gestureService.countdownRunning) {
+      handsStatus = "Raise your hand!";
+      countdownStatus = "";
     }
+  }
 
-    // --- Stability gating ---
-    final stable = _updateStability(torsoAngle, hipAngle, shoulderAngle);
-    if (!stable) {
-      this.feedback = "Hold still briefly to get accurate plank feedback.";
-      this.feedbackColor = Colors.orange;
+  Future<void> _handleFormCorrection(Pose pose) async {
+    final landmarks = pose.landmarks;
+
+    final leftShoulder = landmarks[PoseLandmarkType.leftShoulder];
+    final rightShoulder = landmarks[PoseLandmarkType.rightShoulder];
+    final leftElbow = landmarks[PoseLandmarkType.leftElbow];
+    final rightElbow = landmarks[PoseLandmarkType.rightElbow];
+    final leftWrist = landmarks[PoseLandmarkType.leftWrist];
+    final rightWrist = landmarks[PoseLandmarkType.rightWrist];
+    final leftHip = landmarks[PoseLandmarkType.leftHip];
+    final rightHip = landmarks[PoseLandmarkType.rightHip];
+    final leftKnee = landmarks[PoseLandmarkType.leftKnee];
+    final rightKnee = landmarks[PoseLandmarkType.rightKnee];
+    final leftAnkle = landmarks[PoseLandmarkType.leftAnkle];
+    final rightAnkle = landmarks[PoseLandmarkType.rightAnkle];
+
+    if (leftShoulder == null ||
+        rightShoulder == null ||
+        leftElbow == null ||
+        rightElbow == null ||
+        leftHip == null ||
+        rightHip == null ||
+        leftKnee == null ||
+        rightKnee == null ||
+        leftAnkle == null ||
+        rightAnkle == null) {
+      _allFeedbacks.add("Make sure your full body is visible to the camera.");
       return;
     }
 
-    // --- Biomechanics checks ---
-    final errors = <String>[];
+    final leftShoulderOffset = Offset(leftShoulder.x, leftShoulder.y);
+    final rightShoulderOffset = Offset(rightShoulder.x, rightShoulder.y);
+    final leftElbowOffset = Offset(leftElbow.x, leftElbow.y);
+    final rightElbowOffset = Offset(rightElbow.x, rightElbow.y);
+    final leftHipOffset = Offset(leftHip.x, leftHip.y);
+    final rightHipOffset = Offset(rightHip.x, rightHip.y);
+    final leftKneeOffset = Offset(leftKnee.x, leftKnee.y);
+    final rightKneeOffset = Offset(rightKnee.x, rightKnee.y);
 
-    // 1. Torso alignment (neutral back).
-    if (torsoAngle < 165 || torsoAngle > 180) {
-      errors.add(
-        "Keep your back flat—aim for a straight line from shoulders to hips.",
-      );
+    // Calculate angles
+    double kneeAngleLeft = _calculateAngle(leftHipOffset, leftKneeOffset, Offset(leftAnkle.x, leftAnkle.y));
+    double kneeAngleRight = _calculateAngle(rightHipOffset, rightKneeOffset, Offset(rightAnkle.x, rightAnkle.y));
+
+    double hipAngleLeft = _calculateAngle(leftShoulderOffset, leftHipOffset, leftKneeOffset);
+    double hipAngleRight = _calculateAngle(rightShoulderOffset, rightHipOffset, rightKneeOffset);
+    final hipAngle = (hipAngleLeft + hipAngleRight) / 2;
+
+    final torsoAngle = _torsoAngleFromHorizontal(
+      leftShoulderOffset,
+      rightShoulderOffset,
+      leftHipOffset,
+      rightHipOffset,
+    );
+
+    double elbowAngleLeft = 90;
+    double elbowAngleRight = 90;
+    if (leftWrist != null && rightWrist != null) {
+      elbowAngleLeft = _calculateAngle(leftShoulderOffset, leftElbowOffset, Offset(leftWrist.x, leftWrist.y));
+      elbowAngleRight = _calculateAngle(rightShoulderOffset, rightElbowOffset, Offset(rightWrist.x, rightWrist.y));
     }
 
-    // 2. Hip alignment vs torso.
-    if (hipAngle < torsoAngle - 10) {
-      errors.add(
-        "Your hips are sagging—gently lift them to line up with your torso.",
-      );
-    } else if (hipAngle > torsoAngle + 10) {
+    final shoulderAngle = (_calculateAngle(leftElbowOffset, leftShoulderOffset, leftHipOffset) +
+        _calculateAngle(rightElbowOffset, rightShoulderOffset, rightHipOffset)) / 2;
+
+    // Update stability
+    final stable = _updateStability(torsoAngle, hipAngle, shoulderAngle);
+    if (!stable) {
+      _allFeedbacks.add("Hold still briefly to get accurate plank feedback.");
+      return;
+    }
+
+    // Check form errors
+    final errors = <String>[];
+
+    if (torsoAngle < _minTorsoAngle || torsoAngle > _maxTorsoAngle) {
+      errors.add("Keep your back flat—aim for a straight line from shoulders to hips.");
+    }
+
+    if (hipAngle < torsoAngle - _maxHipTorsoDiff) {
+      errors.add("Your hips are sagging—gently lift them to line up with your torso.");
+    } else if (hipAngle > torsoAngle + _maxHipTorsoDiff) {
       errors.add("Your hips are piking—lower them to form a straight line.");
     }
 
-    // 3. Shoulders drifting forward/backward (stacking).
-    if (shoulderAngle < 70 || shoulderAngle > 100) {
-      errors.add(
-        "Stack shoulders over elbows—don’t lean too far forward or back.",
-      );
+    if (shoulderAngle < _minShoulderAngle || shoulderAngle > _maxShoulderAngle) {
+      errors.add("Stack shoulders over elbows—don't lean too far forward or back.");
     }
 
-    // 4. Elbow angles (forearm plank range 80°–100°).
-    if (elbowAngleLeft < 80 ||
-        elbowAngleLeft > 100 ||
-        elbowAngleRight < 80 ||
-        elbowAngleRight > 100) {
+    if (elbowAngleLeft < _minElbowAngle ||
+        elbowAngleLeft > _maxElbowAngle ||
+        elbowAngleRight < _minElbowAngle ||
+        elbowAngleRight > _maxElbowAngle) {
       errors.add("Keep elbows at roughly 90° under the shoulders.");
     }
 
-    // Basic symmetry check on legs so knees aren’t wildly uneven.
-    if ((kneeAngleLeft - kneeAngleRight).abs() > 20) {
+    if ((kneeAngleLeft - kneeAngleRight).abs() > _maxKneeImbalance) {
       errors.add("Balance both legs evenly—avoid twisting the lower body.");
     }
 
-    // --- Holding-state detection ---
-    final inGoodRange =
-        errors.isEmpty &&
-        torsoAngle >= 165 &&
-        torsoAngle <= 180 &&
-        (hipAngle - torsoAngle).abs() <= 10 &&
-        shoulderAngle >= 70 &&
-        shoulderAngle <= 100 &&
-        elbowAngleLeft >= 80 &&
-        elbowAngleLeft <= 100 &&
-        elbowAngleRight >= 80 &&
-        elbowAngleRight <= 100;
+    // Check if in good range
+    final inGoodRange = errors.isEmpty &&
+        torsoAngle >= _minTorsoAngle &&
+        torsoAngle <= _maxTorsoAngle &&
+        (hipAngle - torsoAngle).abs() <= _maxHipTorsoDiff &&
+        shoulderAngle >= _minShoulderAngle &&
+        shoulderAngle <= _maxShoulderAngle &&
+        elbowAngleLeft >= _minElbowAngle &&
+        elbowAngleLeft <= _maxElbowAngle &&
+        elbowAngleRight >= _minElbowAngle &&
+        elbowAngleRight <= _maxElbowAngle;
 
     if (inGoodRange) {
-      // Once stable pose is good, consider the plank as "holding".
-      isHolding = true;
-    }
+      _isHolding = true;
+      _holdStartTime ??= DateTime.now();
 
-    if (errors.isNotEmpty) {
-      feedback = errors.first;
-      feedbackColor = Colors.red;
+      // Check if held long enough for a rep
+      if (_holdStartTime != null &&
+          DateTime.now().difference(_holdStartTime!) >= _holdDuration) {
+        _plankCount++;
+        _correctCount++;
+        _lastRepCorrect = true;
+        _allFeedbacks.add("Great plank—hold this position!");
+        _holdStartTime = null; // Reset for next rep
+      }
     } else {
-      feedback =
-          isHolding
-              ? "Great plank—hold this position!"
-              : "Good position—settle in and hold.";
+      _isHolding = false;
+      _holdStartTime = null;
+
+      if (errors.isNotEmpty) {
+        _allFeedbacks.add(errors.first);
+        _lastRepCorrect = false;
+      } else {
+        _allFeedbacks.add("Good position—settle in and hold.");
+      }
     }
 
-    this.feedback = feedback;
-    this.feedbackColor = feedbackColor;
-  }
+    if (_plankCount >= 5) {
+      await _cameraService.controller?.stopImageStream();
+      if (!mounted) return;
 
-  double calculateAngle(PoseLandmark a, PoseLandmark b, PoseLandmark c) {
-    final abX = a.x - b.x;
-    final abY = a.y - b.y;
-    final cbX = c.x - b.x;
-    final cbY = c.y - b.y;
-    final dot = abX * cbX + abY * cbY;
-    final magAB = math.sqrt(abX * abX + abY * abY);
-    final magCB = math.sqrt(cbX * cbX + cbY * cbY);
-    final cosine = (dot / (magAB * magCB)).clamp(-1.0, 1.0);
-    return math.acos(cosine) * 180 / math.pi;
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => ExerciseSummaryScreen(
+                correct: _correctCount,
+                wrong: _wrongCount,
+                feedbacks: _allFeedbacks,
+              ),
+        ),
+      );
+    }
   }
 
   double _torsoAngleFromHorizontal(
-    PoseLandmark leftShoulder,
-    PoseLandmark rightShoulder,
-    PoseLandmark leftHip,
-    PoseLandmark rightHip,
+    Offset leftShoulder,
+    Offset rightShoulder,
+    Offset leftHip,
+    Offset rightHip,
   ) {
     final shoulder = Offset(
-      (leftShoulder.x + rightShoulder.x) / 2,
-      (leftShoulder.y + rightShoulder.y) / 2,
+      (leftShoulder.dx + rightShoulder.dx) / 2,
+      (leftShoulder.dy + rightShoulder.dy) / 2,
     );
     final hip = Offset(
-      (leftHip.x + rightHip.x) / 2,
-      (leftHip.y + rightHip.y) / 2,
+      (leftHip.dx + rightHip.dx) / 2,
+      (leftHip.dy + rightHip.dy) / 2,
     );
     final torso = shoulder - hip;
     return math.atan2(torso.dy.abs(), torso.dx.abs() + 1e-6) * 180 / math.pi;
@@ -225,7 +417,245 @@ class PlankFormCorrection {
     _previousHipAngle = hipAngle;
     _previousShoulderAngle = shoulderAngle;
 
-    // Conservative thresholds for a “steady” static hold.
-    return _torsoDrift < 4 && _hipDrift < 4 && _shoulderDrift < 4;
+    return _torsoDrift < _maxTorsoDrift && _hipDrift < _maxHipDrift && _shoulderDrift < _maxShoulderDrift;
   }
+
+  double _distance(Offset a, Offset b) =>
+      math.sqrt(math.pow(a.dx - b.dx, 2) + math.pow(a.dy - b.dy, 2));
+
+  double _calculateAngle(Offset a, Offset b, Offset c) {
+    final ab = Offset(a.dx - b.dx, a.dy - b.dy);
+    final cb = Offset(c.dx - b.dx, c.dy - b.dy);
+
+    final dot = ab.dx * cb.dx + ab.dy * cb.dy;
+    final magAB = math.sqrt(ab.dx * ab.dx + ab.dy * ab.dy);
+    final magCB = math.sqrt(cb.dx * cb.dx + cb.dy * cb.dy);
+
+    final cosine = (dot / (magAB * magCB)).clamp(-1.0, 1.0);
+    return math.acos(cosine) * 180 / math.pi;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized || _cameraService.controller == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Determine the current message
+    String displayMessage = "";
+    Color bgColor = AppColors.primary;
+
+    switch (currentStage) {
+      case ExerciseStage.distanceCheck:
+        displayMessage = distanceStatus;
+        if (displayMessage.toLowerCase().contains("too")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("perfect")) {
+          bgColor = AppColors.green;
+        } else {
+          bgColor = AppColors.primary;
+        }
+        break;
+
+      case ExerciseStage.gestureDetection:
+        displayMessage = handsStatus;
+        if (displayMessage.toLowerCase().contains("raise your hand")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("hands detected") ||
+            displayMessage.toLowerCase().contains("timer complete")) {
+          bgColor = AppColors.green;
+        } else {
+          bgColor = AppColors.primary;
+        }
+        break;
+
+      case ExerciseStage.formCorrection:
+        if (_allFeedbacks.isNotEmpty) {
+          displayMessage = _allFeedbacks.last;
+          bgColor = _lastRepCorrect ? AppColors.green : AppColors.red;
+        } else {
+          displayMessage = "Please perform the exercise.";
+          bgColor = AppColors.primary;
+        }
+        break;
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("Plank Exercise")),
+      body: Column(
+        children: [
+          // Single message panel
+          Container(
+            width: double.infinity,
+            color: bgColor,
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              displayMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: Stack(
+              children: [
+                CameraPreview(_cameraService.controller!),
+
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: CornerPainter(
+                      cornerLength: 60,
+                      strokeWidth: 5,
+                      padding: 50,
+                      topLeft: bgColor,
+                      topRight: bgColor,
+                      bottomLeft: bgColor,
+                      bottomRight: bgColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Gap(AppSizes.gap10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.padding16),
+            child: Card(
+              color: AppColors.grey,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      children: [
+                        Text("CORRECT", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_correctCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1.2,
+                      color: Colors.grey.shade300,
+                    ),
+                    Column(
+                      children: [
+                        Text("WRONG", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_wrongCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Gap(AppSizes.gap10),
+        ],
+      ),
+    );
+  }
+}
+
+class CornerPainter extends CustomPainter {
+  final double cornerLength;
+  final double strokeWidth;
+  final double padding;
+  final Color topLeft;
+  final Color topRight;
+  final Color bottomLeft;
+  final Color bottomRight;
+
+  CornerPainter({
+    this.cornerLength = 30,
+    this.strokeWidth = 4,
+    this.padding = 20,
+    required this.topLeft,
+    required this.topRight,
+    required this.bottomLeft,
+    required this.bottomRight,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.square
+          ..style = PaintingStyle.stroke;
+
+    // Top-left
+    paint.color = topLeft;
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding + cornerLength, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding, padding + cornerLength),
+      paint,
+    );
+
+    // Top-right
+    paint.color = topRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, padding),
+      Offset(size.width - padding, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, padding),
+      Offset(size.width - padding, padding + cornerLength),
+      paint,
+    );
+
+    // Bottom-left
+    paint.color = bottomLeft;
+    canvas.drawLine(
+      Offset(padding, size.height - padding - cornerLength),
+      Offset(padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, size.height - padding),
+      Offset(padding + cornerLength, size.height - padding),
+      paint,
+    );
+
+    // Bottom-right
+    paint.color = bottomRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, size.height - padding),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, size.height - padding - cornerLength),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
