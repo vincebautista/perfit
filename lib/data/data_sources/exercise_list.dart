@@ -28,7 +28,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Recovery-knee-extension-seated-partial-side-converted.mp4",
       "assets/videos/male-Recovery-knee-extension-seated-partial-front-converted.mp4",
     ],
-    image: "assets/images/exercises/knee_extension_seated_partial.jpg",
+    image: "assets/images/exercises/knee_extension_seated_partial.png",
     instructions: [
       "Sit with knees bent, feet flat under you.",
       "Extend one leg forward partially, contracting the quad.",
@@ -41,13 +41,32 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
+    id: "forearm_plank",
+    name: "Forearm Plank",
+    video: [
+      "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
+      "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/forearm_plank.png",
+    instructions: [
+      "Lie face‑down, then prop up on forearms and toes.",
+      "Keep body in a straight line, core braced.",
+      "Hold for required time while breathing steadily.",
+    ],
+    difficulty: "Beginner",
+    type: "time",
+    targetBody: "Lower Back",
+    location: "home",
+    hasFormCorrection: false,
+  ),
+  ExerciseModel(
     id: "push_up",
     name: "Push Up",
     video: [
       "assets/videos/male-Bodyweight-push-up-side-converted.mp4",
       "assets/videos/male-Bodyweight-push-up-front-converted.mp4",
     ],
-    image: "assets/images/exercises/push_up.jpg",
+    image: "assets/images/exercises/push_up.png",
     instructions: [
       "Start in plank on hands under shoulders.",
       "Lower chest toward the floor while keeping a straight line.",
@@ -60,13 +79,32 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
+    id: "split_squat",
+    name: "Split Squat",
+    video: [
+      "assets/videos/male-bodyweight-split-squat-side-converted.mp4",
+      "assets/videos/male-bodyweight-split-squat-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/split_squat.png",
+    instructions: [
+      "Stand in a split stance, back foot elevated or on ground.",
+      "Bend front knee and lower until back knee nears floor.",
+      "Push through front heel to return.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Quadriceps",
+    location: "home",
+    hasFormCorrection: false,
+  ),
+  ExerciseModel(
     id: "bodyweight_squat",
     name: "Bodyweight Squat",
     video: [
       "assets/videos/male-Bodyweight-bodyweight-squat-side-converted.mp4",
       "assets/videos/male-Bodyweight-bodyweight-squat-front-converted.mp4",
     ],
-    image: "assets/images/exercises/bodyweight_squat.jpg",
+    image: "assets/images/exercises/bodyweight_squat.png",
     instructions: [
       "Stand feet shoulder‑width apart, toes slightly out.",
       "Lower hips by bending knees and pushing them out.",
@@ -79,13 +117,32 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
+    id: "crunches",
+    name: "Crunches",
+    video: [
+      "assets/videos/male-bodyweight-crunch-side-converted.mp4",
+      "assets/videos/male-bodyweight-crunch-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/crunches.png",
+    instructions: [
+      "Lie on back with knees bent, feet flat.",
+      "Lift shoulders toward hips, engaging upper abs.",
+      "Lower with control.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Upper Abs",
+    location: "home",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
     id: "barbell_bent_over_row",
     name: "Barbell Bent Over Row",
     video: [
       "assets/videos/male-barbell-bent-over-row-side-converted.mp4",
       "assets/videos/male-barbell-bent-over-row-front-converted.mp4",
     ],
-    image: "assets/images/exercises/bent_over.jpg",
+    image: "assets/images/exercises/bent_over.png",
     instructions: [
       "Grab a barbell with a shoulder width pronated or supinated grip.",
       "Bend forward at your hips while maintaining a flat back.",
@@ -143,7 +200,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-barbell-bench-press-side_KciuhbB-converted.mp4",
       "assets/videos/male-barbell-bench-press-front-converted.mp4",
     ],
-    image: "assets/images/exercises/bench.jpg",
+    image: "assets/images/exercises/bench.png",
     instructions: [
       "Lay flat on the bench with your feet on the ground. With straight arms unrack the bar.",
       "Lower the bar to your mid chest",
@@ -162,7 +219,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Barbell-barbell-deadlift-side.mp4",
       "assets/videos/male-Barbell-barbell-deadlift-front.mp4",
     ],
-    image: "assets/images/exercises/deadlift.jpg",
+    image: "assets/images/exercises/barbell_squat.png",
     instructions: [
       "Stand with your mid-foot under the bar and grip the bar with your hands, about a shoulder width apart.",
       "Bend your knees, then lift the bar by straightening your back. It is important to keep your back straight.",
@@ -201,7 +258,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-wall-sit-side-converted.mp4",
       "assets/videos/male-Bodyweight-wall-sit-front-converted.mp4",
     ],
-    image: "assets/images/exercises/wall_sit.jpg",
+    image: "assets/images/exercises/wall_sit.png",
     instructions: [
       "Press your back against a wall, feet shoulder‑width apart.",
       "Lower into a squat position so your thighs are parallel to the floor and knees are above ankles.",
@@ -219,7 +276,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-glute-bridge-side-converted.mp4",
       "assets/videos/male-Bodyweight-glute-bridge-front-converted.mp4",
     ],
-    image: "assets/images/exercises/glute_bridge.jpg",
+    image: "assets/images/exercises/glute_bridge.png",
     instructions: [
       "Lie on your back with knees bent, feet flat and hip‑width apart.",
       "Drive through your heels to lift your hips until torso is in line with thighs.",
@@ -237,7 +294,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Recovery-abductor-leg-raise-side-lying-side-converted.mp4",
       "assets/videos/male-Recovery-abductor-leg-raise-side-lying-front-converted.mp4",
     ],
-    image: "assets/images/exercises/abductor_leg_raise_side_lying.jpg",
+    image: "assets/images/exercises/abductor_leg_raise_side_lying.png",
     instructions: [
       "Lie on your side with legs straight and stacked.",
       "Lift the top leg up toward the ceiling while keeping it straight.",
@@ -255,7 +312,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-calf-raises-front-converted.mp4",
       "assets/videos/male-Bodyweight-calf-raises-side-converted.mp4",
     ],
-    image: "assets/images/exercises/calf_raises.jpg",
+    image: "assets/images/exercises/calf_raises.png",
     instructions: [
       "Stand with feet hip‑width apart.",
       "Raise your heels off the ground by extending at the ankle.",
@@ -273,7 +330,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-dead-bug-side-converted.mp4",
       "assets/videos/male-Bodyweight-dead-bug-front-converted.mp4",
     ],
-    image: "assets/images/exercises/dead_bug.jpg",
+    image: "assets/images/exercises/dead_bug.png",
     instructions: [
       "Lie face‑up, arms straight up and knees bent 90° over hips.",
       "Extend opposite arm and leg away while keeping back flat.",
@@ -292,7 +349,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-bird-dog-side-converted.mp4",
       "assets/videos/male-Bodyweight-bird-dog-front-converted.mp4",
     ],
-    image: "assets/images/exercises/bird_dog.jpg",
+    image: "assets/images/exercises/bird_dog.png",
     instructions: [
       "Start on all fours, back flat.",
       "Extend opposite arm and leg, keeping hips level.",
@@ -311,7 +368,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-bodyweight-hand-side-plank-side-converted.mp4",
       "assets/videos/male-bodyweight-hand-side-plank-front-converted.mp4",
     ],
-    image: "assets/images/exercises/hand_side_plank.jpg",
+    image: "assets/images/exercises/hand_side_plank.png",
     instructions: [
       "Lie on your side, prop up on one hand under shoulder.",
       "Stack feet, lift hips forming a straight line.",
@@ -329,7 +386,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-hollow-hold-side-converted.mp4",
       "assets/videos/male-Bodyweight-hollow-hold-front-converted.mp4",
     ],
-    image: "assets/images/exercises/hollow_hold.jpg",
+    image: "assets/images/exercises/hollow_hold.png",
     instructions: [
       "Lie face‑up, press lower back into the floor.",
       "Lift shoulders and legs off the ground, arms overhead.",
@@ -347,7 +404,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-toe-tap-side-converted.mp4",
       "assets/videos/male-Bodyweight-toe-tap-front-converted.mp4",
     ],
-    image: "assets/images/exercises/toe_tap.jpg",
+    image: "assets/images/exercises/toe_tap.png",
     instructions: [
       "Lie on back, arms overhead, legs lifted in tabletop.",
       "Lower one foot to tap the ground, then return tabletop.",
@@ -366,7 +423,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Recovery-wall-angels-side-converted.mp4",
       "assets/videos/male-Recovery-wall-angels-front-converted.mp4",
     ],
-    image: "assets/images/exercises/wall_angel.jpg",
+    image: "assets/images/exercises/wall_angel.png",
     instructions: [
       "Stand with back, head, and arms (in 'goal post') against wall.",
       "Slide arms up overhead, then back down, keeping contact.",
@@ -384,7 +441,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-incline-push-up-side-converted.mp4",
       "assets/videos/male-Bodyweight-incline-push-up-front-converted.mp4",
     ],
-    image: "assets/images/exercises/incline_push_up.jpg",
+    image: "assets/images/exercises/incline_push_up.png",
     instructions: [
       "Place hands on elevated surface, body straight.",
       "Lower chest toward the surface, then push back up.",
@@ -401,7 +458,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-single-leg-glute-bridge-side-converted.mp4",
       "assets/videos/male-Bodyweight-single-leg-glute-bridge-front-converted.mp4",
     ],
-    image: "assets/images/exercises/single_leg_glute_bridge.jpg",
+    image: "assets/images/exercises/single_leg_glute_bridge.png",
     instructions: [
       "Lie on back with one knee bent and the other straight.",
       "Drive through the heel of bent leg to lift hips while keeping other leg extended.",
@@ -436,7 +493,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-supermans-side-converted.mp4",
       "assets/videos/male-Bodyweight-supermans-front-converted.mp4",
     ],
-    image: "assets/images/exercises/supermans.jpg",
+    image: "assets/images/exercises/supermans.png",
     instructions: [
       "Lie face‑down with arms extended overhead.",
       "Lift arms, chest, and legs off the ground simultaneously.",
@@ -454,7 +511,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-bodyweight-hand-plank-side_GnZ2NZh-converted.mp4",
       "assets/videos/male-bodyweight-hand-plank-front_ZnMlFBF-converted.mp4",
     ],
-    image: "assets/images/exercises/hand_plank.jpg",
+    image: "assets/images/exercises/hand_plank.png",
     instructions: [
       "Prop up on hands and toes, hands under shoulders.",
       "Maintain straight body line, braced core.",
@@ -472,7 +529,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-kickbacks-side-converted.mp4",
       "assets/videos/male-Bodyweight-kickbacks-front-converted.mp4",
     ],
-    image: "assets/images/exercises/kickbacks.jpg",
+    image: "assets/images/exercises/kickbacks.png",
     instructions: [
       "On all fours, extend one leg straight back and up.",
       "Squeeze glute at top, then lower with control.",
@@ -490,7 +547,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-bodyweight-knee-push-ups-side-converted.mp4",
       "assets/videos/male-Bodyweight-bodyweight-knee-push-ups-front-converted.mp4",
     ],
-    image: "assets/images/exercises/bodyweight_knee_push_ups.jpg",
+    image: "assets/images/exercises/bodyweight_knee_push_ups.png",
     instructions: [
       "Start in plank on knees, hands under shoulders.",
       "Lower chest toward floor, then push back up.",
@@ -508,7 +565,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Bodyweight-bodyweight-box-assisted-dips-side-converted.mp4",
       "assets/videos/male-Bodyweight-bodyweight-box-assisted-dips-front-converted.mp4",
     ],
-    image: "assets/images/exercises/bodyweight_box_assisted_dips.jpg",
+    image: "assets/images/exercises/bodyweight_box_assisted_dips.png",
     instructions: [
       "Sit on edge of box, hands beside hips.",
       "Slide forward, lower body by bending elbows behind you.",
@@ -526,7 +583,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-bodyweight-elbow-side-plank-side-converted.mp4",
       "assets/videos/male-bodyweight-elbow-side-plank-front-converted.mp4",
     ],
-    image: "assets/images/exercises/elbow_side_plank.jpg",
+    image: "assets/images/exercises/elbow_side_plank.png",
     instructions: [
       "Lie on your side, prop elbow under shoulder.",
       "Stack feet, lift hips forming straight line.",
@@ -545,7 +602,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-dumbbell-goblet-squat-side-converted.mp4",
       "assets/videos/male-dumbbell-goblet-squat-front-converted.mp4",
     ],
-    image: "assets/images/exercises/goblet_squat.jpg",
+    image: "assets/images/exercises/goblet_squat.png",
     instructions: [
       "Hold the weight tucked into your upper chest area, keeping your elbows in. Your feet should be slightly wider than shoulder width.",
       "Sink down into the squat, keeping your elbows inside the track of your knees.",
@@ -672,7 +729,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-plate-weighted-forearm-plank-side-converted.mp4",
       "assets/videos/male-plate-weighted-forearm-plank-front-converted.mp4",
     ],
-    image: "assets/images/exercises/forearm.jpg",
+    image: "assets/images/exercises/forearm.png",
     instructions: [
       "Get into a kneeling position with both forearms pressed into the ground.",
       "Place a weight plate on your back (or have a partner do it for you).",
@@ -726,7 +783,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-Barbell-barbell-squat-side-converted.mp4",
       "assets/videos/male-Barbell-barbell-squat-front-converted.mp4",
     ],
-    image: "assets/images/exercises/barbell_squat.jpg",
+    image: "assets/images/exercises/barbell_squat.png",
     instructions: [
       "Place barbell evenly across upper back.",
       "Stand with your feet shoulder-width apart. Maintain the natural arch in your back, squeezing your shoulder blades and raising your chest.",
