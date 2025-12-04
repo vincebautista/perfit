@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:perfit/core/services/recipe_service.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class RecipeSearchScreen extends StatefulWidget {
   const RecipeSearchScreen({super.key});
@@ -53,7 +54,7 @@ class _RecipeSearchScreenState extends State<RecipeSearchScreen> {
             Expanded(
               child:
                   _loading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(child: WalkAnimation())
                       : ListView.builder(
                         itemCount: _recipes.length,
                         itemBuilder: (context, index) {

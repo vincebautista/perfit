@@ -5,6 +5,7 @@ import 'package:perfit/screens/my_meal_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
 
@@ -60,7 +61,7 @@ class _MyMealScreenState extends State<MyMealScreen> {
                         .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return Center(child: WalkAnimation());
                   }
 
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {

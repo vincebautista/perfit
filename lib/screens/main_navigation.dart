@@ -10,6 +10,7 @@ import 'package:perfit/screens/progress_tracking_screen.dart';
 import 'package:perfit/screens/welcome_screen.dart';
 import 'package:perfit/screens/workout_screen.dart';
 import 'package:perfit/widgets/custom_navigation_bar.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key, this.initialIndex = 0});
@@ -46,7 +47,7 @@ class _MainNavigationState extends State<MainNavigation> {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (_, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircularProgressIndicator(color: AppColors.primary);
+            return WalkAnimation();
           }
 
           if (!snapshot.hasData) {

@@ -12,6 +12,7 @@ import 'package:perfit/screens/all_exercises_screen.dart';
 import 'package:perfit/screens/assessment/gender_screen.dart';
 import 'package:perfit/screens/perform_exercise_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -438,7 +439,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(title: Text("Workout Plan")),
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: WalkAnimation()),
       );
     }
 

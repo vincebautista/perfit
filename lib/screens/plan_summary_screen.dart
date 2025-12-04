@@ -15,6 +15,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:perfit/widgets/text_styles.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -185,7 +186,7 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  WalkAnimation(),
                   Gap(50),
                   Text("Generating your plan...", style: TextStyles.body),
                 ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/screens/plan_information_screen.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class PlanHistoryScreen extends StatefulWidget {
   const PlanHistoryScreen({super.key});
@@ -46,7 +47,7 @@ class _PlanHistoryScreenState extends State<PlanHistoryScreen> {
         future: getPlanHistory(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: WalkAnimation());
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {

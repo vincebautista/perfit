@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class FoodScreen extends StatefulWidget {
   const FoodScreen({super.key});
@@ -61,7 +62,7 @@ class _FoodScreenState extends State<FoodScreen> {
         builder: (context, nutritionPlanSnapshot) {
           if (nutritionPlanSnapshot.connectionState ==
               ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return Center(child: WalkAnimation());
           }
 
           if (nutritionPlanSnapshot.hasError) {
@@ -110,7 +111,7 @@ class _FoodScreenState extends State<FoodScreen> {
                           .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
+                      return Center(child: WalkAnimation());
                     }
 
                     if (snapshot.hasError) {

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 final List<Map<String, dynamic>> allBadges = [
   {
@@ -121,7 +122,7 @@ class BadgeScreen extends StatelessWidget {
         future: _getActiveFitnessPlan(uid),
         builder: (context, planSnap) {
           if (planSnap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: WalkAnimation());
           }
           if (!planSnap.hasData ||
               planSnap.data == null ||
@@ -135,7 +136,7 @@ class BadgeScreen extends StatelessWidget {
             future: _prepareBadges(uid, fitnessPlanId),
             builder: (context, badgeSnap) {
               if (badgeSnap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: WalkAnimation());
               }
 
               final earnedBadges = badgeSnap.data ?? {};

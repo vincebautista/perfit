@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:http/http.dart' as http;
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:provider/provider.dart';
 
 class AddFoodScreen extends StatefulWidget {
@@ -165,7 +166,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
+                            return Center(child: WalkAnimation());
                           }
 
                           if (snapshot.hasError) {

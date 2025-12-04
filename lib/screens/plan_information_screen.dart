@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 
 class PlanInformationScreen extends StatefulWidget {
@@ -93,9 +94,7 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
-              ),
+              child: WalkAnimation()
             );
           }
 

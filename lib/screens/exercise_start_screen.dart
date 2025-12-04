@@ -417,7 +417,7 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
                       ),
                     if (widget.exercise.type == "rep" && widget.reps != null)
                       Text(
-                        "Perform ${widget.sets} sets of ${widget.reps} reps \n NEED REDESIGN",
+                        "Perform ${widget.sets} sets of ${widget.reps} reps",
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w500,

@@ -15,6 +15,7 @@ import 'package:gap/gap.dart';
 import 'package:perfit/core/services/gemini_api_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/widgets/text_styles.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:printing/printing.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -176,7 +177,7 @@ bool isDarkMode = true;
       future: _getPast7DaysWithGeminiCheck(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: WalkAnimation());
         }
 
         if (snapshot.hasError) {
@@ -1316,7 +1317,7 @@ bool isDarkMode = true;
       future: _getTodayWithGeminiCheck(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: WalkAnimation());
         }
 
         if (snapshot.hasError) {
@@ -1503,7 +1504,7 @@ bool isDarkMode = true;
       future: _getLastMonthWithGeminiCheck(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: WalkAnimation());
         }
 
         if (snapshot.hasError) {

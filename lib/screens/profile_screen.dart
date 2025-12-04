@@ -17,6 +17,7 @@ import 'package:perfit/screens/form_correction/knee_extension_seated_partial_scr
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/screens/plan_history_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -97,9 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
-              ),
+              child: WalkAnimation(),
             );
           }
 
@@ -114,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       .get(),
               builder: (context, userSnapshot) {
                 if (userSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: WalkAnimation());
                 }
 
                 if (userSnapshot.hasData && userSnapshot.data!.exists) {

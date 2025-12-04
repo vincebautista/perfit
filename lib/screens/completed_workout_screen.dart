@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class CompletedWorkoutScreen extends StatelessWidget {
   final String userId;
@@ -34,7 +35,7 @@ class CompletedWorkoutScreen extends StatelessWidget {
                 .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: WalkAnimation());
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>?;

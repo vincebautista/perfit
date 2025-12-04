@@ -11,6 +11,7 @@ import 'package:perfit/screens/form_correction/form_correction_router.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 
@@ -385,7 +386,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                   Gap(AppSizes.gap20),
                 ],
               )
-              : Center(child: CircularProgressIndicator()),
+              : Center(child: WalkAnimation()),
     );
   }
 }

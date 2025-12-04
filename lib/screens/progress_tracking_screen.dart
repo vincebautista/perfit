@@ -12,6 +12,7 @@ import 'package:perfit/core/services/gemini_api_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/completed_workout_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 import 'package:intl/intl.dart';
 import 'package:quickalert/models/quickalert_type.dart';
@@ -37,9 +38,9 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
   Map<String, dynamic>? _cachedFitnessPlan;
 
   final geminiService = GeminiApiService();
-final SettingService _settingService = SettingService();  
+  final SettingService _settingService = SettingService();
 
-bool isDarkMode = true;
+  bool isDarkMode = true;
   @override
   void initState() {
     // TODO: implement initState
@@ -49,6 +50,7 @@ bool isDarkMode = true;
     uid = user?.uid;
     _loadTheme();
   }
+
   Future<void> _loadTheme() async {
     final mode = await _settingService.loadThemeMode();
     if (!mounted) return;
@@ -576,9 +578,7 @@ bool isDarkMode = true;
         builder: (context, authSnapshot) {
           if (authSnapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(
-                color: Theme.of(context).primaryColor,
-              ),
+              child: WalkAnimation(),
             );
           }
 
@@ -597,9 +597,7 @@ bool isDarkMode = true;
             builder: (context, userSnapshot) {
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return Center(
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).primaryColor,
-                  ),
+                  child: WalkAnimation()
                 );
               }
 
@@ -616,8 +614,6 @@ bool isDarkMode = true;
                 );
               }
 
-              
-
               return StreamBuilder<QuerySnapshot>(
                 stream:
                     FirebaseFirestore.instance
@@ -630,9 +626,7 @@ bool isDarkMode = true;
                 builder: (context, logsSnapshot) {
                   if (logsSnapshot.connectionState == ConnectionState.waiting) {
                     return Center(
-                      child: CircularProgressIndicator(
-                        color: Theme.of(context).primaryColor,
-                      ),
+                      child: WalkAnimation(),
                     );
                   }
 
@@ -652,7 +646,7 @@ bool isDarkMode = true;
                               return const Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Center(
-                                  child: CircularProgressIndicator(),
+                                  child: WalkAnimation(),
                                 ),
                               );
                             }
@@ -735,6 +729,7 @@ bool isDarkMode = true;
                           selectedMonth,
                           selectedYear,
                         ),
+
                         const SizedBox(height: 20),
                         Text("Completed Workouts", style: TextStyles.body),
                         Gap(AppSizes.gap10),
@@ -749,7 +744,7 @@ bool isDarkMode = true;
                           builder: (context, planSnapshot) {
                             if (!planSnapshot.hasData) {
                               return const Center(
-                                child: CircularProgressIndicator(),
+                                child: WalkAnimation(),
                               );
                             }
 
@@ -758,6 +753,7 @@ bool isDarkMode = true;
                                     as Map<String, dynamic>? ??
                                 {};
                             final currentDay = planData["currentDay"] ?? 0;
+                            final planDuration = planData["planDuration"] ?? 30;
 
                             return StreamBuilder<QuerySnapshot>(
                               stream:
@@ -772,7 +768,7 @@ bool isDarkMode = true;
                               builder: (context, workoutSnapshot) {
                                 if (!workoutSnapshot.hasData) {
                                   return const Center(
-                                    child: CircularProgressIndicator(),
+                                    child: WalkAnimation(),
                                   );
                                 }
 
@@ -809,71 +805,66 @@ bool isDarkMode = true;
                                 }
 
                                 return Column(
-                                  children:
-                                      limited.map((doc) {
-                                        final data =
-                                            doc.data() as Map<String, dynamic>;
-                                        final dayNum =
-                                            int.tryParse(doc.id) ?? 0;
-                                        final split =
-                                            data["split"] ?? "Workout";
-                                        final dateCompleted =
-                                            data["dateCompleted"] != null
-                                                ? (data["dateCompleted"]
-                                                        as Timestamp)
-                                                    .toDate()
-                                                : null;
+                                  children: [
+                                    ...limited.map((doc) {
+                                      final data =
+                                          doc.data() as Map<String, dynamic>;
+                                      final dayNum = int.tryParse(doc.id) ?? 0;
+                                      final split = data["split"] ?? "Workout";
+                                      final dateCompleted =
+                                          data["dateCompleted"] != null
+                                              ? (data["dateCompleted"]
+                                                      as Timestamp)
+                                                  .toDate()
+                                              : null;
 
-                                        print(doc.id);
-
-                                        return Card(
-                                          margin: const EdgeInsets.symmetric(
-                                            vertical: 6,
-                                          ),
-                                          child: ListTile(
-                                            leading: CircleAvatar(
-                                              backgroundColor:
-                                                  AppColors.primary,
-                                              child: Text(
-                                                dayNum.toString(),
-                                                style: TextStyle(
-                                                  color: AppColors.white,
-                                                ),
+                                      return Card(
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 6,
+                                        ),
+                                        child: ListTile(
+                                          leading: CircleAvatar(
+                                            backgroundColor: AppColors.primary,
+                                            child: Text(
+                                              dayNum.toString(),
+                                              style: TextStyle(
+                                                color: AppColors.white,
                                               ),
                                             ),
-                                            title: Text("$split Day"),
-                                            subtitle:
-                                                dateCompleted != null
-                                                    ? Text(
-                                                      DateFormat(
-                                                        "MMM d, yyyy – h:mm a",
-                                                      ).format(dateCompleted),
-                                                    )
-                                                    : const Text(
-                                                      "No completion date",
-                                                    ),
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (
-                                                        _,
-                                                      ) => CompletedWorkoutScreen(
-                                                        userId: user.uid,
-                                                        planId:
-                                                            activeFitnessPlan,
-                                                        workoutId: doc.id,
-                                                        split: split,
-                                                        dateCompleted:
-                                                            dateCompleted,
-                                                      ),
-                                                ),
-                                              );
-                                            },
                                           ),
-                                        );
-                                      }).toList(),
+                                          title: Text("$split Day"),
+                                          subtitle:
+                                              dateCompleted != null
+                                                  ? Text(
+                                                    DateFormat(
+                                                      "MMM d, yyyy – h:mm a",
+                                                    ).format(dateCompleted),
+                                                  )
+                                                  : const Text(
+                                                    "No completion date",
+                                                  ),
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (_) =>
+                                                        CompletedWorkoutScreen(
+                                                          userId: user.uid,
+                                                          planId:
+                                                              activeFitnessPlan,
+                                                          workoutId: doc.id,
+                                                          split: split,
+                                                          dateCompleted:
+                                                              dateCompleted,
+                                                        ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ],
                                 );
                               },
                             );
@@ -903,7 +894,7 @@ bool isDarkMode = true;
       return SizedBox(
         width: double.infinity,
         height: 300,
-        child: const Center(child: CircularProgressIndicator()),
+        child: const Center(child: WalkAnimation()),
       );
     }
 

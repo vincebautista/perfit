@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 import 'package:perfit/core/services/setting_service.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class ThumbsUpTimerScreen extends StatefulWidget {
   @override
@@ -211,7 +212,7 @@ class _ThumbsUpTimerScreenState extends State<ThumbsUpTimerScreen> {
   @override
   Widget build(BuildContext context) {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(body: Center(child: WalkAnimation()));
     }
 
     return Scaffold(

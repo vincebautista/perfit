@@ -15,6 +15,7 @@ import 'package:perfit/screens/exercise_screen.dart';
 import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/widgets/last_7_days_chart.dart';
 import 'package:perfit/widgets/text_styles.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -168,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               // Full-screen loading indicator
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: WalkAnimation());
             }
 
             if (!snapshot.hasData) {

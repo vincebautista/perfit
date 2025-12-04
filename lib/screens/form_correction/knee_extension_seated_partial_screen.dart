@@ -14,6 +14,7 @@ import 'package:perfit/core/services/pose_detection_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/exercise_summary_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
+import 'package:perfit/widgets/walk_animation.dart';
 
 class KneeExtensionSeatedPartialScreen extends StatefulWidget {
   const KneeExtensionSeatedPartialScreen({super.key});
@@ -321,7 +322,7 @@ class _KneeExtensionSeatedPartialScreenState
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _cameraService.controller == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: WalkAnimation()));
     }
 
     String displayMessage = "";
