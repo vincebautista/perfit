@@ -41,25 +41,6 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
-    id: "forearm_plank",
-    name: "Forearm Plank",
-    video: [
-      "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
-      "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/forearm_plank.png",
-    instructions: [
-      "Lie face‑down, then prop up on forearms and toes.",
-      "Keep body in a straight line, core braced.",
-      "Hold for required time while breathing steadily.",
-    ],
-    difficulty: "Beginner",
-    type: "time",
-    targetBody: "Lower Back",
-    location: "home",
-    hasFormCorrection: false,
-  ),
-  ExerciseModel(
     id: "push_up",
     name: "Push Up",
     video: [
@@ -117,25 +98,6 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
-    id: "crunches",
-    name: "Crunches",
-    video: [
-      "assets/videos/male-bodyweight-crunch-side-converted.mp4",
-      "assets/videos/male-bodyweight-crunch-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/crunches.png",
-    instructions: [
-      "Lie on back with knees bent, feet flat.",
-      "Lift shoulders toward hips, engaging upper abs.",
-      "Lower with control.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Upper Abs",
-    location: "home",
-    hasFormCorrection: true,
-  ),
-  ExerciseModel(
     id: "barbell_bent_over_row",
     name: "Barbell Bent Over Row",
     video: [
@@ -162,7 +124,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-bodyweight-split-squat-side-converted.mp4",
       "assets/videos/male-bodyweight-split-squat-front-converted.mp4",
     ],
-    image: "assets/images/exercises/split_squat.jpg",
+    image: "assets/images/exercises/split_squat.png",
     instructions: [
       "Stand in a split stance, back foot elevated or on ground.",
       "Bend front knee and lower until back knee nears floor.",
@@ -181,7 +143,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-bodyweight-crunch-side-converted.mp4",
       "assets/videos/male-bodyweight-crunch-front-converted.mp4",
     ],
-    image: "assets/images/exercises/crunches.jpg",
+    image: "assets/images/exercises/crunches.png",
     instructions: [
       "Lie on back with knees bent, feet flat.",
       "Lift shoulders toward hips, engaging upper abs.",
@@ -239,7 +201,7 @@ List<ExerciseModel> exercises = [
       "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
       "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
     ],
-    image: "assets/images/exercises/forearm_plank.jpg",
+    image: "assets/images/exercises/forearm_plank.png",
     instructions: [
       "Lie face‑down, then prop up on forearms and toes.",
       "Keep body in a straight line, core braced.",
