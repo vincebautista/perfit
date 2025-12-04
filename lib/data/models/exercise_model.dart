@@ -8,6 +8,7 @@ class ExerciseModel {
   final String type;
   final String targetBody;
   final String location;
+  final bool hasFormCorrection;
 
   ExerciseModel({
     required this.id,
@@ -18,6 +19,7 @@ class ExerciseModel {
     required this.difficulty,
     required this.type,
     required this.targetBody,
-    required this.location, 
+    required this.location,
+    this.hasFormCorrection = false,
   });
 }

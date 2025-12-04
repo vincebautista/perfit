@@ -7,6 +7,7 @@ import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
 import 'package:perfit/data/data_sources/exercise_list.dart';
 import 'package:perfit/data/models/exercise_model.dart';
+import 'package:perfit/screens/form_correction/form_correction_router.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -86,6 +87,39 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       appBar: AppBar(
         title: Text(exercise.name),
         actions: [
+          if (exercise.hasFormCorrection && !widget.fromWorkoutScreen)
+            GestureDetector(
+              onTap: () {
+                final correctionScreen = FormCorrectionRouter.getScreen(
+                  exercise.id,
+                );
+
+                if (correctionScreen == null) {
+                  ValidationUtils.snackBar(
+                    context,
+                    "Form correction not available for this exercise!",
+                  );
+                  return;
+                }
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => correctionScreen),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.padding16 * 2,
+                  vertical: AppSizes.padding16,
+                ),
+                child: Text(
+                  "Form Correction",
+                  style: TextStyles.label.copyWith(
+                    color: isDarkMode ? AppColors.white : AppColors.black,
+                  ),
+                ),
+              ),
+            ),
           if (widget.fromWorkoutScreen)
             TextButton(
               onPressed: () async {
