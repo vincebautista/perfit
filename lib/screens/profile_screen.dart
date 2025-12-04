@@ -97,9 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: WalkAnimation(),
-            );
+            return Center(child: WalkAnimation());
           }
 
           if (snapshot.hasData) {
@@ -261,7 +259,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Card(
-                              color: AppColors.grey,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
                               child: ListTile(
                                 onTap:
                                     () => NavigationUtils.push(
@@ -417,7 +418,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: Text("Edit $title"),
+            title: Text(
+              "Edit $title",
+              style: TextStyles.caption.copyWith(
+                color: isDarkMode ? AppColors.lightgrey : AppColors.black,
+                fontSize: 20,
+              ),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

@@ -1,5 +1,743 @@
+// import 'dart:math' as math;
+// import 'dart:typed_data';
+
+// import 'package:camera/camera.dart';
+// import 'package:flutter/material.dart';
+// import 'package:gap/gap.dart';
+// import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+// import 'package:perfit/core/constants/colors.dart';
+// import 'package:perfit/core/constants/sizes.dart';
+// import 'package:perfit/core/services/camera_service.dart';
+// import 'package:perfit/core/services/distance_service.dart';
+// import 'package:perfit/core/services/gesture_service.dart';
+// import 'package:perfit/core/services/pose_detection_service.dart';
+// import 'package:perfit/core/services/setting_service.dart';
+// import 'package:perfit/screens/exercise_summary_screen.dart';
+// import 'package:perfit/widgets/text_styles.dart';
+// import 'package:perfit/widgets/walk_animation.dart';
+
+// class KneeExtensionSeatedPartialScreen extends StatefulWidget {
+//   const KneeExtensionSeatedPartialScreen({super.key});
+
+//   @override
+//   State<KneeExtensionSeatedPartialScreen> createState() =>
+//       _KneeExtensionSeatedPartialScreenState();
+// }
+
+// enum ExerciseStage { distanceCheck, gestureDetection, formCorrection }
+
+// class _KneeExtensionSeatedPartialScreenState
+//     extends State<KneeExtensionSeatedPartialScreen> {
+//   // Services
+//   final CameraService _cameraService = CameraService();
+//   final PoseDetectionService _poseService = PoseDetectionService();
+//   final DistanceService _distanceService = DistanceService();
+//   final GestureService _gestureService = GestureService();
+
+//   // Camera and stream state
+//   bool _isInitialized = false;
+//   bool _isBusy = false;
+//   Pose? _lastPose;
+//   Size? _cameraImageSize;
+
+//   double _currentKneeAngle = 0.0;
+//   double _maxKneeAngleDuringRep = 0.0;
+
+//   // Exercise stage
+//   ExerciseStage currentStage = ExerciseStage.distanceCheck;
+
+//   // Distance and gesture messages
+//   String distanceStatus = "Checking distance...";
+//   String handsStatus = "Raise your right hand above the head";
+//   String countdownStatus = "";
+//   int countdown = 3;
+
+//   // Form correction counters
+//   int _rightCurlCount = 0; // Number of reps completed
+//   int _rightCorrectCount = 0; // Number of correct reps
+//   int _rightWrongCount = 0; // Number of incorrect reps
+//   List<String> _feedback = []; // Feedback per rep
+//   List<String> _allFeedbacks = [];
+
+//   // Form detection flags
+//   bool _rightStartedDown = false; // Leg bent start position detected
+//   bool _rightReachedUp = false; // Leg extended position detected
+
+//   // Knee extension thresholds
+//   final double _kneeMinBentAngle = 120.0; // Minimum knee angle (foot down)
+//   final double _kneeMaxExtendAngle = 160.0; // Maximum knee angle (leg extended)
+
+//   bool _isDisposed = false;
+//   bool _lastRepCorrect = true;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     Future.delayed(const Duration(seconds: 1), () async {
+//       await _initCamera();
+//       _loadCountdown();
+//     });
+//   }
+
+//   Future<void> _loadCountdown() async {
+//     final countdownData = await SettingService().loadCountdown();
+//     countdown = countdownData["countdown"] ?? 3;
+//   }
+
+//   Future<void> _initCamera() async {
+//     await _cameraService.initCamera();
+//     _cameraService.startStream(_processCameraImage);
+//     setState(() => _isInitialized = true);
+//   }
+
+//   @override
+//   void dispose() {
+//     _isDisposed = true;
+//     _cameraService.dispose();
+//     super.dispose();
+//   }
+
+//   Future<void> _processCameraImage(CameraImage image) async {
+//     if (_isBusy) return;
+//     _isBusy = true;
+
+//     _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
+//     try {
+//       if (_isDisposed) return;
+//       final inputImage = _cameraImageToInputImage(
+//         image,
+//         _cameraService.controller!.description.sensorOrientation,
+//       );
+
+//       final poses = await _poseService.detectPoses(inputImage);
+//       if (poses.isEmpty) return;
+
+//       final pose = poses.first;
+//       _lastPose = pose;
+
+//       switch (currentStage) {
+//         case ExerciseStage.distanceCheck:
+//           _handleDistanceCheck(pose);
+//           break;
+//         case ExerciseStage.gestureDetection:
+//           _handleGestureDetection(pose);
+//           break;
+//         case ExerciseStage.formCorrection:
+//           await _handleFormCorrection(pose);
+//           break;
+//       }
+//     } finally {
+//       _isBusy = false;
+//       if (mounted && !_isDisposed) {
+//         setState(() {});
+//       }
+//     }
+//   }
+
+//   InputImage _cameraImageToInputImage(CameraImage image, int rotation) {
+//     final width = image.width;
+//     final height = image.height;
+//     final uvRowStride = image.planes[1].bytesPerRow;
+//     final uvPixelStride = image.planes[1].bytesPerPixel!;
+
+//     final nv21 = Uint8List(width * height * 3 ~/ 2);
+
+//     for (int i = 0; i < height; i++) {
+//       nv21.setRange(
+//         i * width,
+//         (i + 1) * width,
+//         image.planes[0].bytes,
+//         i * image.planes[0].bytesPerRow,
+//       );
+//     }
+
+//     int uvIndex = 0;
+//     for (int i = 0; i < height ~/ 2; i++) {
+//       for (int j = 0; j < width ~/ 2; j++) {
+//         final u = image.planes[1].bytes[i * uvRowStride + j * uvPixelStride];
+//         final v = image.planes[2].bytes[i * uvRowStride + j * uvPixelStride];
+//         nv21[width * height + uvIndex++] = v;
+//         nv21[width * height + uvIndex++] = u;
+//       }
+//     }
+
+//     return InputImage.fromBytes(
+//       bytes: nv21,
+//       metadata: InputImageMetadata(
+//         size: Size(width.toDouble(), height.toDouble()),
+//         rotation:
+//             InputImageRotationValue.fromRawValue(rotation) ??
+//             InputImageRotation.rotation0deg,
+//         format: InputImageFormat.nv21,
+//         bytesPerRow: image.planes[0].bytesPerRow,
+//       ),
+//     );
+//   }
+
+//   void _handleDistanceCheck(Pose pose) {
+//     final distanceCm = _distanceService.computeSmoothedDistance(pose);
+//     const minCm = 150;
+//     const maxCm = 200;
+
+//     if (distanceCm < minCm) {
+//       distanceStatus = "Too Close! Move back";
+//     } else if (distanceCm > maxCm) {
+//       distanceStatus = "Too Far! Move closer";
+//     } else {
+//       distanceStatus = "Perfect Distance! Stay in that position.";
+//       currentStage = ExerciseStage.gestureDetection;
+//       handsStatus = "Raise your right hand above the head";
+//     }
+//   }
+
+//   void _handleGestureDetection(Pose pose) {
+//     final handsUp = _gestureService.update(
+//       pose,
+//       startCountdown: countdown,
+//       onHoldProgress:
+//           (progress) =>
+//               countdownStatus =
+//                   "Raise your right hand above the head… ${(progress * 100).toInt()}%",
+//       onHandsUpDetected: () {
+//         handsStatus = "Hands detected! Starting countdown...";
+//         countdownStatus = "";
+//       },
+//       onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s remaining",
+//       onCountdownComplete: () {
+//         countdownStatus = "Timer complete!";
+//         currentStage = ExerciseStage.formCorrection;
+//       },
+//     );
+
+//     if (!handsUp && !_gestureService.countdownRunning) {
+//       handsStatus = "Raise your hand!";
+//       countdownStatus = "";
+//     }
+//   }
+
+//   Future<void> _handleFormCorrection(Pose pose) async {
+//     final landmarks = pose.landmarks;
+
+//     final rightHip = landmarks[PoseLandmarkType.rightHip];
+//     final rightKnee = landmarks[PoseLandmarkType.rightKnee];
+//     final rightAnkle = landmarks[PoseLandmarkType.rightAnkle];
+
+//     if (rightHip != null && rightKnee != null && rightAnkle != null) {
+//       final h = Offset(rightHip.x, rightHip.y);
+//       final k = Offset(rightKnee.x, rightKnee.y);
+//       final a = Offset(rightAnkle.x, rightAnkle.y);
+
+//       final double kneeAngle = _calculateAngle(h, k, a);
+//       _currentKneeAngle = kneeAngle;
+
+//       // Detect start of rep: leg bent
+//       if (!_rightStartedDown && kneeAngle <= _kneeMinBentAngle) {
+//         _rightStartedDown = true;
+//         _maxKneeAngleDuringRep = kneeAngle; // reset max for this rep
+//       }
+
+//       // If rep started, track max knee angle
+//       if (_rightStartedDown) {
+//         _maxKneeAngleDuringRep = math.max(_maxKneeAngleDuringRep, kneeAngle);
+
+//         // Complete rep: leg returns to bent position
+//         if (kneeAngle <= _kneeMinBentAngle &&
+//             _maxKneeAngleDuringRep > _kneeMinBentAngle) {
+//           _rightCurlCount++;
+
+//           String correction = "";
+//           bool isCorrect = true;
+
+//           // Evaluate rep based on max angle
+//           if (_maxKneeAngleDuringRep < 140.0 &&
+//               _maxKneeAngleDuringRep >= 110.0) {
+//             correction = "Not enough extension";
+//             isCorrect = false;
+//           } else if (_maxKneeAngleDuringRep > 160.0) {
+//             correction = "Extended too much";
+//             isCorrect = false;
+//           }
+
+//           _feedback.add(
+//             "Rep $_rightCurlCount: Max Knee Angle = ${_maxKneeAngleDuringRep.toStringAsFixed(1)}°" +
+//                 (correction.isEmpty ? "" : " | $correction"),
+//           );
+
+//           if (isCorrect) {
+//             _lastRepCorrect = true;
+//             _rightCorrectCount++;
+//             _allFeedbacks.add("Correct form!");
+//           } else {
+//             _rightWrongCount++;
+//             _feedback.add("Rep $_rightCurlCount: $correction");
+//             _allFeedbacks.add(correction);
+//             _lastRepCorrect = false;
+//           }
+
+//           // Reset flags for next rep
+//           _rightStartedDown = false;
+//           _rightReachedUp = false;
+//           _maxKneeAngleDuringRep = 0.0;
+
+//           // Stop after 5 reps
+//           if (_rightCurlCount >= 5) {
+//             print(_feedback);
+//             await _cameraService.controller?.stopImageStream();
+//             if (!mounted || _isDisposed) return;
+
+//             await Future.delayed(const Duration(seconds: 1));
+//             if (!mounted || _isDisposed) return;
+
+//             Navigator.pushReplacement(
+//               context,
+//               MaterialPageRoute(
+//                 builder:
+//                     (_) => ExerciseSummaryScreen(
+//                       correct: _rightCorrectCount,
+//                       wrong: _rightWrongCount,
+//                       feedbacks: _allFeedbacks,
+//                     ),
+//               ),
+//             );
+//           }
+//         }
+//       }
+//     }
+//   }
+
+//   double _distance(Offset a, Offset b) =>
+//       math.sqrt(math.pow(a.dx - b.dx, 2) + math.pow(a.dy - b.dy, 2));
+
+//   double _calculateAngle(Offset a, Offset b, Offset c) {
+//     final ab = Offset(a.dx - b.dx, a.dy - b.dy);
+//     final cb = Offset(c.dx - b.dx, c.dy - b.dy);
+//     final dot = ab.dx * cb.dx + ab.dy * cb.dy;
+//     final magAB = math.sqrt(ab.dx * ab.dx + ab.dy * ab.dy);
+//     final magCB = math.sqrt(cb.dx * cb.dx + cb.dy * cb.dy);
+//     final cosine = dot / (magAB * magCB);
+//     return math.acos(cosine.clamp(-1.0, 1.0)) * 180 / math.pi;
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     if (!_isInitialized || _cameraService.controller == null) {
+//       return const Scaffold(body: Center(child: WalkAnimation()));
+//     }
+
+//     String displayMessage = "";
+//     Color bgColor = AppColors.primary;
+
+//     switch (currentStage) {
+//       case ExerciseStage.distanceCheck:
+//         displayMessage = distanceStatus;
+//         if (displayMessage.toLowerCase().contains("too")) {
+//           bgColor = AppColors.red;
+//         } else if (displayMessage.toLowerCase().contains("perfect")) {
+//           bgColor = AppColors.green;
+//         } else {
+//           bgColor = AppColors.primary;
+//         }
+//         break;
+
+//       case ExerciseStage.gestureDetection:
+//         displayMessage = handsStatus;
+//         if (displayMessage.toLowerCase().contains("raise your hand")) {
+//           bgColor = AppColors.red;
+//         } else if (displayMessage.toLowerCase().contains("hands detected") ||
+//             displayMessage.toLowerCase().contains("timer complete")) {
+//           bgColor = AppColors.green;
+//         } else {
+//           bgColor = AppColors.primary;
+//         }
+//         break;
+//       case ExerciseStage.formCorrection:
+//         if (_allFeedbacks.isNotEmpty) {
+//           displayMessage = _allFeedbacks.last;
+//           bgColor = _lastRepCorrect ? AppColors.green : AppColors.red;
+//         } else {
+//           displayMessage = "Please perform the exercise.";
+//           bgColor = AppColors.primary;
+//         }
+//         break;
+//     }
+
+//     return Scaffold(
+//       appBar: AppBar(title: const Text("Knee Extension Seated Partial")),
+//       body: Column(
+//         children: [
+//           Container(
+//             width: double.infinity,
+//             color: bgColor,
+//             padding: const EdgeInsets.all(12),
+//             child: Text(
+//               displayMessage,
+//               textAlign: TextAlign.center,
+//               style: const TextStyle(
+//                 color: AppColors.black,
+//                 fontSize: 18,
+//                 fontWeight: FontWeight.w600,
+//               ),
+//             ),
+//           ),
+//           Expanded(
+//             child: Stack(
+//               children: [
+//                 CameraPreview(_cameraService.controller!),
+
+//                 Positioned.fill(
+//                   child: CustomPaint(
+//                     painter: CornerPainter(
+//                       cornerLength: 60,
+//                       strokeWidth: 5,
+//                       padding: 50,
+//                       topLeft: bgColor,
+//                       topRight: bgColor,
+//                       bottomLeft: bgColor,
+//                       bottomRight: bgColor,
+//                     ),
+//                   ),
+//                 ),
+
+//                 // if (_lastPose != null && _cameraImageSize != null)
+//                 //   LayoutBuilder(
+//                 //     builder: (context, constraints) {
+//                 //       final widgetSize = Size( constraints.maxWidth, constraints.maxHeight, );
+//                 //       final controller = _cameraService.controller!;
+//                 //       final sensorOrientation =  controller.description.sensorOrientation;
+//                 //       final isFront = controller.description.lensDirection ==CameraLensDirection.front;
+
+//                 //       return CustomPaint(
+//                 //         painter: PosePainter(
+//                 //           pose: _lastPose!,
+//                 //           imageSize:  _cameraImageSize!, // original frame size (width,height)
+//                 //           widgetSize:  widgetSize, // original frame size the area that CameraPreview occupies
+//                 //           sensorOrientation: sensorOrientation,
+//                 //           isFrontCamera: isFront,
+//                 //         ),
+//                 //         size: widgetSize,
+//                 //       );
+//                 //     },
+//                 //   ),
+//               ],
+//             ),
+//           ),
+//           Gap(AppSizes.gap10),
+//           Padding(
+//             padding: const EdgeInsets.symmetric(horizontal: AppSizes.padding16),
+//             child: Card(
+//               color: AppColors.grey,
+//               elevation: 4,
+//               shape: RoundedRectangleBorder(
+//                 borderRadius: BorderRadius.circular(16),
+//               ),
+//               child: Padding(
+//                 padding: const EdgeInsets.all(16),
+//                 child: Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//                   children: [
+//                     Column(
+//                       children: [
+//                         Text("CORRECT", style: TextStyles.label),
+//                         Gap(6),
+//                         Text(
+//                           "$_rightCorrectCount",
+//                           style: TextStyles.subtitle.copyWith(
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                     Container(
+//                       height: 40,
+//                       width: 1.2,
+//                       color: Colors.grey.shade300,
+//                     ),
+//                     Column(
+//                       children: [
+//                         Text("WRONG", style: TextStyles.label),
+//                         Gap(6),
+//                         Text(
+//                           "$_rightWrongCount",
+//                           style: TextStyles.subtitle.copyWith(
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//           ),
+//           Gap(AppSizes.gap10),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// class CornerPainter extends CustomPainter {
+//   final double cornerLength;
+//   final double strokeWidth;
+//   final double padding;
+//   final Color topLeft;
+//   final Color topRight;
+//   final Color bottomLeft;
+//   final Color bottomRight;
+
+//   CornerPainter({
+//     this.cornerLength = 30,
+//     this.strokeWidth = 4,
+//     this.padding = 20,
+//     required this.topLeft,
+//     required this.topRight,
+//     required this.bottomLeft,
+//     required this.bottomRight,
+//   });
+
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final paint =
+//         Paint()
+//           ..strokeWidth = strokeWidth
+//           ..strokeCap = StrokeCap.square
+//           ..style = PaintingStyle.stroke;
+
+//     // Top-left
+//     paint.color = topLeft;
+//     canvas.drawLine(
+//       Offset(padding, padding),
+//       Offset(padding + cornerLength, padding),
+//       paint,
+//     );
+//     canvas.drawLine(
+//       Offset(padding, padding),
+//       Offset(padding, padding + cornerLength),
+//       paint,
+//     );
+
+//     // Top-right
+//     paint.color = topRight;
+//     canvas.drawLine(
+//       Offset(size.width - padding - cornerLength, padding),
+//       Offset(size.width - padding, padding),
+//       paint,
+//     );
+//     canvas.drawLine(
+//       Offset(size.width - padding, padding),
+//       Offset(size.width - padding, padding + cornerLength),
+//       paint,
+//     );
+
+//     // Bottom-left
+//     paint.color = bottomLeft;
+//     canvas.drawLine(
+//       Offset(padding, size.height - padding - cornerLength),
+//       Offset(padding, size.height - padding),
+//       paint,
+//     );
+//     canvas.drawLine(
+//       Offset(padding, size.height - padding),
+//       Offset(padding + cornerLength, size.height - padding),
+//       paint,
+//     );
+
+//     // Bottom-right
+//     paint.color = bottomRight;
+//     canvas.drawLine(
+//       Offset(size.width - padding - cornerLength, size.height - padding),
+//       Offset(size.width - padding, size.height - padding),
+//       paint,
+//     );
+//     canvas.drawLine(
+//       Offset(size.width - padding, size.height - padding - cornerLength),
+//       Offset(size.width - padding, size.height - padding),
+//       paint,
+//     );
+//   }
+
+//   @override
+//   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+// }
+
+// // class PosePainter extends CustomPainter {
+// //   final Pose pose;
+// //   final Size imageSize; // camera image size (width,height) from frames
+// //   final Size widgetSize; // size of the paint area (passed in paint)
+// //   final int sensorOrientation; // controller.description.sensorOrientation
+// //   final bool
+// //   isFrontCamera; // controller.description.lensDirection == CameraLensDirection.front
+
+// //   PosePainter({
+// //     required this.pose,
+// //     required this.imageSize,
+// //     required this.widgetSize,
+// //     required this.sensorOrientation,
+// //     required this.isFrontCamera,
+// //   });
+
+// //   // paint style
+// //   final Paint _bonePaint =
+// //       Paint()
+// //         ..color = Colors.greenAccent
+// //         ..strokeWidth = 4
+// //         ..strokeCap = StrokeCap.round;
+
+// //   final Paint _landmarkPaint =
+// //       Paint()
+// //         ..color = Colors.greenAccent
+// //         ..style = PaintingStyle.fill;
+
+// //   @override
+// //   void paint(Canvas canvas, Size size) {
+// //     // Compute mapping constants
+// //     // 1) determine effective image size after applying rotation
+// //     final int rotation = (sensorOrientation % 360);
+// //     final bool rotated = rotation == 90 || rotation == 270;
+// //     final double imageW = rotated ? imageSize.height : imageSize.width;
+// //     final double imageH = rotated ? imageSize.width : imageSize.height;
+
+// //     // 2) compute scale used by CameraPreview (BoxFit.cover semantics)
+// //     final double scale = math.max(
+// //       widgetSize.width / imageW,
+// //       widgetSize.height / imageH,
+// //     );
+
+// //     final double scaledImageW = imageW * scale;
+// //     final double scaledImageH = imageH * scale;
+
+// //     // 3) compute letterbox offset (center crop)
+// //     final double dx = (widgetSize.width - scaledImageW) / 2;
+// //     final double dy = (widgetSize.height - scaledImageH) / 2;
+
+// //     Offset transformLandmark(PoseLandmark lm) {
+// //       // landmark coordinates are in original camera image coordinate system
+// //       double x = lm.x;
+// //       double y = lm.y;
+
+// //       // existing rotation mapping (kept as is for correct scaling/position)
+// //       double rx, ry;
+// //       final int rotation = sensorOrientation % 360;
+// //       switch (rotation) {
+// //         case 0:
+// //           rx = x;
+// //           ry = y;
+// //           break;
+// //         case 90:
+// //           rx = y;
+// //           ry = imageSize.width - x;
+// //           break;
+// //         case 180:
+// //           rx = imageSize.width - x;
+// //           ry = imageSize.height - y;
+// //           break;
+// //         case 270:
+// //           rx = imageSize.height - y;
+// //           ry = x;
+// //           break;
+// //         default:
+// //           rx = x;
+// //           ry = y;
+// //       }
+
+// //       // after rotation, apply front camera mirroring
+// //       final double mappedImageW =
+// //           (rotation == 90 || rotation == 270)
+// //               ? imageSize.height
+// //               : imageSize.width;
+// //       if (isFrontCamera) {
+// //         rx = mappedImageW - rx;
+// //       }
+
+// //       // --- NEW: rotate skeleton back by -90 degrees around the center ---
+// //       final double centerX = mappedImageW / 2;
+// //       final double centerY =
+// //           ((rotation == 90 || rotation == 270)
+// //               ? imageSize.width
+// //               : imageSize.height) /
+// //           2;
+
+// //       // translate to origin
+// //       double tempX = rx - centerX;
+// //       double tempY = ry - centerY;
+
+// //       // apply -90° rotation
+// //       double rotatedX = tempX * 0 - tempY * 1; // cos(-90)=0, sin(-90)=-1
+// //       double rotatedY = tempX * 1 + tempY * 0; // cos(-90)=0, sin(-90)=-1
+
+// //       // translate back
+// //       rx = rotatedX + centerX;
+// //       ry = rotatedY + centerY;
+
+// //       // scale to widget and add crop offset
+// //       final double scale = math.max(
+// //         widgetSize.width / mappedImageW,
+// //         widgetSize.height /
+// //             ((rotation == 90 || rotation == 270)
+// //                 ? imageSize.width
+// //                 : imageSize.height),
+// //       );
+
+// //       final double dx = (widgetSize.width - mappedImageW * scale) / 2;
+// //       final double dy =
+// //           (widgetSize.height -
+// //               ((rotation == 90 || rotation == 270)
+// //                       ? imageSize.width
+// //                       : imageSize.height) *
+// //                   scale) /
+// //           2;
+
+// //       final double widgetX = rx * scale + dx;
+// //       final double widgetY = ry * scale + dy;
+
+// //       return Offset(widgetX, widgetY);
+// //     }
+
+// //     // helper to get landmark safely
+// //     Offset? lmPos(PoseLandmarkType t) {
+// //       final lm = pose.landmarks[t];
+// //       return lm == null ? null : transformLandmark(lm);
+// //     }
+
+// //     // draw bones (example set)
+// //     List<List<PoseLandmarkType>> bones = [
+// //       [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+// //       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+// //       [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+// //       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+// //       [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+// //       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+// //       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+// //       [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+// //       [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+// //       [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+// //       [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+// //       [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+// //     ];
+
+// //     for (var b in bones) {
+// //       final s = lmPos(b[0]);
+// //       final e = lmPos(b[1]);
+// //       if (s != null && e != null) {
+// //         canvas.drawLine(s, e, _bonePaint);
+// //       }
+// //     }
+
+// //     // draw landmarks
+// //     for (var lm in pose.landmarks.values) {
+// //       final p = transformLandmark(lm);
+// //       canvas.drawCircle(p, 6, _landmarkPaint);
+// //     }
+// //   }
+
+// //   @override
+// //   bool shouldRepaint(covariant PosePainter old) => true;
+// // }
+
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:io'; // Needed for Platform check
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +752,6 @@ import 'package:perfit/core/services/pose_detection_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/exercise_summary_screen.dart';
 import 'package:perfit/widgets/text_styles.dart';
-import 'package:perfit/widgets/walk_animation.dart';
 
 class KneeExtensionSeatedPartialScreen extends StatefulWidget {
   const KneeExtensionSeatedPartialScreen({super.key});
@@ -37,8 +774,12 @@ class _KneeExtensionSeatedPartialScreenState
   // Camera and stream state
   bool _isInitialized = false;
   bool _isBusy = false;
+
+  // --- STATE FOR PAINTER ---
   Pose? _lastPose;
-  Size? _cameraImageSize;
+  Size? _cameraImageSize; // Raw size of the image from the camera sensor
+  InputImageRotation? _imageRotation; // Rotation of the camera image
+  // -------------------------
 
   double _currentKneeAngle = 0.0;
   double _maxKneeAngleDuringRep = 0.0;
@@ -53,19 +794,19 @@ class _KneeExtensionSeatedPartialScreenState
   int countdown = 3;
 
   // Form correction counters
-  int _rightCurlCount = 0; // Number of reps completed
-  int _rightCorrectCount = 0; // Number of correct reps
-  int _rightWrongCount = 0; // Number of incorrect reps
-  List<String> _feedback = []; // Feedback per rep
+  int _rightCurlCount = 0;
+  int _rightCorrectCount = 0;
+  int _rightWrongCount = 0;
+  List<String> _feedback = [];
   List<String> _allFeedbacks = [];
 
   // Form detection flags
-  bool _rightStartedDown = false; // Leg bent start position detected
-  bool _rightReachedUp = false; // Leg extended position detected
+  bool _rightStartedDown = false;
+  bool _rightReachedUp = false;
 
   // Knee extension thresholds
-  final double _kneeMinBentAngle = 120.0; // Minimum knee angle (foot down)
-  final double _kneeMaxExtendAngle = 160.0; // Maximum knee angle (leg extended)
+  final double _kneeMinBentAngle = 120.0;
+  final double _kneeMaxExtendAngle = 160.0;
 
   bool _isDisposed = false;
   bool _lastRepCorrect = true;
@@ -101,20 +842,27 @@ class _KneeExtensionSeatedPartialScreenState
     if (_isBusy) return;
     _isBusy = true;
 
+    // Capture the image size and rotation for the painter
     _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
+    final sensorOrientation =
+        _cameraService.controller!.description.sensorOrientation;
+    _imageRotation ??=
+        InputImageRotationValue.fromRawValue(sensorOrientation) ??
+        InputImageRotation.rotation0deg;
 
     try {
       if (_isDisposed) return;
-      final inputImage = _cameraImageToInputImage(
-        image,
-        _cameraService.controller!.description.sensorOrientation,
-      );
+      final inputImage = _cameraImageToInputImage(image, sensorOrientation);
 
       final poses = await _poseService.detectPoses(inputImage);
-      if (poses.isEmpty) return;
+      if (poses.isEmpty) {
+        _lastPose = null;
+        return;
+      }
 
       final pose = poses.first;
-      _lastPose = pose;
+      _lastPose = pose; // Update for overlay
 
       switch (currentStage) {
         case ExerciseStage.distanceCheck:
@@ -223,6 +971,31 @@ class _KneeExtensionSeatedPartialScreenState
     final rightKnee = landmarks[PoseLandmarkType.rightKnee];
     final rightAnkle = landmarks[PoseLandmarkType.rightAnkle];
 
+    final handsUp = _gestureService.update(
+      pose,
+      startCountdown: 1, // 1 second hold
+      onHoldProgress: (progress) {
+        countdownStatus = "Hold hands up… ${(progress * 100).toInt()}%";
+      },
+      onHandsUpDetected: () async {
+        // Stop camera and go to summary
+        await _cameraService.controller?.stopImageStream();
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => ExerciseSummaryScreen(
+                  correct: _rightCorrectCount,
+                  wrong: _rightWrongCount,
+                  feedbacks: _allFeedbacks,
+                ),
+          ),
+        );
+      },
+    );
+
     if (rightHip != null && rightKnee != null && rightAnkle != null) {
       final h = Offset(rightHip.x, rightHip.y);
       final k = Offset(rightKnee.x, rightKnee.y);
@@ -322,7 +1095,7 @@ class _KneeExtensionSeatedPartialScreenState
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _cameraService.controller == null) {
-      return const Scaffold(body: Center(child: WalkAnimation()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     String displayMessage = "";
@@ -385,6 +1158,48 @@ class _KneeExtensionSeatedPartialScreenState
               children: [
                 CameraPreview(_cameraService.controller!),
 
+                // --- MODIFIED: Added Pose Painting Logic with LayoutBuilder ---
+                if (_lastPose != null &&
+                    _cameraImageSize != null &&
+                    _imageRotation != null)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final widgetSize = Size(
+                        constraints.maxWidth,
+                        constraints.maxHeight,
+                      );
+                      final controller = _cameraService.controller!;
+                      final isFront =
+                          controller.description.lensDirection ==
+                          CameraLensDirection.front;
+
+                      Color skeletonColor = AppColors.primary;
+
+                      if (currentStage == ExerciseStage.formCorrection) {
+                        skeletonColor =
+                            _allFeedbacks.isNotEmpty
+                                ? (_lastRepCorrect
+                                    ? AppColors.green
+                                    : AppColors.red)
+                                : AppColors.primary;
+                      }
+
+                      return CustomPaint(
+                        painter: PosePainter(
+                          pose: _lastPose!,
+                          imageSize: _cameraImageSize!,
+                          widgetSize: widgetSize,
+                          rotation:
+                              _imageRotation!, // Use correct rotation enum
+                          isFrontCamera: isFront,
+                          skeletonColor: skeletonColor,
+                        ),
+                        size: widgetSize,
+                      );
+                    },
+                  ),
+
+                // -------------------------------------------
                 Positioned.fill(
                   child: CustomPaint(
                     painter: CornerPainter(
@@ -398,27 +1213,6 @@ class _KneeExtensionSeatedPartialScreenState
                     ),
                   ),
                 ),
-
-                // if (_lastPose != null && _cameraImageSize != null)
-                //   LayoutBuilder(
-                //     builder: (context, constraints) {
-                //       final widgetSize = Size( constraints.maxWidth, constraints.maxHeight, );
-                //       final controller = _cameraService.controller!;
-                //       final sensorOrientation =  controller.description.sensorOrientation;
-                //       final isFront = controller.description.lensDirection ==CameraLensDirection.front;
-
-                //       return CustomPaint(
-                //         painter: PosePainter(
-                //           pose: _lastPose!,
-                //           imageSize:  _cameraImageSize!, // original frame size (width,height)
-                //           widgetSize:  widgetSize, // original frame size the area that CameraPreview occupies
-                //           sensorOrientation: sensorOrientation,
-                //           isFrontCamera: isFront,
-                //         ),
-                //         size: widgetSize,
-                //       );
-                //     },
-                //   ),
               ],
             ),
           ),
@@ -561,176 +1355,164 @@ class CornerPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-// class PosePainter extends CustomPainter {
-//   final Pose pose;
-//   final Size imageSize; // camera image size (width,height) from frames
-//   final Size widgetSize; // size of the paint area (passed in paint)
-//   final int sensorOrientation; // controller.description.sensorOrientation
-//   final bool
-//   isFrontCamera; // controller.description.lensDirection == CameraLensDirection.front
+// --- REVISED: Robust Pose Painter for Correct Alignment ---
+class PosePainter extends CustomPainter {
+  final Pose pose;
+  final Size imageSize;
+  final Size widgetSize;
+  final InputImageRotation rotation;
+  final bool isFrontCamera;
+  final Color skeletonColor;
 
-//   PosePainter({
-//     required this.pose,
-//     required this.imageSize,
-//     required this.widgetSize,
-//     required this.sensorOrientation,
-//     required this.isFrontCamera,
-//   });
+  PosePainter({
+    required this.pose,
+    required this.imageSize,
+    required this.widgetSize,
+    required this.rotation,
+    required this.isFrontCamera,
+    required this.skeletonColor,
+  });
 
-//   // paint style
-//   final Paint _bonePaint =
-//       Paint()
-//         ..color = Colors.greenAccent
-//         ..strokeWidth = 4
-//         ..strokeCap = StrokeCap.round;
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Styles
+    final whitePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0
+          ..color = skeletonColor;
+    final leftPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = skeletonColor;
 
-//   final Paint _landmarkPaint =
-//       Paint()
-//         ..color = Colors.greenAccent
-//         ..style = PaintingStyle.fill;
+    final rightPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = skeletonColor;
 
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     // Compute mapping constants
-//     // 1) determine effective image size after applying rotation
-//     final int rotation = (sensorOrientation % 360);
-//     final bool rotated = rotation == 90 || rotation == 270;
-//     final double imageW = rotated ? imageSize.height : imageSize.width;
-//     final double imageH = rotated ? imageSize.width : imageSize.height;
+    // Define connections (Bone structure)
+    final connections = [
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+      [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+      [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+      [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+      [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+      [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+      [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+    ];
 
-//     // 2) compute scale used by CameraPreview (BoxFit.cover semantics)
-//     final double scale = math.max(
-//       widgetSize.width / imageW,
-//       widgetSize.height / imageH,
-//     );
+    // Draw connections (Bones)
+    for (final connection in connections) {
+      final startLandmark = pose.landmarks[connection[0]];
+      final endLandmark = pose.landmarks[connection[1]];
 
-//     final double scaledImageW = imageW * scale;
-//     final double scaledImageH = imageH * scale;
+      if (startLandmark != null && endLandmark != null) {
+        final start = _translateX(
+          startLandmark.x,
+          startLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        final end = _translateX(
+          endLandmark.x,
+          endLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        canvas.drawLine(start, end, whitePaint);
+      }
+    }
 
-//     // 3) compute letterbox offset (center crop)
-//     final double dx = (widgetSize.width - scaledImageW) / 2;
-//     final double dy = (widgetSize.height - scaledImageH) / 2;
+    // Draw landmarks (Joints)
+    pose.landmarks.forEach((_, landmark) {
+      final point = _translateX(
+        landmark.x,
+        landmark.y,
+        imageSize,
+        widgetSize,
+        rotation,
+        isFrontCamera,
+      );
 
-//     Offset transformLandmark(PoseLandmark lm) {
-//       // landmark coordinates are in original camera image coordinate system
-//       double x = lm.x;
-//       double y = lm.y;
+      if (landmark.type.name.toLowerCase().contains('left')) {
+        canvas.drawCircle(point, 5, leftPaint);
+      } else if (landmark.type.name.toLowerCase().contains('right')) {
+        canvas.drawCircle(point, 5, rightPaint);
+      } else {
+        canvas.drawCircle(point, 5, whitePaint..style = PaintingStyle.fill);
+      }
+    });
+  }
 
-//       // existing rotation mapping (kept as is for correct scaling/position)
-//       double rx, ry;
-//       final int rotation = sensorOrientation % 360;
-//       switch (rotation) {
-//         case 0:
-//           rx = x;
-//           ry = y;
-//           break;
-//         case 90:
-//           rx = y;
-//           ry = imageSize.width - x;
-//           break;
-//         case 180:
-//           rx = imageSize.width - x;
-//           ry = imageSize.height - y;
-//           break;
-//         case 270:
-//           rx = imageSize.height - y;
-//           ry = x;
-//           break;
-//         default:
-//           rx = x;
-//           ry = y;
-//       }
+  // Helper method to translate coordinates to screen
+  Offset _translateX(
+    double x,
+    double y,
+    Size absoluteImageSize,
+    Size screenWidgetSize,
+    InputImageRotation rotation,
+    bool isFront,
+  ) {
+    // 1. Determine if we need to swap width/height.
+    // In Portrait mode, the sensor image (landscape) is rotated 90 or 270 degrees.
+    // However, ML Kit returns coordinates relative to the *upright* image.
+    // So we treat the ML Kit X as Screen X and ML Kit Y as Screen Y,
+    // but we must calculate the scale based on the "upright" image dimensions.
 
-//       // after rotation, apply front camera mirroring
-//       final double mappedImageW =
-//           (rotation == 90 || rotation == 270)
-//               ? imageSize.height
-//               : imageSize.width;
-//       if (isFrontCamera) {
-//         rx = mappedImageW - rx;
-//       }
+    // Check if rotation is 90 or 270 (Portrait orientations)
+    final bool isPortrait =
+        rotation == InputImageRotation.rotation90deg ||
+        rotation == InputImageRotation.rotation270deg;
 
-//       // --- NEW: rotate skeleton back by -90 degrees around the center ---
-//       final double centerX = mappedImageW / 2;
-//       final double centerY =
-//           ((rotation == 90 || rotation == 270)
-//               ? imageSize.width
-//               : imageSize.height) /
-//           2;
+    // If portrait, the effective image width for scaling is the sensor height,
+    // and effective height is sensor width.
+    final double imageWidth =
+        isPortrait ? absoluteImageSize.height : absoluteImageSize.width;
+    final double imageHeight =
+        isPortrait ? absoluteImageSize.width : absoluteImageSize.height;
 
-//       // translate to origin
-//       double tempX = rx - centerX;
-//       double tempY = ry - centerY;
+    // 2. Calculate scale factors
+    // We assume CameraPreview acts as BoxFit.cover (fills the screen).
+    // We calculate the scale for width and height and take the MAX (to cover).
+    double scaleX = screenWidgetSize.width / imageWidth;
+    double scaleY = screenWidgetSize.height / imageHeight;
 
-//       // apply -90° rotation
-//       double rotatedX = tempX * 0 - tempY * 1; // cos(-90)=0, sin(-90)=-1
-//       double rotatedY = tempX * 1 + tempY * 0; // cos(-90)=0, sin(-90)=-1
+    // For BoxFit.cover, use the larger scale
+    final double scale = math.max(scaleX, scaleY);
 
-//       // translate back
-//       rx = rotatedX + centerX;
-//       ry = rotatedY + centerY;
+    // 3. Calculate offset to center the image (since it's cropped)
+    // The "virtual" displayed image size
+    final double scaledImageWidth = imageWidth * scale;
+    final double scaledImageHeight = imageHeight * scale;
 
-//       // scale to widget and add crop offset
-//       final double scale = math.max(
-//         widgetSize.width / mappedImageW,
-//         widgetSize.height /
-//             ((rotation == 90 || rotation == 270)
-//                 ? imageSize.width
-//                 : imageSize.height),
-//       );
+    // How much is cut off?
+    final double offsetX = (scaledImageWidth - screenWidgetSize.width) / 2;
+    final double offsetY = (scaledImageHeight - screenWidgetSize.height) / 2;
 
-//       final double dx = (widgetSize.width - mappedImageW * scale) / 2;
-//       final double dy =
-//           (widgetSize.height -
-//               ((rotation == 90 || rotation == 270)
-//                       ? imageSize.width
-//                       : imageSize.height) *
-//                   scale) /
-//           2;
+    // 4. Transform coordinates
+    double finalX = x * scale - offsetX;
+    double finalY = y * scale - offsetY;
 
-//       final double widgetX = rx * scale + dx;
-//       final double widgetY = ry * scale + dy;
+    // 5. Mirror X for front camera
+    if (isFront) {
+      finalX = screenWidgetSize.width - finalX;
+    }
 
-//       return Offset(widgetX, widgetY);
-//     }
+    return Offset(finalX, finalY);
+  }
 
-//     // helper to get landmark safely
-//     Offset? lmPos(PoseLandmarkType t) {
-//       final lm = pose.landmarks[t];
-//       return lm == null ? null : transformLandmark(lm);
-//     }
-
-//     // draw bones (example set)
-//     List<List<PoseLandmarkType>> bones = [
-//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
-//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
-//       [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
-//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
-//       [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
-//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
-//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
-//       [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
-//       [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
-//       [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
-//       [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
-//       [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
-//     ];
-
-//     for (var b in bones) {
-//       final s = lmPos(b[0]);
-//       final e = lmPos(b[1]);
-//       if (s != null && e != null) {
-//         canvas.drawLine(s, e, _bonePaint);
-//       }
-//     }
-
-//     // draw landmarks
-//     for (var lm in pose.landmarks.values) {
-//       final p = transformLandmark(lm);
-//       canvas.drawCircle(p, 6, _landmarkPaint);
-//     }
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant PosePainter old) => true;
-// }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}

@@ -301,7 +301,7 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                         onTap: () => skipExercise(),
                         child: Card(
                           color:
-                              isDarkMode ? AppColors.lightgrey : AppColors.grey,
+                              isDarkMode ? AppColors.grey : AppColors.lightgrey,
 
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -310,12 +310,7 @@ class _PerformExerciseScreenState extends State<PerformExerciseScreen> {
                             ),
                             child: Text(
                               "Skip",
-                              style: TextStyles.caption.copyWith(
-                                color:
-                                    isDarkMode
-                                        ? AppColors.black
-                                        : AppColors.lightgrey,
-                              ),
+                              
                             ),
                           ),
                         ),

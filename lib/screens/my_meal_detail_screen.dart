@@ -1,3 +1,4 @@
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
@@ -71,6 +72,7 @@ class _MyMealDetailScreenState extends State<MyMealDetailScreen> {
                   .collection("myMeals")
                   .doc(widget.id)
                   .delete();
+
               if (!mounted) return;
               NavigationUtils.pop(context);
               if (!mounted) return;
@@ -104,176 +106,169 @@ class _MyMealDetailScreenState extends State<MyMealDetailScreen> {
                     return const Center(child: Text("Meal not found."));
                   }
 
+                  // Macro colors
+                  final caloriesClr = Color.fromARGB(255, 221, 192, 255);
+                  final proteinClr = Color.fromARGB(255, 69, 197, 136);
+                  final carbsClr = Color.fromARGB(255, 120, 180, 245);
+                  final fatClr = Color.fromARGB(255, 255, 111, 67);
+
                   return Padding(
                     padding: const EdgeInsets.all(AppSizes.padding16),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // 🔹 Meal Name
-                          Text(
-                            mealData['mealName'] ?? 'Unnamed Meal',
-                            style: TextStyles.title.copyWith(fontSize: 22),
-                          ),
-                          const Gap(AppSizes.gap10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Meal Name
+                        Text(
+                          mealData['mealName'] ?? 'Unnamed Meal',
+                          style: TextStyles.title.copyWith(fontSize: 22),
+                          textAlign: TextAlign.start,
+                        ),
+                        const Gap(AppSizes.gap15),
 
-                          // 🔹 Macros Section
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                      AppSizes.padding16,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text("Total Calories"),
-                                        Text(
-                                          "${(mealData['totalCalories'] ?? 0).toStringAsFixed(1)} kcal",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                        // Macro Cards
+                        Row(
+                          children: [
+                            Expanded(
+                              child: buildCard(
+                                "Calories",
+                                (mealData['totalCalories'] ?? 0).toDouble(),
+                                caloriesClr,
                               ),
-                              Expanded(
-                                child: Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                      AppSizes.padding16,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text("Total Protein"),
-                                        Text(
-                                          "${(mealData['totalProtein'] ?? 0).toStringAsFixed(1)} g",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                            ),
+                            Expanded(
+                              child: buildCard(
+                                "Protein",
+                                (mealData['totalProtein'] ?? 0).toDouble(),
+                                proteinClr,
                               ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                      AppSizes.padding16,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text("Total Carbs"),
-                                        Text(
-                                          "${(mealData['totalCarbs'] ?? 0).toStringAsFixed(1)} g",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: buildCard(
+                                "Carbs",
+                                (mealData['totalCarbs'] ?? 0).toDouble(),
+                                carbsClr,
                               ),
-                              Expanded(
-                                child: Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                      AppSizes.padding16,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text("Total Fat"),
-                                        Text(
-                                          "${(mealData['totalFat'] ?? 0).toStringAsFixed(1)} g",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                            ),
+                            Expanded(
+                              child: buildCard(
+                                "Fat",
+                                (mealData['totalFat'] ?? 0).toDouble(),
+                                fatClr,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        ),
+                        const Gap(AppSizes.gap15),
 
-                          const Gap(AppSizes.gap20),
-
-                          // 🔹 Instructions Section
-                          if (mealData['instructions'] != null &&
-                              (mealData['instructions'] as String).isNotEmpty)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        // Tabs
+                        Expanded(
+                          child: DefaultTabController(
+                            length: 2,
+                            child: Column(
                               children: [
-                                Text(
-                                  "Instructions",
-                                  style: TextStyles.body.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                const TabBar(
+                                  labelColor: AppColors.primary,
+                                  unselectedLabelColor: Colors.grey,
+                                  tabs: [
+                                    Tab(text: "Meal Items"),
+                                    Tab(text: "Instructions"),
+                                  ],
+                                ),
+                                Expanded(
+                                  child: TabBarView(
+                                    children: [
+                                      // Meal Items Tab
+                                      ListView.builder(
+                                        padding: const EdgeInsets.all(8),
+                                        itemCount: foods.length,
+                                        itemBuilder: (context, index) {
+                                          final food = foods[index];
+                                          return Card(
+                                            color: AppColors.surface,
+                                            child: ListTile(
+                                              title: Text(
+                                                "${food['quantity']} grams ${food['foodName']}",
+                                              ),
+                                              subtitle: Text(
+                                                "${(food['calories'] ?? 0).toStringAsFixed(2)} kcal | Protein: ${(food['protein'] ?? 0).toStringAsFixed(2)}g | Carbs: ${(food['carbs'] ?? 0).toStringAsFixed(2)}g | Fat: ${(food['fat'] ?? 0).toStringAsFixed(2)}g",
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+
+                                      // Instructions Tab
+                                      SingleChildScrollView(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: _buildInstructionSteps(
+                                            mealData['instructions'] ?? "",
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const Gap(AppSizes.gap10),
-                                Text(
-                                  mealData['instructions'],
-                                  style: const TextStyle(height: 1.5),
-                                ),
-                                const Gap(AppSizes.gap20),
                               ],
                             ),
-
-                          // 🔹 Meal Items
-                          Text(
-                            "Meal Items",
-                            style: TextStyles.body.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
                           ),
-                          const Gap(AppSizes.gap10),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: foods.length,
-                            itemBuilder: (context, index) {
-                              final food = foods[index];
-                              return Card(
-                                child: ListTile(
-                                  title: Text(
-                                    "${food['quantity']} grams ${food['foodName']}",
-                                  ),
-                                  subtitle: Text(
-                                    "${(food['calories'] ?? 0).toStringAsFixed(1)} kcal | "
-                                    "Protein: ${(food['protein'] ?? 0).toStringAsFixed(1)}g | "
-                                    "Carbs: ${(food['carbs'] ?? 0).toStringAsFixed(1)}g | "
-                                    "Fat: ${(food['fat'] ?? 0).toStringAsFixed(1)}g",
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
+    );
+  }
+
+  Widget buildCard(String title, double value, Color clr) {
+    return Card(
+      color: clr,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.padding16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [Text(title), Text(value.toStringAsFixed(2))],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildInstructionSteps(String instructions) {
+    final stepList =
+        instructions
+            .split(RegExp(r'(\d+\.)|\n'))
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+
+    return List.generate(
+      stepList.length,
+      (index) => Card(
+        color: AppColors.surface,
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        child: ListTile(
+          leading: CircleAvatar(
+            radius: 14,
+            backgroundColor: AppColors.primary,
+            child: Text(
+              "${index + 1}",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          title: Text(stepList[index], style: const TextStyle(fontSize: 16)),
+        ),
+      ),
     );
   }
 }

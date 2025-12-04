@@ -1,3 +1,5 @@
+import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
 import 'package:perfit/screens/create_meal_screen.dart';
@@ -5,6 +7,7 @@ import 'package:perfit/screens/my_meal_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:perfit/widgets/text_styles.dart';
 import 'package:perfit/widgets/walk_animation.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -20,7 +23,9 @@ class MyMealScreen extends StatefulWidget {
 
 class _MyMealScreenState extends State<MyMealScreen> {
   String? uid;
+final SettingService _settingService = SettingService();  
 
+bool isDarkMode = true;
   @override
   void initState() {
     super.initState();
@@ -31,8 +36,15 @@ class _MyMealScreenState extends State<MyMealScreen> {
     }
 
     uid = user.uid;
+    _loadTheme();
   }
-
+ Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,7 +57,9 @@ class _MyMealScreenState extends State<MyMealScreen> {
                   context,
                   CreateMealScreen(meal: widget.meal),
                 ),
-            child: Text("Create Meal", style: TextStyle(color: Colors.white)),
+            child: Text("Create Meal", style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.lightgrey : AppColors.black,
+                    ),),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
 import 'package:perfit/data/models/meal_provider.dart';
@@ -10,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:perfit/widgets/text_styles.dart';
 import 'package:provider/provider.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -34,13 +36,22 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
 
   bool isGenerated = false;
   Map<String, dynamic>? generatedMeal;
+final SettingService _settingService = SettingService();  
 
+bool isDarkMode = true;
   @override
   void initState() {
     super.initState();
     uid = FirebaseAuth.instance.currentUser?.uid;
+    _loadTheme();
   }
-
+Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
+  }
   @override
   Widget build(BuildContext context) {
     final mealProvider = Provider.of<MealProvider>(context);
@@ -56,9 +67,12 @@ class _CreateMealScreenState extends State<CreateMealScreen> {
                     context,
                     AddFoodScreen(meal: widget.meal, isFromMeal: true),
                   ),
-              child: const Text(
+              child:  Text(
                 "Add Food",
-                style: TextStyle(color: AppColors.white),
+                
+style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.white : AppColors.black,
+                    ),
               ),
             ),
           if (isGenerated)

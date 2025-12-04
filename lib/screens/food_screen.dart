@@ -244,28 +244,49 @@ class _FoodScreenState extends State<FoodScreen> {
                           right: AppSizes.gap15,
                           left: AppSizes.gap15,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text("Breakfast", style: TextStyles.body),
-                            Row(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "${(totalCalories).toDouble().toStringAsFixed(1)} kcal",
-                                ),
-                                Gap(AppSizes.gap15),
-                                TextButton(
-                                  onPressed:
-                                      () => NavigationUtils.push(
-                                        context,
-                                        MealScreen(meal: "Breakfast"),
+                                Text("Breakfast", style: TextStyles.body),
+                                Row(
+                                  children: [
+                                    Text(
+                                      "${(totalCalories).toDouble().toStringAsFixed(1)} kcal",
+                                    ),
+                                    Gap(AppSizes.gap15),
+                                    TextButton(
+                                      onPressed:
+                                          () => NavigationUtils.push(
+                                            context,
+                                            MealScreen(meal: "Breakfast"),
+                                          ),
+                                      child: Text(
+                                        "View Meals",
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                        ),
                                       ),
-                                  child: Text(
-                                    "Add breakfast",
-                                    style: TextStyle(color: AppColors.primary),
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSizes.gap15,
+                              ),
+                              child: IconButton(
+                                onPressed:
+                                    () => NavigationUtils.push(
+                                      context,
+                                      MealScreen(meal: "Breakfast"),
+                                    ),
+                                icon: Icon(Icons.add),
+                              ),
                             ),
                           ],
                         ),
@@ -316,7 +337,7 @@ class _FoodScreenState extends State<FoodScreen> {
                                         MealScreen(meal: "Lunch"),
                                       ),
                                   child: Text(
-                                    "Add Lunch",
+                                    "View Lunch",
                                     style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),
@@ -371,7 +392,7 @@ class _FoodScreenState extends State<FoodScreen> {
                                         MealScreen(meal: "Dinner"),
                                       ),
                                   child: Text(
-                                    "Add Dinner",
+                                    "View Dinner",
                                     style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),
@@ -426,7 +447,7 @@ class _FoodScreenState extends State<FoodScreen> {
                                         MealScreen(meal: "Snacks"),
                                       ),
                                   child: Text(
-                                    "Add Snacks",
+                                    "View Snacks",
                                     style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),

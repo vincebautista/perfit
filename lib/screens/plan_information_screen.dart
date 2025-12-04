@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/widgets/text_styles.dart';
 import 'package:perfit/widgets/walk_animation.dart';
 import 'package:perfit/widgets/welcome_guest.dart';
 
@@ -93,9 +94,7 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
         future: loadAllPlanData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: WalkAnimation()
-            );
+            return Center(child: WalkAnimation());
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -125,6 +124,42 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
                 buildAssessment(planData),
                 const SizedBox(height: 12),
                 buildIntake(planData),
+                const SizedBox(height: 12),
+                FutureBuilder<List<String>>(
+                  future: getCompletedExercises(planData),
+                  builder: (context, exercisesSnapshot) {
+                    if (exercisesSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final completedExercises = exercisesSnapshot.data ?? [];
+
+                    if (completedExercises.isEmpty) {
+                      return const Text("No exercises completed yet.");
+                    }
+
+                    return Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              "Completed Exercises",
+                              style: TextStyles.subtitle.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ...completedExercises.map((e) => Text("• $e")),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           );
@@ -177,38 +212,40 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
   }
 
   Widget buildPlanProgress(Map<String, dynamic> planData) {
-    final planDuration = planData['planDuration'] ?? 0; // in weeks
-    final currentDay = planData['currentDay'] ?? 0; // in days
+    final planDuration = planData['planDuration'] ?? 0;
+    final currentDay = planData['currentDay'] ?? 0;
     final totalDays = planDuration * 7;
 
     double progress = totalDays > 0 ? (currentDay / totalDays) : 0;
     progress = progress.clamp(0.0, 1.0);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 100,
-              height: 100,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 8,
-                color: AppColors.primary,
-                backgroundColor: Colors.grey.shade300,
-              ),
+        SizedBox(
+          height: 10,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.grey.shade300,
+              color: AppColors.primary,
             ),
-            Text(
-              "${(progress * 100).toStringAsFixed(1)}%",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: 8),
-        Text(
-          "Day $currentDay of $totalDays",
-          style: const TextStyle(fontSize: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "${(progress * 100).toStringAsFixed(1)}%",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              "Day $currentDay of $totalDays",
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
         ),
       ],
     );
@@ -247,18 +284,9 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "Initial Assessment",
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
+            Text(
+              "Initial Assessment",
+              style: TextStyles.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             _info("Age", assessment["age"]),
@@ -290,20 +318,9 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(
-                  12,
-                ), // adjust the radius as needed
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "Required Daily Intake",
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
+            Text(
+              "Required Daily Intake",
+              style: TextStyles.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             _info("Calories", intake["calorieTarget"]),
@@ -512,5 +529,47 @@ class _PlanInformationScreenState extends State<PlanInformationScreen> {
         ),
       ),
     );
+  }
+
+  Future<List<String>> getCompletedExercises(
+    Map<String, dynamic> planData,
+  ) async {
+    if (uid == null) return [];
+
+    final currentDay = planData['currentDay'] ?? 0;
+    print("Current Day: $currentDay");
+
+    final workoutsSnapshot =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('fitnessPlan')
+            .doc(widget.planId)
+            .collection('workouts')
+            .get(); // fetch all days
+
+    final List<String> exercisesList = [];
+    final Set<String> exercisesSet = {};
+
+    for (var doc in workoutsSnapshot.docs) {
+      final day = int.tryParse(doc.id) ?? 0;
+      if (day > currentDay) break;
+
+      final exercises = doc['exercises'] as List<dynamic>? ?? [];
+      for (var exercise in exercises) {
+        final name = exercise['name']?.toString() ?? '';
+        final status = exercise['status']?.toString().toLowerCase() ?? '';
+        print(exercises);
+        if (name.isNotEmpty &&
+            status == 'completed' &&
+            !exercisesSet.contains(name)) {
+          exercisesSet.add(name);
+          exercisesList.add(name);
+        }
+      }
+    }
+
+    print("Completed Exercises: $exercisesList");
+    return exercisesList;
   }
 }

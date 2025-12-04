@@ -1,5 +1,6 @@
 import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/screens/add_food_screen.dart';
 import 'package:perfit/screens/my_meal_screen.dart';
@@ -22,7 +23,9 @@ class MealScreen extends StatefulWidget {
 
 class _MealScreenState extends State<MealScreen> {
   String? uid;
+final SettingService _settingService = SettingService();  
 
+bool isDarkMode = true;
   @override
   void initState() {
     super.initState();
@@ -30,6 +33,14 @@ class _MealScreenState extends State<MealScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     uid = user!.uid;
+    _loadTheme();
+  }
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
   }
 
   Future<List<Map<String, dynamic>>> getAllFoods() async {
@@ -68,7 +79,9 @@ class _MealScreenState extends State<MealScreen> {
                 ),
             child: Text(
               "My Meals",
-              style: TextStyles.body.copyWith(color: AppColors.white),
+             style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.lightgrey : AppColors.black,
+                    ),
             ),
           ),
         ],

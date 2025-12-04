@@ -86,30 +86,58 @@ class ExerciseSummaryScreen extends StatelessWidget {
                         Card(child: ListTile(title: Text(feedbacks[index]))),
               ),
             ),
-            GestureDetector(
-              onTap:
-                  () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => CurlUpScreen()),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap:
+                      () => Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (_) => CurlUpScreen()),
+                      ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.primary, // line color
+                        width: 1.0, // line thickness
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        8,
+                      ), // optional: rounded corners
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.padding16,
+                      vertical: AppSizes.padding16 / 2,
+                    ),
+                    child: Text(
+                      "Try Again",
+                      style: TextStyles.body.copyWith(color: AppColors.primary),
+                    ),
                   ),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: AppColors.primary, // line color
-                    width: 1.0, // line thickness
+                ),
+                Gap(AppSizes.gap10),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.primary, // line color
+                        width: 1.0, // line thickness
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        8,
+                      ), // optional: rounded corners
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.padding16,
+                      vertical: AppSizes.padding16 / 2,
+                    ),
+                    child: Text(
+                      "Done",
+                      style: TextStyles.body.copyWith(color: AppColors.primary),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(
-                    8,
-                  ), // optional: rounded corners
                 ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSizes.padding16,
-                  vertical: AppSizes.padding16 / 2,
-                ),
-                child: Text(
-                  "Try Again",
-                  style: TextStyles.body.copyWith(color: AppColors.primary),
-                ),
-              ),
+              ],
             ),
           ],
         ),

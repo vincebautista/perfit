@@ -286,7 +286,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 bool isToday = day == currentDay;
 
                 return Card(
-                  color: isDarkMode ? AppColors.black : AppColors.lightgrey,
+                  color: isDarkMode ? AppColors.grey : AppColors.lightgrey,
 
                   shape: RoundedRectangleBorder(
                     // side: BorderSide(

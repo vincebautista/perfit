@@ -16,6 +16,7 @@ import 'package:perfit/screens/main_navigation.dart';
 import 'package:perfit/widgets/last_7_days_chart.dart';
 import 'package:perfit/widgets/text_styles.dart';
 import 'package:perfit/widgets/walk_animation.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -43,7 +44,125 @@ class _HomeScreenState extends State<HomeScreen> {
     _filteredExercises = _exercises;
     _incrementStreakBadges();
     fetchViewedExercises();
+    checkAndAutoIncrementDay();
     _loadTheme();
+  }
+
+  Future<void> checkAndAutoIncrementDay() async {
+    print("🔍 checkAndAutoIncrementDay() STARTED");
+
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    print("User ID: $uid");
+
+    final userDoc =
+        await FirebaseFirestore.instance.collection("users").doc(uid).get();
+    final fitnessPlanId = userDoc.data()?['activeFitnessPlan'];
+    print("Active Fitness Plan ID: $fitnessPlanId");
+
+    if (fitnessPlanId == null || fitnessPlanId.isEmpty) {
+      print("❌ No active fitness plan found");
+      return;
+    }
+
+    final planRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("fitnessPlan")
+        .doc(fitnessPlanId);
+
+    final planDoc = await planRef.get();
+    if (!planDoc.exists) {
+      print("❌ Plan doc does not exist");
+      return;
+    }
+
+    final planData = planDoc.data()!;
+    int currentDay = planData['currentDay'] ?? 1;
+    String lastUpdated = planData['lastUpdatedDate'] ?? "";
+    String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    print("📅 Current Day: $currentDay");
+    print("🕒 Last Updated: $lastUpdated | Today: $today");
+
+    if (lastUpdated == today) {
+      print("⏱ Already processed today → exiting");
+      return;
+    }
+
+    // Fetch today's workout
+    final workoutDoc =
+        await planRef.collection("workouts").doc(currentDay.toString()).get();
+
+    if (!workoutDoc.exists) {
+      print(
+        "❌ No workout found for Day $currentDay → incrementing day automatically",
+      );
+      await planRef.update({
+        "currentDay": currentDay + 1,
+        "lastUpdatedDate": today,
+      });
+      print("✅ Current day incremented to ${currentDay + 1}");
+      return;
+    }
+
+    final workoutData = workoutDoc.data()!;
+    String type = workoutData['type'] ?? "Workout";
+    print("Workout type for Day $currentDay: $type");
+
+    // Handle REST day
+    if (type.toLowerCase() == "rest") {
+      print("😴 Today is a REST DAY → incrementing day automatically");
+      await planRef.update({
+        "currentDay": currentDay + 1,
+        "lastUpdatedDate": today,
+      });
+      print("✅ Current day incremented to ${currentDay + 1}");
+      return;
+    }
+
+    // Read exercises array
+    List exercises = workoutData['exercises'] ?? [];
+    print("📥 Found ${exercises.length} exercises for Day $currentDay");
+
+    bool allPending = true;
+    bool anyCompletedOrSkipped = false;
+
+    for (var e in exercises) {
+      String status = e['status'] ?? "pending";
+      print("▪ Exercise: ${e['name']} | Status: $status");
+
+      if (status != "pending") allPending = false;
+      if (status == "completed" || status == "skipped")
+        anyCompletedOrSkipped = true;
+    }
+
+    if (allPending) {
+      print("❌ All exercises still pending → NOT incrementing");
+      await planRef.update({"lastUpdatedDate": today});
+      print("📌 Updated lastUpdatedDate only.");
+      return;
+    }
+
+    // Mark remaining pending exercises as skipped
+    for (int i = 0; i < exercises.length; i++) {
+      if (exercises[i]['status'] == "pending") {
+        exercises[i]['status'] = "skipped";
+        print("⏩ Marking exercise '${exercises[i]['name']}' as skipped");
+      }
+    }
+
+    // Update the workout document with modified statuses
+    await planRef.collection("workouts").doc(currentDay.toString()).update({
+      "exercises": exercises,
+    });
+
+    // Increment currentDay
+    await planRef.update({
+      "currentDay": currentDay + 1,
+      "lastUpdatedDate": today,
+    });
+
+    print("✅ Current day incremented to ${currentDay + 1}");
   }
 
   Future<void> _incrementStreakBadges() async {
@@ -208,18 +327,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       last7Workouts != null &&
                       last7Workouts.isNotEmpty)
                     Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          12,
-                        ), // rounded corners
-                        side: BorderSide(
-                          color:
-                              isDarkMode
-                                  ? AppColors.white
-                                  : Colors.transparent, // border color
-                          width: 0.5, // border width
-                        ),
-                      ),
+                      // shape: RoundedRectangleBorder(
+                      //   borderRadius: BorderRadius.circular(
+                      //     12,
+                      //   ), // rounded corners
+                      //   side: BorderSide(
+                      //     color:
+                      //         isDarkMode
+                      //             ? AppColors.white
+                      //             : Colors.transparent, // border color
+                      //     width: 0.5, // border width
+                      //   ),
+                      // ),
                       color:
                           isDarkMode ? AppColors.surface : AppColors.lightgrey,
                       child: Padding(
@@ -228,8 +347,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               "Weekly Summary",
-                              style: TextStyles.subtitle.copyWith(
-                                fontWeight: FontWeight.w600,
+                              style: TextStyles.body.copyWith(
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                             Gap(AppSizes.gap10),
@@ -280,8 +399,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            trailing: TextButton(
-                              onPressed: () {
+                            trailing: GestureDetector(
+                              onTap: () {
                                 Navigator.of(context).pushReplacement(
                                   MaterialPageRoute(
                                     builder:
@@ -289,10 +408,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               },
-                              child: Text(
-                                "View All",
-                                style: TextStyles.label.copyWith(
-                                  color: AppColors.white,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.grey.withAlpha(200),
+                                  borderRadius: BorderRadius.circular(
+                                    20,
+                                  ), // optional: rounded corners
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: AppSizes.padding16,
+                                  vertical: AppSizes.padding16 / 2,
+                                ),
+                                child: Text(
+                                  "View",
+                                  style: TextStyles.caption.copyWith(
+                                    color: AppColors.white,
+                                  ),
                                 ),
                               ),
                             ),

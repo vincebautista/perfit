@@ -199,16 +199,32 @@ class _AllExercisesScreenState extends State<AllExercisesScreen> {
                                 ),
                                 header:
                                     viewedExercises.contains(exercise.id)
-                                        ? Padding(
-                                          padding: const EdgeInsets.all(
-                                            AppSizes.padding16 / 2,
-                                          ),
-                                          child: Text(
-                                            "viewed",
-                                            style: TextStyle(
-                                              color: Colors.black,
+                                        ? Align(
+                                          alignment: Alignment.topRight,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(6),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal:
+                                                        AppSizes.padding20 / 2,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.orange,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      AppSizes.circleRadius,
+                                                    ),
+                                              ),
+                                              child: const Text(
+                                                "viewed",
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
                                             ),
-                                            textAlign: TextAlign.end,
                                           ),
                                         )
                                         : Text(""),

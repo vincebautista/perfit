@@ -1134,9 +1134,9 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
                             if (!mounted) return;
                             Navigator.of(context).pop();
                           },
-                          child: const Text(
+                          child:  Text(
                             "Cancel",
-                            style: TextStyle(color: AppColors.white),
+                            style: TextStyle( color: isDarkMode ? AppColors.white : AppColors.black,),
                           ),
                         ),
                         Container(
@@ -1296,7 +1296,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
       final summary = await geminiService.fetchFromGemini(prompt);
 
       // Save to preferences
-      prefs.setInt('saved_total_weight_logs', allWeightLogs.length);
+      prefs.setInt('saved_total_weight_logs', allWeightLogs.length);  
       prefs.setInt('saved_total_completed_workouts', totalCompletedWorkouts);
       prefs.setString(
         'saved_full_progress_explanation',

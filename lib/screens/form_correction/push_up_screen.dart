@@ -3,14 +3,17 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/camera_service.dart';
 import 'package:perfit/core/services/distance_service.dart';
 import 'package:perfit/core/services/gesture_service.dart';
 import 'package:perfit/core/services/pose_detection_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/exercise_summary_screen.dart';
-import 'package:perfit/widgets/walk_animation.dart';
+import 'package:perfit/widgets/text_styles.dart';
 
 class PushUpScreen extends StatefulWidget {
   const PushUpScreen({super.key});
@@ -30,6 +33,11 @@ class _PushUpScreenState extends State<PushUpScreen> {
   bool _isInitialized = false;
   bool _isBusy = false;
 
+  // --- NEW: Variables for Skeleton Overlay ---
+  Pose? _currentPose;
+  Size _inputImageSize = Size.zero;
+  // -----------------------------------------
+
   ExerciseStage currentStage = ExerciseStage.distanceCheck;
 
   String distanceStatus = "Checking distance...";
@@ -38,20 +46,26 @@ class _PushUpScreenState extends State<PushUpScreen> {
   int countdown = 3;
 
   // Form correction variables
-  int _rightCurlCount = 0;
-  int _rightCorrectCount = 0;
-  int _rightWrongCount = 0;
+  int _pushUpCount = 0;
+  int _correctCount = 0;
+  int _wrongCount = 0;
   List<String> _feedback = [];
 
-  bool _rightStartedDown = false;
-  bool _rightReachedUp = false;
-  double _rightMinElbowAngleDuringRep = 180.0;
+  bool _lastRepCorrect = true;
+  bool _startedDown = false;
+  bool _reachedUp = false;
+  double _minElbowAngleDuringRep = 180.0;
+
+  Pose? _lastPose;
+  Size? _cameraImageSize;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
-    _loadCountdown();
+    Future.delayed(const Duration(seconds: 1), () async {
+      await _initCamera();
+      _loadCountdown();
+    });
   }
 
   Future<void> _loadCountdown() async {
@@ -62,6 +76,8 @@ class _PushUpScreenState extends State<PushUpScreen> {
   Future<void> _initCamera() async {
     await _cameraService.initCamera();
     _cameraService.startStream(_processCameraImage);
+
+    if (!mounted) return;
     setState(() => _isInitialized = true);
   }
 
@@ -75,6 +91,8 @@ class _PushUpScreenState extends State<PushUpScreen> {
     if (_isBusy) return;
     _isBusy = true;
 
+    _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
     try {
       final inputImage = _cameraImageToInputImage(
         image,
@@ -85,6 +103,7 @@ class _PushUpScreenState extends State<PushUpScreen> {
       if (poses.isEmpty) return;
 
       final pose = poses.first;
+      _lastPose = pose;
 
       switch (currentStage) {
         case ExerciseStage.distanceCheck:
@@ -99,7 +118,7 @@ class _PushUpScreenState extends State<PushUpScreen> {
       }
     } finally {
       _isBusy = false;
-      if (mounted) setState(() {}); // Only one UI update per frame
+      if (mounted) setState(() {});
     }
   }
 
@@ -149,11 +168,11 @@ class _PushUpScreenState extends State<PushUpScreen> {
     const maxCm = 150;
 
     if (distanceCm < minCm) {
-      distanceStatus = "❌ Too Close! Move back";
+      distanceStatus = "Too Close! Move back";
     } else if (distanceCm > maxCm) {
-      distanceStatus = "❌ Too Far! Move closer";
+      distanceStatus = "Too Far! Move closer";
     } else {
-      distanceStatus = "✅ Perfect Distance! Stay in that position.";
+      distanceStatus = "Perfect Distance! Stay in that position.";
       currentStage = ExerciseStage.gestureDetection;
       handsStatus = "Raise your right hand above the head";
     }
@@ -165,21 +184,20 @@ class _PushUpScreenState extends State<PushUpScreen> {
       startCountdown: countdown,
       onHoldProgress:
           (progress) =>
-              countdownStatus =
-                  "✋ Raise your hand for 1 second… ${(progress * 100).toInt()}%",
+              countdownStatus = "Raise your hand… ${(progress * 100).toInt()}%",
       onHandsUpDetected: () {
-        handsStatus = "✅ Hands detected! Starting countdown...";
+        handsStatus = "Hands detected! Starting countdown...";
         countdownStatus = "";
       },
-      onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s remaining",
+      onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s",
       onCountdownComplete: () {
-        countdownStatus = "✅ Timer complete!";
+        countdownStatus = "Timer complete!";
         currentStage = ExerciseStage.formCorrection;
       },
     );
 
     if (!handsUp && !_gestureService.countdownRunning) {
-      handsStatus = "❌ Raise your hand!";
+      handsStatus = "Raise your hand!";
       countdownStatus = "";
     }
   }
@@ -200,6 +218,31 @@ class _PushUpScreenState extends State<PushUpScreen> {
     final leftAnkle = landmarks[PoseLandmarkType.leftAnkle];
     final rightAnkle = landmarks[PoseLandmarkType.rightAnkle];
 
+    final handsUp = _gestureService.update(
+      pose,
+      startCountdown: 1, // 1 second hold
+      onHoldProgress: (progress) {
+        countdownStatus = "Hold hands up… ${(progress * 100).toInt()}%";
+      },
+      onHandsUpDetected: () async {
+        // Stop camera and go to summary
+        await _cameraService.controller?.stopImageStream();
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => ExerciseSummaryScreen(
+                  correct: _correctCount,
+                  wrong: _wrongCount,
+                  feedbacks: _feedback,
+                ),
+          ),
+        );
+      },
+    );
+
     if (leftShoulder == null ||
         rightShoulder == null ||
         leftElbow == null ||
@@ -212,12 +255,9 @@ class _PushUpScreenState extends State<PushUpScreen> {
         rightKnee == null ||
         leftAnkle == null ||
         rightAnkle == null) {
-      // Keep existing feedback mechanism list-based; this function only counts reps.
-      _feedback.add("Rep helper: make sure your whole body is visible.");
       return;
     }
 
-    // Core angle set.
     double kneeAngleLeft = _calculateAngle(
       Offset(leftHip.x, leftHip.y),
       Offset(leftKnee.x, leftKnee.y),
@@ -241,7 +281,6 @@ class _PushUpScreenState extends State<PushUpScreen> {
     );
     double hipAngle = (hipAngleLeft + hipAngleRight) / 2;
 
-    // Torso: shoulders–hips vs horizontal.
     final midShoulder = Offset(
       (leftShoulder.x + rightShoulder.x) / 2,
       (leftShoulder.y + rightShoulder.y) / 2,
@@ -259,65 +298,37 @@ class _PushUpScreenState extends State<PushUpScreen> {
       Offset(rightElbow.x, rightElbow.y),
       Offset(rightWrist.x, rightWrist.y),
     );
-    // Track left arm angles for future symmetry checks (unused but reserved).
-    final elbowAngleLeft = _calculateAngle(
-      Offset(leftShoulder.x, leftShoulder.y),
-      Offset(leftElbow.x, leftElbow.y),
-      Offset(leftWrist.x, leftWrist.y),
-    );
 
-    double shoulderAngleRight = _calculateAngle(
-      Offset(rightHip.x, rightHip.y),
-      Offset(rightShoulder.x, rightShoulder.y),
-      Offset(rightElbow.x, rightElbow.y),
-    );
-    double shoulderAngleLeft = _calculateAngle(
-      Offset(leftHip.x, leftHip.y),
-      Offset(leftShoulder.x, leftShoulder.y),
-      Offset(leftElbow.x, leftElbow.y),
-    );
-    final shoulderAngle = (shoulderAngleLeft + shoulderAngleRight) / 2;
-
-    // Simple stability check: require symmetry and limited angle jitter.
     final kneeDiff = (kneeAngleLeft - kneeAngleRight).abs();
     final hipDiff = (hipAngleLeft - hipAngleRight).abs();
 
-    // Prevent "unused" lints on reserved symmetry variables without affecting logic.
-    if (elbowAngleLeft < -1 || shoulderAngle < -1) {
-      // no-op
-    }
     if (kneeDiff > 25 || hipDiff > 25) {
-      // Skip this frame; probably mid-movement wobble or partial view.
       return;
     }
 
-    // Depth/top detection using right elbow (primary tracking arm).
     const downMin = 80.0;
     const downMax = 100.0;
     const upMin = 160.0;
+
     final atBottom = elbowAngleRight >= downMin && elbowAngleRight <= downMax;
     final atTop = elbowAngleRight >= upMin;
 
-    // Form quality flags for this rep.
     bool formGood = true;
     String correction = "";
 
-    // 1. Body line – hips should roughly match torso (avoid sag/pike).
     if (hipAngle < torsoAngle - 15) {
       formGood = false;
-      correction = "Push-up: lift hips slightly to keep a straight line.";
+      correction = "Lift hips slightly.";
     } else if (hipAngle > torsoAngle + 15) {
       formGood = false;
-      correction = "Push-up: lower hips to avoid piking.";
+      correction = "Lower hips (no piking).";
     }
 
-    // 2. Torso angle: too much arch/round.
     if (formGood && (torsoAngle < 150 || torsoAngle > 190)) {
       formGood = false;
-      correction = "Push-up: keep your torso closer to a plank position.";
+      correction = "Keep torso straight.";
     }
 
-    // 3. Elbow flare: shoulder–elbow–wrist angle too small.
     final flareAngleRight = _calculateAngle(
       Offset(rightElbow.x, rightElbow.y),
       Offset(rightShoulder.x, rightShoulder.y),
@@ -325,53 +336,57 @@ class _PushUpScreenState extends State<PushUpScreen> {
     );
     if (formGood && flareAngleRight < 45) {
       formGood = false;
-      correction =
-          "Push-up: keep elbows about 45° from your torso, not flared out.";
+      correction = "Don't flare elbows.";
     }
 
-    // Rep state machine based on elbow angle.
-    _rightMinElbowAngleDuringRep = math.min(
-      _rightMinElbowAngleDuringRep,
+    _minElbowAngleDuringRep = math.min(
+      _minElbowAngleDuringRep,
       elbowAngleRight,
     );
-    if (!_rightStartedDown && atTop) {
-      _rightStartedDown = true;
+
+    if (!_startedDown && atTop) {
+      _startedDown = true;
     }
-    if (_rightStartedDown && !_rightReachedUp && atBottom) {
-      _rightReachedUp = true;
+    if (_startedDown && !_reachedUp && atBottom) {
+      _reachedUp = true;
     }
 
-    if (_rightStartedDown && _rightReachedUp && atTop) {
-      _rightCurlCount++;
+    if (_startedDown && _reachedUp && atTop) {
+      _pushUpCount++;
 
       if (!formGood ||
-          _rightMinElbowAngleDuringRep < downMin ||
-          _rightMinElbowAngleDuringRep > downMax) {
-        _rightWrongCount++;
-        _feedback.add(
-          "Rep $_rightCurlCount: "
-          "${correction.isNotEmpty ? correction : "Reach ~90° elbow depth."}",
-        );
+          _minElbowAngleDuringRep < downMin ||
+          _minElbowAngleDuringRep > downMax) {
+        _wrongCount++;
+        if (_minElbowAngleDuringRep > downMax) correction = "Go lower (90°)";
+        if (_minElbowAngleDuringRep < downMin) correction = "Don't go too low";
+
+        _feedback.add("Rep $_pushUpCount: $correction");
+        _lastRepCorrect = false;
       } else {
-        _rightCorrectCount++;
+        _correctCount++;
+        _feedback.add("Good Pushup!");
+        _lastRepCorrect = true;
       }
 
-      // Reset for next rep.
-      _rightStartedDown = false;
-      _rightReachedUp = false;
-      _rightMinElbowAngleDuringRep = 180.0;
+      _startedDown = false;
+      _reachedUp = false;
+      _minElbowAngleDuringRep = 180.0;
 
-      // Stop after 5 reps (existing behavior).
-      if (_rightCurlCount >= 5) {
+      if (_pushUpCount >= 5) {
         await _cameraService.controller?.stopImageStream();
+        if (!mounted) return;
+
+        await Future.delayed(const Duration(seconds: 1));
+
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder:
                 (_) => ExerciseSummaryScreen(
-                  correct: _rightCorrectCount,
-                  wrong: _rightWrongCount,
+                  correct: _correctCount,
+                  wrong: _wrongCount,
                   feedbacks: _feedback,
                 ),
           ),
@@ -393,108 +408,234 @@ class _PushUpScreenState extends State<PushUpScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _cameraService.controller == null) {
-      return const Scaffold(body: Center(child: WalkAnimation()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     String displayMessage = "";
+    Color bgColor = AppColors.primary;
+
     switch (currentStage) {
       case ExerciseStage.distanceCheck:
         displayMessage = distanceStatus;
+        if (displayMessage.toLowerCase().contains("too")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("perfect")) {
+          bgColor = AppColors.green;
+        } else {
+          bgColor = AppColors.primary;
+        }
         break;
+
       case ExerciseStage.gestureDetection:
         displayMessage =
             countdownStatus.isNotEmpty ? countdownStatus : handsStatus;
+        if (displayMessage.toLowerCase().contains("raise")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("detected") ||
+            displayMessage.toLowerCase().contains("complete")) {
+          bgColor = AppColors.green;
+        } else {
+          bgColor = AppColors.primary;
+        }
         break;
+
       case ExerciseStage.formCorrection:
+        if (_feedback.isNotEmpty) {
+          displayMessage = _feedback.last;
+          if (displayMessage.contains("Rep") &&
+              !displayMessage.contains("Good")) {
+            bgColor = _lastRepCorrect ? AppColors.green : AppColors.red;
+          } else if (displayMessage.contains("Good")) {
+            bgColor = AppColors.green;
+          } else {
+            bgColor = AppColors.primary;
+          }
+        } else {
+          displayMessage = "Perform 5 Push Ups";
+          bgColor = AppColors.primary;
+        }
         break;
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Test Exercise")),
-      body: Stack(
+      appBar: AppBar(title: const Text("Push Up Exercise")),
+      body: Column(
         children: [
-          CameraPreview(_cameraService.controller!),
+          // 1. Top Message Banner
+          Container(
+            width: double.infinity,
+            color: bgColor,
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              displayMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
 
-          // Overlay messages
-          if (currentStage != ExerciseStage.formCorrection)
-            Positioned(
-              bottom: 150,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
+          // 2. Camera Area
+          Expanded(
+            child: Stack(
+              children: [
+                CameraPreview(_cameraService.controller!),
+
+                // --- NEW: Skeleton Overlay Painter ---
+                // Draws landmarks on top of the camera stream
+                if (_lastPose != null && _cameraImageSize != null)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final widgetSize = Size(
+                        constraints.maxWidth,
+                        constraints.maxHeight,
+                      );
+                      final controller = _cameraService.controller!;
+                      final sensorOrientation =
+                          controller.description.sensorOrientation;
+                      final isFront =
+                          controller.description.lensDirection ==
+                          CameraLensDirection.front;
+
+                      Color skeletonColor = AppColors.primary;
+
+                      if (currentStage == ExerciseStage.formCorrection) {
+                        skeletonColor =
+                            _feedback.isNotEmpty
+                                ? (_lastRepCorrect
+                                    ? AppColors.green
+                                    : AppColors.red)
+                                : AppColors.primary;
+                      }
+
+                      return CustomPaint(
+                        painter: PosePainter(
+                          pose: _lastPose!, // use _currentPose
+                          imageSize: _cameraImageSize!, // use _inputImageSize
+                          widgetSize: widgetSize,
+                          sensorOrientation: sensorOrientation,
+                          isFrontCamera: isFront,
+                          skeletonColor: skeletonColor,
+                        ),
+                        size: widgetSize,
+                      );
+                    },
                   ),
-                  child: Text(
-                    displayMessage,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+
+                // -------------------------------------
+
+                // Corner Overlay
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: CornerPainter(
+                      cornerLength: 60,
+                      strokeWidth: 5,
+                      padding: 50,
+                      topLeft: bgColor,
+                      topRight: bgColor,
+                      bottomLeft: bgColor,
+                      bottomRight: bgColor,
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
 
-          // Overlay rep counter
-          if (currentStage == ExerciseStage.formCorrection)
-            Positioned(
-              top: 20,
-              left: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "Reps: $_rightCurlCount\n✅ $_rightCorrectCount | ❌ $_rightWrongCount",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+          Gap(AppSizes.gap10),
+
+          // 3. Stats Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.padding16),
+            child: Card(
+              color: AppColors.grey,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      children: [
+                        Text("CORRECT", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_correctCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1.2,
+                      color: Colors.grey.shade300,
+                    ),
+                    Column(
+                      children: [
+                        Text("WRONG", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_wrongCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
+          Gap(AppSizes.gap10),
         ],
       ),
     );
   }
 }
 
+// --- NEW: PosePainter Class ---
+// Draws the skeleton overlay using detected landmarks
 class PosePainter extends CustomPainter {
   final Pose pose;
   final Size imageSize;
+  final Size widgetSize;
+  final int sensorOrientation;
+  final bool isFrontCamera;
+  final Color skeletonColor;
 
-  PosePainter(this.pose, this.imageSize);
+  PosePainter({
+    required this.pose,
+    required this.imageSize,
+    required this.widgetSize,
+    required this.sensorOrientation,
+    required this.isFrontCamera,
+    required this.skeletonColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = Colors.greenAccent
-          ..strokeWidth = 4
-          ..strokeCap = StrokeCap.round;
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4.0
+          ..color = skeletonColor; // Skeleton color
 
-    // Map from image coordinates to widget coordinates
-    double scaleX = size.width / imageSize.width;
-    double scaleY = size.height / imageSize.height;
+    final pointPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = skeletonColor; // Joint color
 
-    Offset toOffset(PoseLandmark landmark) {
-      return Offset(landmark.x * scaleX, landmark.y * scaleY);
-    }
-
-    // List of bones (pairs of landmarks to connect)
-    List<List<PoseLandmarkType>> bones = [
+    // Loop through all landmarks to draw connections
+    // Define the skeletal connections (pairs of landmarks)
+    final connections = [
       [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
       [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
@@ -509,19 +650,173 @@ class PosePainter extends CustomPainter {
       [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
     ];
 
-    // Draw lines
-    for (var bone in bones) {
-      final start = pose.landmarks[bone[0]];
-      final end = pose.landmarks[bone[1]];
-      if (start != null && end != null) {
-        canvas.drawLine(toOffset(start), toOffset(end), paint);
+    // Draw Connections
+    for (final connection in connections) {
+      final startLandmark = pose.landmarks[connection[0]];
+      final endLandmark = pose.landmarks[connection[1]];
+
+      if (startLandmark != null && endLandmark != null) {
+        final startOffset = _translate(
+          startLandmark.x,
+          startLandmark.y,
+          imageSize,
+          widgetSize,
+          sensorOrientation,
+          isFrontCamera,
+        );
+        final endOffset = _translate(
+          endLandmark.x,
+          endLandmark.y,
+          imageSize,
+          widgetSize,
+          sensorOrientation,
+          isFrontCamera,
+        );
+
+        canvas.drawLine(startOffset, endOffset, paint);
       }
     }
 
-    // Draw landmarks as circles
-    for (var landmark in pose.landmarks.values) {
-      canvas.drawCircle(toOffset(landmark), 6, paint);
+    // Draw Landmarks (Dots)
+    pose.landmarks.forEach((_, landmark) {
+      final offset = _translate(
+        landmark.x,
+        landmark.y,
+        imageSize,
+        widgetSize,
+        sensorOrientation,
+        isFrontCamera,
+      );
+      canvas.drawCircle(offset, 5, pointPaint);
+    });
+  }
+
+  /// Helper to map camera coordinates to screen coordinates
+  Offset _translate(
+    double x,
+    double y,
+    Size absoluteImageSize,
+    Size widgetSize,
+    int rotation,
+    bool isFront,
+  ) {
+    // We swap width and height for the image if the rotation is 90 or 270
+    // (portrait mode usually implies this swap relative to sensor)
+    final double imageWidth =
+        (rotation == 90 || rotation == 270)
+            ? absoluteImageSize.height
+            : absoluteImageSize.width;
+    final double imageHeight =
+        (rotation == 90 || rotation == 270)
+            ? absoluteImageSize.width
+            : absoluteImageSize.height;
+
+    // Calculate scale factors
+    double scaleX = widgetSize.width / imageWidth;
+    double scaleY = widgetSize.height / imageHeight;
+
+    // Depending on fit, you might want to use the same scale for both to maintain aspect ratio
+    // But usually CameraPreview fills the screen, so we stretch slightly or crop.
+    // For simplicity, we scale independently to fit the widget bounds.
+
+    double screenX = x * scaleX;
+    double screenY = y * scaleY;
+
+    // If using front camera, mirror the X axis
+    if (isFront) {
+      screenX = widgetSize.width - screenX;
     }
+
+    return Offset(screenX, screenY);
+  }
+
+  @override
+  bool shouldRepaint(covariant PosePainter oldDelegate) {
+    return oldDelegate.pose != pose ||
+        oldDelegate.imageSize != imageSize ||
+        oldDelegate.widgetSize != widgetSize;
+  }
+}
+// ------------------------------
+
+class CornerPainter extends CustomPainter {
+  final double cornerLength;
+  final double strokeWidth;
+  final double padding;
+  final Color topLeft;
+  final Color topRight;
+  final Color bottomLeft;
+  final Color bottomRight;
+
+  CornerPainter({
+    this.cornerLength = 30,
+    this.strokeWidth = 4,
+    this.padding = 20,
+    required this.topLeft,
+    required this.topRight,
+    required this.bottomLeft,
+    required this.bottomRight,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.square
+          ..style = PaintingStyle.stroke;
+
+    // Top-left
+    paint.color = topLeft;
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding + cornerLength, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding, padding + cornerLength),
+      paint,
+    );
+
+    // Top-right
+    paint.color = topRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, padding),
+      Offset(size.width - padding, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, padding),
+      Offset(size.width - padding, padding + cornerLength),
+      paint,
+    );
+
+    // Bottom-left
+    paint.color = bottomLeft;
+    canvas.drawLine(
+      Offset(padding, size.height - padding - cornerLength),
+      Offset(padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, size.height - padding),
+      Offset(padding + cornerLength, size.height - padding),
+      paint,
+    );
+
+    // Bottom-right
+    paint.color = bottomRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, size.height - padding),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, size.height - padding - cornerLength),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
   }
 
   @override

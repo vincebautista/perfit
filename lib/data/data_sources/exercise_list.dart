@@ -41,25 +41,6 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
-    id: "forearm_plank",
-    name: "Forearm Plank",
-    video: [
-      "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
-      "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/forearm_plank.jpg",
-    instructions: [
-      "Lie face‑down, then prop up on forearms and toes.",
-      "Keep body in a straight line, core braced.",
-      "Hold for required time while breathing steadily.",
-    ],
-    difficulty: "Beginner",
-    type: "time",
-    targetBody: "Lower Back",
-    location: "home",
-    hasFormCorrection: false,
-  ),
-  ExerciseModel(
     id: "push_up",
     name: "Push Up",
     video: [
@@ -79,25 +60,6 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
-    id: "split_squat",
-    name: "Split Squat",
-    video: [
-      "assets/videos/male-bodyweight-split-squat-side-converted.mp4",
-      "assets/videos/male-bodyweight-split-squat-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/split_squat.jpg",
-    instructions: [
-      "Stand in a split stance, back foot elevated or on ground.",
-      "Bend front knee and lower until back knee nears floor.",
-      "Push through front heel to return.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Quadriceps",
-    location: "home",
-    hasFormCorrection: false,
-  ),
-  ExerciseModel(
     id: "bodyweight_squat",
     name: "Bodyweight Squat",
     video: [
@@ -113,25 +75,6 @@ List<ExerciseModel> exercises = [
     difficulty: "Beginner",
     type: "rep",
     targetBody: "Quadriceps",
-    location: "home",
-    hasFormCorrection: true,
-  ),
-  ExerciseModel(
-    id: "crunches",
-    name: "Crunches",
-    video: [
-      "assets/videos/male-bodyweight-crunch-side-converted.mp4",
-      "assets/videos/male-bodyweight-crunch-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/crunches.jpg",
-    instructions: [
-      "Lie on back with knees bent, feet flat.",
-      "Lift shoulders toward hips, engaging upper abs.",
-      "Lower with control.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Upper Abs",
     location: "home",
     hasFormCorrection: true,
   ),
@@ -156,6 +99,44 @@ List<ExerciseModel> exercises = [
     hasFormCorrection: true,
   ),
   ExerciseModel(
+    id: "split_squat",
+    name: "Split Squat",
+    video: [
+      "assets/videos/male-bodyweight-split-squat-side-converted.mp4",
+      "assets/videos/male-bodyweight-split-squat-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/split_squat.jpg",
+    instructions: [
+      "Stand in a split stance, back foot elevated or on ground.",
+      "Bend front knee and lower until back knee nears floor.",
+      "Push through front heel to return.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Quadriceps",
+    location: "home",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "crunches",
+    name: "Crunches",
+    video: [
+      "assets/videos/male-bodyweight-crunch-side-converted.mp4",
+      "assets/videos/male-bodyweight-crunch-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/crunches.jpg",
+    instructions: [
+      "Lie on back with knees bent, feet flat.",
+      "Lift shoulders toward hips, engaging upper abs.",
+      "Lower with control.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Upper Abs",
+    location: "home",
+    hasFormCorrection: false,
+  ),
+  ExerciseModel(
     id: "barbell_bench_press",
     name: "Bench Press",
     video: [
@@ -172,7 +153,7 @@ List<ExerciseModel> exercises = [
     type: "rep",
     targetBody: "Chest",
     location: "gym",
-    hasFormCorrection: true,
+    hasFormCorrection: false,
   ),
   ExerciseModel(
     id: "barbell_deadlift",
@@ -194,6 +175,25 @@ List<ExerciseModel> exercises = [
     location: "gym",
   ),
 
+  ExerciseModel(
+    id: "forearm_plank",
+    name: "Forearm Plank",
+    video: [
+      "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
+      "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/forearm_plank.jpg",
+    instructions: [
+      "Lie face‑down, then prop up on forearms and toes.",
+      "Keep body in a straight line, core braced.",
+      "Hold for required time while breathing steadily.",
+    ],
+    difficulty: "Beginner",
+    type: "time",
+    targetBody: "Lower Back",
+    location: "home",
+    hasFormCorrection: false,
+  ),
   ExerciseModel(
     id: "wall_sit",
     name: "Wall Sit",
