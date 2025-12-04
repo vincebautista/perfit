@@ -161,9 +161,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ? AppColors.grey
                                       : AppColors.lightgrey,
                               child: ListTile(
-                                title: Text("Rest Time",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.black : AppColors.white,
-                    ) ,),
+                                title: Text(
+                                  "Rest Time",
+                                  style: TextStyles.caption.copyWith(
+                                    color:
+                                        isDarkMode
+                                            ? AppColors.grey
+                                            : AppColors.lightgrey,
+                                  ),
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -200,9 +206,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text("$countdown secs",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,
-                    ) ),
+                                    Text(
+                                      "$countdown secs",
+                                      style: TextStyles.caption.copyWith(
+                                        color:
+                                            isDarkMode
+                                                ? AppColors.white
+                                                : AppColors.black,
+                                      ),
+                                    ),
                                     Gap(AppSizes.gap10),
                                     IconButton(
                                       onPressed: () {
@@ -232,9 +244,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       : AppColors.lightgrey,
 
                               child: ListTile(
-                                title: Text("Workout Reminder",style: TextStyles.caption.copyWith(
-                      color: isDarkMode ? AppColors.white : AppColors.black,
-                    ) ),
+                                title: Text(
+                                  "Workout Reminder",
+                                  style: TextStyles.caption.copyWith(
+                                    color:
+                                        isDarkMode
+                                            ? AppColors.white
+                                            : AppColors.black,
+                                  ),
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
