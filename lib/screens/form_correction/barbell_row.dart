@@ -1,14 +1,20 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:io'; // Needed for Platform checks if necessary
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/camera_service.dart';
 import 'package:perfit/core/services/distance_service.dart';
 import 'package:perfit/core/services/gesture_service.dart';
 import 'package:perfit/core/services/pose_detection_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/exercise_summary_screen.dart';
+import 'package:perfit/widgets/text_styles.dart';
 
 class BarbellRowScreen extends StatefulWidget {
   const BarbellRowScreen({super.key});
@@ -28,6 +34,12 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
   bool _isInitialized = false;
   bool _isBusy = false;
 
+  // --- ADDED: Track Pose, Size, and Rotation for the Painter ---
+  Pose? _lastPose;
+  Size? _cameraImageSize; // Raw size of the image from the camera sensor
+  InputImageRotation? _imageRotation; // Rotation of the camera image
+  // -----------------------------------------------------------
+
   ExerciseStage currentStage = ExerciseStage.distanceCheck;
 
   String distanceStatus = "Checking distance...";
@@ -39,22 +51,23 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
   int _rowCount = 0;
   int _correctCount = 0;
   int _wrongCount = 0;
-  List<String> _feedback = [];
+  List<String> _feedbackList = [];
 
   bool _startedRep = false;
   bool isAtTop = false;
   double _previousTorsoAngle = 0.0;
   double _torsoAngleVariance = 0.0;
 
-  // Feedback display
-  String feedback = "";
-  Color feedbackColor = Colors.green;
+  String _currentFeedback = "";
+  bool _lastRepCorrect = true;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
-    _loadCountdown();
+    Future.delayed(const Duration(seconds: 1), () async {
+      await _initCamera();
+      _loadCountdown();
+    });
   }
 
   Future<void> _loadCountdown() async {
@@ -65,6 +78,7 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
   Future<void> _initCamera() async {
     await _cameraService.initCamera();
     _cameraService.startStream(_processCameraImage);
+    if (!mounted) return;
     setState(() => _isInitialized = true);
   }
 
@@ -78,16 +92,28 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
     if (_isBusy) return;
     _isBusy = true;
 
+    // --- ADDED: Capture image metadata for alignment ---
+    _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
+    final sensorOrientation =
+        _cameraService.controller!.description.sensorOrientation;
+    _imageRotation ??=
+        InputImageRotationValue.fromRawValue(sensorOrientation) ??
+        InputImageRotation.rotation0deg;
+    // --------------------------------------------------
+
     try {
-      final inputImage = _cameraImageToInputImage(
-        image,
-        _cameraService.controller!.description.sensorOrientation,
-      );
+      final inputImage = _cameraImageToInputImage(image, sensorOrientation);
 
       final poses = await _poseService.detectPoses(inputImage);
-      if (poses.isEmpty) return;
+      if (poses.isEmpty) {
+        // Clear pose if none detected so overlay disappears
+        _lastPose = null;
+        return;
+      }
 
       final pose = poses.first;
+      _lastPose = pose; // Trigger repaint
 
       switch (currentStage) {
         case ExerciseStage.distanceCheck:
@@ -152,11 +178,11 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
     const maxCm = 150;
 
     if (distanceCm < minCm) {
-      distanceStatus = "❌ Too Close! Move back";
+      distanceStatus = "Too Close! Move back";
     } else if (distanceCm > maxCm) {
-      distanceStatus = "❌ Too Far! Move closer";
+      distanceStatus = "Too Far! Move closer";
     } else {
-      distanceStatus = "✅ Perfect Distance! Stay in that position.";
+      distanceStatus = "Perfect Distance! Stay there.";
       currentStage = ExerciseStage.gestureDetection;
       handsStatus = "Raise your right hand above the head";
     }
@@ -168,26 +194,24 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
       startCountdown: countdown,
       onHoldProgress:
           (progress) =>
-              countdownStatus =
-                  "✋ Raise your hand for 1 second… ${(progress * 100).toInt()}%",
+              countdownStatus = "Raise your hand… ${(progress * 100).toInt()}%",
       onHandsUpDetected: () {
-        handsStatus = "✅ Hands detected! Starting countdown...";
+        handsStatus = "Hands detected! Starting countdown...";
         countdownStatus = "";
       },
-      onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s remaining",
+      onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s",
       onCountdownComplete: () {
-        countdownStatus = "✅ Timer complete!";
+        countdownStatus = "Timer complete!";
         currentStage = ExerciseStage.formCorrection;
       },
     );
 
     if (!handsUp && !_gestureService.countdownRunning) {
-      handsStatus = "❌ Raise your hand!";
+      handsStatus = "Raise your hand!";
       countdownStatus = "";
     }
   }
 
-  // Helper function to calculate angle from three landmarks
   double calculateAngle(PoseLandmark a, PoseLandmark b, PoseLandmark c) {
     return _calculateAngle(
       Offset(a.x, a.y),
@@ -226,17 +250,12 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
         rightKnee == null ||
         leftAnkle == null ||
         rightAnkle == null) {
-      feedback = "Please ensure all body parts are visible";
-      feedbackColor = Colors.orange;
+      _currentFeedback = "Ensure all body parts are visible";
+      _lastRepCorrect = false;
       return;
     }
 
-    // Calculate angles
-    // Knee angles: hip-knee-ankle (calculated per requirements)
-    // ignore: unused_local_variable
-    double kneeAngleLeft = calculateAngle(leftHip, leftKnee, leftAnkle);
-    // ignore: unused_local_variable
-    double kneeAngleRight = calculateAngle(rightHip, rightKnee, rightAnkle);
+    // --- BARBELL ROW LOGIC ---
 
     // Hip angles: shoulder-hip-knee
     double hipAngleLeft = calculateAngle(leftShoulder, leftHip, leftKnee);
@@ -251,16 +270,6 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
       rightWrist,
     );
     final avgElbowAngle = (elbowAngleLeft + elbowAngleRight) / 2;
-
-    // Shoulder angle: hip-shoulder-elbow (calculated per requirements)
-    double shoulderAngleLeft = calculateAngle(leftHip, leftShoulder, leftElbow);
-    double shoulderAngleRight = calculateAngle(
-      rightHip,
-      rightShoulder,
-      rightElbow,
-    );
-    // ignore: unused_local_variable
-    final avgShoulderAngle = (shoulderAngleLeft + shoulderAngleRight) / 2;
 
     // Hip angle: average hip angle (for general hip position)
     double hipAngle = avgHipAngle;
@@ -292,8 +301,8 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
     // Check if data is stable (both elbows have similar angles)
     final elbowAngleDiff = (elbowAngleLeft - elbowAngleRight).abs();
     if (elbowAngleDiff > 30) {
-      feedback = "Please ensure both arms are visible";
-      feedbackColor = Colors.orange;
+      _currentFeedback = "Please ensure both arms are visible";
+      _lastRepCorrect = false;
       return;
     }
 
@@ -307,38 +316,29 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
     // Detect if at top position (elbow angles in 70-110° range)
     isAtTop = avgElbowAngle >= 70 && avgElbowAngle <= 110;
 
-    // Initialize feedback
-    feedback = "";
-    feedbackColor = Colors.green;
-
     // Form error detection
     List<String> errors = [];
 
-    // 1. Rounded back: torsoAngle varies > 10° OR spine curvature suggests < 40° or > 80°
+    // 1. Rounded back check
     if (torsoAngle < 40 || torsoAngle > 80) {
-      errors.add("Keep your back straight - maintain neutral spine");
-      feedbackColor = Colors.red;
+      errors.add("Keep back straight");
     }
-    // Check torso wobble during rep
+    // Check torso wobble
     if (_torsoAngleVariance > 15) {
-      errors.add("Keep your torso stable - reduce movement");
-      feedbackColor = Colors.red;
+      errors.add("Stabilize torso");
     }
 
-    // 2. Insufficient hip hinge: hipAngle > 100° (standing too upright)
+    // 2. Insufficient hip hinge
     if (hipAngle > 100) {
-      errors.add("Hinge more at the hips - lean forward");
-      feedbackColor = Colors.red;
+      errors.add("Hinge more at hips");
     }
 
-    // 3. Elbows not pulling correctly: elbow angle does not enter 70°-110° at contraction
+    // 3. Elbows not pulling correctly
     if (isAtTop && (avgElbowAngle < 70 || avgElbowAngle > 110)) {
-      errors.add("Pull elbows back to 70-110° range");
-      feedbackColor = Colors.red;
+      errors.add("Pull elbows to 90°");
     }
 
-    // 4. Shrugging instead of rowing: shoulder elevation > 20° (shoulders too close to ears)
-    // Check shoulder position relative to hip (vertical distance)
+    // 4. Shrugging (Shoulder Elevation)
     final shoulderElevation = (avgShoulder.dy - avgHip.dy).abs();
     final torsoLength = math.sqrt(
       (avgShoulder.dx - avgHip.dx) * (avgShoulder.dx - avgHip.dx) +
@@ -346,25 +346,23 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
     );
     if (torsoLength > 0) {
       final elevationRatio = shoulderElevation / torsoLength;
-      // If shoulders are elevated relative to normal torso position
       if (elevationRatio > 0.3 && isAtTop) {
-        errors.add("Don't shrug - pull with your back, not your shoulders");
-        feedbackColor = Colors.red;
+        errors.add("Don't shrug shoulders");
       }
     }
 
-    // 5. Too much torso movement: torso wobble > 15° between frames
-    // Already checked above with _torsoAngleVariance
-
-    // Set feedback message
-    if (errors.isEmpty) {
-      if (isAtTop) {
-        feedback = "✅ Good form!";
-      } else {
-        feedback = "Continue rowing";
-      }
+    // Set Live Feedback Logic
+    if (errors.isNotEmpty) {
+      _currentFeedback = errors.join(". ");
+      _lastRepCorrect = false;
     } else {
-      feedback = errors.join(". ");
+      if (isAtTop) {
+        _currentFeedback = "Squeeze back! Good form.";
+        _lastRepCorrect = true;
+      } else {
+        _currentFeedback = "Pull barbell up";
+        _lastRepCorrect = true;
+      }
     }
 
     // Rep counting logic
@@ -377,11 +375,14 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
     if (_startedRep && isAtTop && avgElbowAngle > 150) {
       _rowCount++;
 
-      if (feedbackColor == Colors.green) {
+      if (errors.isEmpty) {
         _correctCount++;
+        _feedbackList.add("Correct form!");
+        _lastRepCorrect = true;
       } else {
         _wrongCount++;
-        _feedback.add("Rep $_rowCount: ${errors.join(", ")}");
+        _feedbackList.add("Rep $_rowCount: ${errors.join(", ")}");
+        _lastRepCorrect = false;
       }
 
       // Reset for next rep
@@ -392,6 +393,9 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
       if (_rowCount >= 5) {
         await _cameraService.controller?.stopImageStream();
         if (!mounted) return;
+        await Future.delayed(const Duration(seconds: 1));
+        if (!mounted) return;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -399,7 +403,7 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
                 (_) => ExerciseSummaryScreen(
                   correct: _correctCount,
                   wrong: _wrongCount,
-                  feedbacks: _feedback,
+                  feedbacks: _feedbackList,
                 ),
           ),
         );
@@ -423,101 +427,413 @@ class _BarbellRowScreenState extends State<BarbellRowScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // Determine UI Colors and Messages based on Logic
     String displayMessage = "";
+    Color bgColor = AppColors.primary;
+
     switch (currentStage) {
       case ExerciseStage.distanceCheck:
         displayMessage = distanceStatus;
+        if (displayMessage.toLowerCase().contains("too")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("perfect")) {
+          bgColor = AppColors.green;
+        }
         break;
+
       case ExerciseStage.gestureDetection:
         displayMessage =
             countdownStatus.isNotEmpty ? countdownStatus : handsStatus;
+        if (displayMessage.toLowerCase().contains("raise")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("detected") ||
+            displayMessage.toLowerCase().contains("complete")) {
+          bgColor = AppColors.green;
+        }
         break;
+
       case ExerciseStage.formCorrection:
+        if (_currentFeedback.isNotEmpty) {
+          displayMessage = _currentFeedback;
+          bgColor = _lastRepCorrect ? AppColors.green : AppColors.red;
+        } else {
+          displayMessage = "Start Rowing!";
+          bgColor = AppColors.primary;
+        }
         break;
     }
 
     return Scaffold(
       appBar: AppBar(title: const Text("Barbell Row")),
-      body: Stack(
+      body: Column(
         children: [
-          CameraPreview(_cameraService.controller!),
-
-          // Overlay messages
-          if (currentStage != ExerciseStage.formCorrection)
-            Positioned(
-              bottom: 150,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    displayMessage,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+          // 1. TOP MESSAGE PANEL
+          Container(
+            width: double.infinity,
+            color: bgColor,
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              displayMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
             ),
+          ),
 
-          // Overlay rep counter and feedback
-          if (currentStage == ExerciseStage.formCorrection)
-            Positioned(
-              top: 20,
-              left: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Reps: $_rowCount\n✅ $_correctCount | ❌ $_wrongCount",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+          // 2. CAMERA + OVERLAY
+          Expanded(
+            child: Stack(
+              children: [
+                CameraPreview(_cameraService.controller!),
+
+                // --- MODIFIED: Added Pose Painting Logic with LayoutBuilder ---
+                // We ensure we have a pose, image size, and rotation before drawing
+                if (_lastPose != null &&
+                    _cameraImageSize != null &&
+                    _imageRotation != null)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final widgetSize = Size(
+                        constraints.maxWidth,
+                        constraints.maxHeight,
+                      );
+                      final controller = _cameraService.controller!;
+                      final isFront =
+                          controller.description.lensDirection ==
+                          CameraLensDirection.front;
+
+                      return CustomPaint(
+                        painter: PosePainter(
+                          pose: _lastPose!,
+                          imageSize: _cameraImageSize!,
+                          widgetSize: widgetSize,
+                          rotation: _imageRotation!,
+                          isFrontCamera: isFront,
+                        ),
+                        size: widgetSize,
+                      );
+                    },
+                  ),
+
+                // ---------------------------------------------
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: CornerPainter(
+                      cornerLength: 60,
+                      strokeWidth: 5,
+                      padding: 50,
+                      topLeft: bgColor,
+                      topRight: bgColor,
+                      bottomLeft: bgColor,
+                      bottomRight: bgColor,
                     ),
-                    if (feedback.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: feedbackColor.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            feedback,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Gap(AppSizes.gap10),
+
+          // 3. SCORE CARD
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.padding16),
+            child: Card(
+              color: AppColors.grey,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      children: [
+                        Text("CORRECT", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_correctCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
+                      ],
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1.2,
+                      color: Colors.grey.shade300,
+                    ),
+                    Column(
+                      children: [
+                        Text("WRONG", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_wrongCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ),
+          ),
+          Gap(AppSizes.gap10),
         ],
       ),
     );
+  }
+}
+
+class CornerPainter extends CustomPainter {
+  final double cornerLength;
+  final double strokeWidth;
+  final double padding;
+  final Color topLeft;
+  final Color topRight;
+  final Color bottomLeft;
+  final Color bottomRight;
+
+  CornerPainter({
+    this.cornerLength = 30,
+    this.strokeWidth = 4,
+    this.padding = 20,
+    required this.topLeft,
+    required this.topRight,
+    required this.bottomLeft,
+    required this.bottomRight,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.square
+          ..style = PaintingStyle.stroke;
+
+    // Top-left
+    paint.color = topLeft;
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding + cornerLength, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding, padding + cornerLength),
+      paint,
+    );
+
+    // Top-right
+    paint.color = topRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, padding),
+      Offset(size.width - padding, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, padding),
+      Offset(size.width - padding, padding + cornerLength),
+      paint,
+    );
+
+    // Bottom-left
+    paint.color = bottomLeft;
+    canvas.drawLine(
+      Offset(padding, size.height - padding - cornerLength),
+      Offset(padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, size.height - padding),
+      Offset(padding + cornerLength, size.height - padding),
+      paint,
+    );
+
+    // Bottom-right
+    paint.color = bottomRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, size.height - padding),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, size.height - padding - cornerLength),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// --- REVISED: Robust Pose Painter for Correct Alignment ---
+class PosePainter extends CustomPainter {
+  final Pose pose;
+  final Size imageSize;
+  final Size widgetSize;
+  final InputImageRotation rotation;
+  final bool isFrontCamera;
+
+  PosePainter({
+    required this.pose,
+    required this.imageSize,
+    required this.widgetSize,
+    required this.rotation,
+    required this.isFrontCamera,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Styles
+    final whitePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0
+          ..color = Colors.white;
+
+    final leftPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color.fromRGBO(255, 138, 0, 1); // Orange for left
+
+    final rightPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color.fromRGBO(0, 217, 245, 1); // Cyan for right
+
+    // Define connections (Bone structure)
+    final connections = [
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+      [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+      [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+      [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+      [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+      [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+      [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+    ];
+
+    // Draw connections (Bones)
+    for (final connection in connections) {
+      final startLandmark = pose.landmarks[connection[0]];
+      final endLandmark = pose.landmarks[connection[1]];
+
+      if (startLandmark != null && endLandmark != null) {
+        final start = _translateX(
+          startLandmark.x,
+          startLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        final end = _translateX(
+          endLandmark.x,
+          endLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        canvas.drawLine(start, end, whitePaint);
+      }
+    }
+
+    // Draw landmarks (Joints)
+    pose.landmarks.forEach((_, landmark) {
+      final point = _translateX(
+        landmark.x,
+        landmark.y,
+        imageSize,
+        widgetSize,
+        rotation,
+        isFrontCamera,
+      );
+
+      if (landmark.type.name.toLowerCase().contains('left')) {
+        canvas.drawCircle(point, 5, leftPaint);
+      } else if (landmark.type.name.toLowerCase().contains('right')) {
+        canvas.drawCircle(point, 5, rightPaint);
+      } else {
+        canvas.drawCircle(point, 5, whitePaint..style = PaintingStyle.fill);
+      }
+    });
+  }
+
+  // Helper method to translate coordinates to screen
+  Offset _translateX(
+    double x,
+    double y,
+    Size absoluteImageSize,
+    Size screenWidgetSize,
+    InputImageRotation rotation,
+    bool isFront,
+  ) {
+    // 1. Determine if we need to swap width/height.
+    // In Portrait mode, the sensor image (landscape) is rotated 90 or 270 degrees.
+    // However, ML Kit returns coordinates relative to the *upright* image.
+    // So we treat the ML Kit X as Screen X and ML Kit Y as Screen Y,
+    // but we must calculate the scale based on the "upright" image dimensions.
+
+    // Check if rotation is 90 or 270 (Portrait orientations)
+    final bool isPortrait =
+        rotation == InputImageRotation.rotation90deg ||
+        rotation == InputImageRotation.rotation270deg;
+
+    // If portrait, the effective image width for scaling is the sensor height,
+    // and effective height is sensor width.
+    final double imageWidth =
+        isPortrait ? absoluteImageSize.height : absoluteImageSize.width;
+    final double imageHeight =
+        isPortrait ? absoluteImageSize.width : absoluteImageSize.height;
+
+    // 2. Calculate scale factors
+    // We assume CameraPreview acts as BoxFit.cover (fills the screen).
+    // We calculate the scale for width and height and take the MAX (to cover).
+    double scaleX = screenWidgetSize.width / imageWidth;
+    double scaleY = screenWidgetSize.height / imageHeight;
+
+    // For BoxFit.cover, use the larger scale
+    final double scale = math.max(scaleX, scaleY);
+
+    // 3. Calculate offset to center the image (since it's cropped)
+    // The "virtual" displayed image size
+    final double scaledImageWidth = imageWidth * scale;
+    final double scaledImageHeight = imageHeight * scale;
+
+    // How much is cut off?
+    final double offsetX = (scaledImageWidth - screenWidgetSize.width) / 2;
+    final double offsetY = (scaledImageHeight - screenWidgetSize.height) / 2;
+
+    // 4. Transform coordinates
+    double finalX = x * scale - offsetX;
+    double finalY = y * scale - offsetY;
+
+    // 5. Mirror X for front camera
+    if (isFront) {
+      finalX = screenWidgetSize.width - finalX;
+    }
+
+    return Offset(finalX, finalY);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }

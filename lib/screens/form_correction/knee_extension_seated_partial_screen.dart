@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:io'; // Needed for Platform check
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -36,8 +37,12 @@ class _KneeExtensionSeatedPartialScreenState
   // Camera and stream state
   bool _isInitialized = false;
   bool _isBusy = false;
+
+  // --- STATE FOR PAINTER ---
   Pose? _lastPose;
-  Size? _cameraImageSize;
+  Size? _cameraImageSize; // Raw size of the image from the camera sensor
+  InputImageRotation? _imageRotation; // Rotation of the camera image
+  // -------------------------
 
   double _currentKneeAngle = 0.0;
   double _maxKneeAngleDuringRep = 0.0;
@@ -52,19 +57,19 @@ class _KneeExtensionSeatedPartialScreenState
   int countdown = 3;
 
   // Form correction counters
-  int _rightCurlCount = 0; // Number of reps completed
-  int _rightCorrectCount = 0; // Number of correct reps
-  int _rightWrongCount = 0; // Number of incorrect reps
-  List<String> _feedback = []; // Feedback per rep
+  int _rightCurlCount = 0;
+  int _rightCorrectCount = 0;
+  int _rightWrongCount = 0;
+  List<String> _feedback = [];
   List<String> _allFeedbacks = [];
 
   // Form detection flags
-  bool _rightStartedDown = false; // Leg bent start position detected
-  bool _rightReachedUp = false; // Leg extended position detected
+  bool _rightStartedDown = false;
+  bool _rightReachedUp = false;
 
   // Knee extension thresholds
-  final double _kneeMinBentAngle = 120.0; // Minimum knee angle (foot down)
-  final double _kneeMaxExtendAngle = 160.0; // Maximum knee angle (leg extended)
+  final double _kneeMinBentAngle = 120.0;
+  final double _kneeMaxExtendAngle = 160.0;
 
   bool _isDisposed = false;
   bool _lastRepCorrect = true;
@@ -100,20 +105,27 @@ class _KneeExtensionSeatedPartialScreenState
     if (_isBusy) return;
     _isBusy = true;
 
+    // Capture the image size and rotation for the painter
     _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
+    final sensorOrientation =
+        _cameraService.controller!.description.sensorOrientation;
+    _imageRotation ??=
+        InputImageRotationValue.fromRawValue(sensorOrientation) ??
+        InputImageRotation.rotation0deg;
 
     try {
       if (_isDisposed) return;
-      final inputImage = _cameraImageToInputImage(
-        image,
-        _cameraService.controller!.description.sensorOrientation,
-      );
+      final inputImage = _cameraImageToInputImage(image, sensorOrientation);
 
       final poses = await _poseService.detectPoses(inputImage);
-      if (poses.isEmpty) return;
+      if (poses.isEmpty) {
+        _lastPose = null;
+        return;
+      }
 
       final pose = poses.first;
-      _lastPose = pose;
+      _lastPose = pose; // Update for overlay
 
       switch (currentStage) {
         case ExerciseStage.distanceCheck:
@@ -384,6 +396,36 @@ class _KneeExtensionSeatedPartialScreenState
               children: [
                 CameraPreview(_cameraService.controller!),
 
+                // --- MODIFIED: Added Pose Painting Logic with LayoutBuilder ---
+                if (_lastPose != null &&
+                    _cameraImageSize != null &&
+                    _imageRotation != null)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final widgetSize = Size(
+                        constraints.maxWidth,
+                        constraints.maxHeight,
+                      );
+                      final controller = _cameraService.controller!;
+                      final isFront =
+                          controller.description.lensDirection ==
+                          CameraLensDirection.front;
+
+                      return CustomPaint(
+                        painter: PosePainter(
+                          pose: _lastPose!,
+                          imageSize: _cameraImageSize!,
+                          widgetSize: widgetSize,
+                          rotation:
+                              _imageRotation!, // Use correct rotation enum
+                          isFrontCamera: isFront,
+                        ),
+                        size: widgetSize,
+                      );
+                    },
+                  ),
+
+                // -------------------------------------------
                 Positioned.fill(
                   child: CustomPaint(
                     painter: CornerPainter(
@@ -397,27 +439,6 @@ class _KneeExtensionSeatedPartialScreenState
                     ),
                   ),
                 ),
-
-                // if (_lastPose != null && _cameraImageSize != null)
-                //   LayoutBuilder(
-                //     builder: (context, constraints) {
-                //       final widgetSize = Size( constraints.maxWidth, constraints.maxHeight, );
-                //       final controller = _cameraService.controller!;
-                //       final sensorOrientation =  controller.description.sensorOrientation;
-                //       final isFront = controller.description.lensDirection ==CameraLensDirection.front;
-
-                //       return CustomPaint(
-                //         painter: PosePainter(
-                //           pose: _lastPose!,
-                //           imageSize:  _cameraImageSize!, // original frame size (width,height)
-                //           widgetSize:  widgetSize, // original frame size the area that CameraPreview occupies
-                //           sensorOrientation: sensorOrientation,
-                //           isFrontCamera: isFront,
-                //         ),
-                //         size: widgetSize,
-                //       );
-                //     },
-                //   ),
               ],
             ),
           ),
@@ -560,176 +581,163 @@ class CornerPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-// class PosePainter extends CustomPainter {
-//   final Pose pose;
-//   final Size imageSize; // camera image size (width,height) from frames
-//   final Size widgetSize; // size of the paint area (passed in paint)
-//   final int sensorOrientation; // controller.description.sensorOrientation
-//   final bool
-//   isFrontCamera; // controller.description.lensDirection == CameraLensDirection.front
+// --- REVISED: Robust Pose Painter for Correct Alignment ---
+class PosePainter extends CustomPainter {
+  final Pose pose;
+  final Size imageSize;
+  final Size widgetSize;
+  final InputImageRotation rotation;
+  final bool isFrontCamera;
 
-//   PosePainter({
-//     required this.pose,
-//     required this.imageSize,
-//     required this.widgetSize,
-//     required this.sensorOrientation,
-//     required this.isFrontCamera,
-//   });
+  PosePainter({
+    required this.pose,
+    required this.imageSize,
+    required this.widgetSize,
+    required this.rotation,
+    required this.isFrontCamera,
+  });
 
-//   // paint style
-//   final Paint _bonePaint =
-//       Paint()
-//         ..color = Colors.greenAccent
-//         ..strokeWidth = 4
-//         ..strokeCap = StrokeCap.round;
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Styles
+    final whitePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0
+          ..color = Colors.white;
 
-//   final Paint _landmarkPaint =
-//       Paint()
-//         ..color = Colors.greenAccent
-//         ..style = PaintingStyle.fill;
+    final leftPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color.fromRGBO(255, 138, 0, 1); // Orange for left
 
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     // Compute mapping constants
-//     // 1) determine effective image size after applying rotation
-//     final int rotation = (sensorOrientation % 360);
-//     final bool rotated = rotation == 90 || rotation == 270;
-//     final double imageW = rotated ? imageSize.height : imageSize.width;
-//     final double imageH = rotated ? imageSize.width : imageSize.height;
+    final rightPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color.fromRGBO(0, 217, 245, 1); // Cyan for right
 
-//     // 2) compute scale used by CameraPreview (BoxFit.cover semantics)
-//     final double scale = math.max(
-//       widgetSize.width / imageW,
-//       widgetSize.height / imageH,
-//     );
+    // Define connections (Bone structure)
+    final connections = [
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+      [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+      [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+      [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+      [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+      [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+      [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+      [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+      [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+    ];
 
-//     final double scaledImageW = imageW * scale;
-//     final double scaledImageH = imageH * scale;
+    // Draw connections (Bones)
+    for (final connection in connections) {
+      final startLandmark = pose.landmarks[connection[0]];
+      final endLandmark = pose.landmarks[connection[1]];
 
-//     // 3) compute letterbox offset (center crop)
-//     final double dx = (widgetSize.width - scaledImageW) / 2;
-//     final double dy = (widgetSize.height - scaledImageH) / 2;
+      if (startLandmark != null && endLandmark != null) {
+        final start = _translateX(
+          startLandmark.x,
+          startLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        final end = _translateX(
+          endLandmark.x,
+          endLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        canvas.drawLine(start, end, whitePaint);
+      }
+    }
 
-//     Offset transformLandmark(PoseLandmark lm) {
-//       // landmark coordinates are in original camera image coordinate system
-//       double x = lm.x;
-//       double y = lm.y;
+    // Draw landmarks (Joints)
+    pose.landmarks.forEach((_, landmark) {
+      final point = _translateX(
+        landmark.x,
+        landmark.y,
+        imageSize,
+        widgetSize,
+        rotation,
+        isFrontCamera,
+      );
 
-//       // existing rotation mapping (kept as is for correct scaling/position)
-//       double rx, ry;
-//       final int rotation = sensorOrientation % 360;
-//       switch (rotation) {
-//         case 0:
-//           rx = x;
-//           ry = y;
-//           break;
-//         case 90:
-//           rx = y;
-//           ry = imageSize.width - x;
-//           break;
-//         case 180:
-//           rx = imageSize.width - x;
-//           ry = imageSize.height - y;
-//           break;
-//         case 270:
-//           rx = imageSize.height - y;
-//           ry = x;
-//           break;
-//         default:
-//           rx = x;
-//           ry = y;
-//       }
+      if (landmark.type.name.toLowerCase().contains('left')) {
+        canvas.drawCircle(point, 5, leftPaint);
+      } else if (landmark.type.name.toLowerCase().contains('right')) {
+        canvas.drawCircle(point, 5, rightPaint);
+      } else {
+        canvas.drawCircle(point, 5, whitePaint..style = PaintingStyle.fill);
+      }
+    });
+  }
 
-//       // after rotation, apply front camera mirroring
-//       final double mappedImageW =
-//           (rotation == 90 || rotation == 270)
-//               ? imageSize.height
-//               : imageSize.width;
-//       if (isFrontCamera) {
-//         rx = mappedImageW - rx;
-//       }
+  // Helper method to translate coordinates to screen
+  Offset _translateX(
+    double x,
+    double y,
+    Size absoluteImageSize,
+    Size screenWidgetSize,
+    InputImageRotation rotation,
+    bool isFront,
+  ) {
+    // 1. Determine if we need to swap width/height.
+    // In Portrait mode, the sensor image (landscape) is rotated 90 or 270 degrees.
+    // However, ML Kit returns coordinates relative to the *upright* image.
+    // So we treat the ML Kit X as Screen X and ML Kit Y as Screen Y,
+    // but we must calculate the scale based on the "upright" image dimensions.
 
-//       // --- NEW: rotate skeleton back by -90 degrees around the center ---
-//       final double centerX = mappedImageW / 2;
-//       final double centerY =
-//           ((rotation == 90 || rotation == 270)
-//               ? imageSize.width
-//               : imageSize.height) /
-//           2;
+    // Check if rotation is 90 or 270 (Portrait orientations)
+    final bool isPortrait =
+        rotation == InputImageRotation.rotation90deg ||
+        rotation == InputImageRotation.rotation270deg;
 
-//       // translate to origin
-//       double tempX = rx - centerX;
-//       double tempY = ry - centerY;
+    // If portrait, the effective image width for scaling is the sensor height,
+    // and effective height is sensor width.
+    final double imageWidth =
+        isPortrait ? absoluteImageSize.height : absoluteImageSize.width;
+    final double imageHeight =
+        isPortrait ? absoluteImageSize.width : absoluteImageSize.height;
 
-//       // apply -90° rotation
-//       double rotatedX = tempX * 0 - tempY * 1; // cos(-90)=0, sin(-90)=-1
-//       double rotatedY = tempX * 1 + tempY * 0; // cos(-90)=0, sin(-90)=-1
+    // 2. Calculate scale factors
+    // We assume CameraPreview acts as BoxFit.cover (fills the screen).
+    // We calculate the scale for width and height and take the MAX (to cover).
+    double scaleX = screenWidgetSize.width / imageWidth;
+    double scaleY = screenWidgetSize.height / imageHeight;
 
-//       // translate back
-//       rx = rotatedX + centerX;
-//       ry = rotatedY + centerY;
+    // For BoxFit.cover, use the larger scale
+    final double scale = math.max(scaleX, scaleY);
 
-//       // scale to widget and add crop offset
-//       final double scale = math.max(
-//         widgetSize.width / mappedImageW,
-//         widgetSize.height /
-//             ((rotation == 90 || rotation == 270)
-//                 ? imageSize.width
-//                 : imageSize.height),
-//       );
+    // 3. Calculate offset to center the image (since it's cropped)
+    // The "virtual" displayed image size
+    final double scaledImageWidth = imageWidth * scale;
+    final double scaledImageHeight = imageHeight * scale;
 
-//       final double dx = (widgetSize.width - mappedImageW * scale) / 2;
-//       final double dy =
-//           (widgetSize.height -
-//               ((rotation == 90 || rotation == 270)
-//                       ? imageSize.width
-//                       : imageSize.height) *
-//                   scale) /
-//           2;
+    // How much is cut off?
+    final double offsetX = (scaledImageWidth - screenWidgetSize.width) / 2;
+    final double offsetY = (scaledImageHeight - screenWidgetSize.height) / 2;
 
-//       final double widgetX = rx * scale + dx;
-//       final double widgetY = ry * scale + dy;
+    // 4. Transform coordinates
+    double finalX = x * scale - offsetX;
+    double finalY = y * scale - offsetY;
 
-//       return Offset(widgetX, widgetY);
-//     }
+    // 5. Mirror X for front camera
+    if (isFront) {
+      finalX = screenWidgetSize.width - finalX;
+    }
 
-//     // helper to get landmark safely
-//     Offset? lmPos(PoseLandmarkType t) {
-//       final lm = pose.landmarks[t];
-//       return lm == null ? null : transformLandmark(lm);
-//     }
+    return Offset(finalX, finalY);
+  }
 
-//     // draw bones (example set)
-//     List<List<PoseLandmarkType>> bones = [
-//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
-//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
-//       [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
-//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
-//       [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
-//       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
-//       [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
-//       [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
-//       [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
-//       [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
-//       [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
-//       [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
-//     ];
-
-//     for (var b in bones) {
-//       final s = lmPos(b[0]);
-//       final e = lmPos(b[1]);
-//       if (s != null && e != null) {
-//         canvas.drawLine(s, e, _bonePaint);
-//       }
-//     }
-
-//     // draw landmarks
-//     for (var lm in pose.landmarks.values) {
-//       final p = transformLandmark(lm);
-//       canvas.drawCircle(p, 6, _landmarkPaint);
-//     }
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant PosePainter old) => true;
-// }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}

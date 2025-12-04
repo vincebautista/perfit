@@ -1,14 +1,19 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:perfit/core/constants/colors.dart';
+import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/services/camera_service.dart';
 import 'package:perfit/core/services/distance_service.dart';
 import 'package:perfit/core/services/gesture_service.dart';
 import 'package:perfit/core/services/pose_detection_service.dart';
 import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/screens/exercise_summary_screen.dart';
+import 'package:perfit/widgets/text_styles.dart';
 
 class SquatsScreen extends StatefulWidget {
   const SquatsScreen({super.key});
@@ -28,6 +33,12 @@ class _SquatsScreenState extends State<SquatsScreen> {
   bool _isInitialized = false;
   bool _isBusy = false;
 
+  // --- ADDED BY AI: State for Skeleton Overlay ---
+  Pose? _lastPose;
+  Size? _cameraImageSize; // Raw resolution of the camera sensor
+  InputImageRotation? _imageRotation; // Rotation of the image
+  // ----------------------------------------------
+
   ExerciseStage currentStage = ExerciseStage.distanceCheck;
 
   String distanceStatus = "Checking distance...";
@@ -36,20 +47,26 @@ class _SquatsScreenState extends State<SquatsScreen> {
   int countdown = 3;
 
   // Form correction variables
-  int _rightCurlCount = 0;
-  int _rightCorrectCount = 0;
-  int _rightWrongCount = 0;
+  int _squatCount = 0;
+  int _correctCount = 0;
+  int _wrongCount = 0;
   List<String> _feedback = [];
+
+  // To track UI color state
+  bool _lastRepCorrect = true;
 
   bool _rightStartedDown = false;
   bool _rightReachedUp = false;
-  double _rightMinElbowAngleDuringRep = 180.0;
+  double _rightMinElbowAngleDuringRep =
+      180.0; // Variable reused for knee tracking
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
-    _loadCountdown();
+    Future.delayed(const Duration(seconds: 1), () async {
+      await _initCamera();
+      _loadCountdown();
+    });
   }
 
   Future<void> _loadCountdown() async {
@@ -60,6 +77,8 @@ class _SquatsScreenState extends State<SquatsScreen> {
   Future<void> _initCamera() async {
     await _cameraService.initCamera();
     _cameraService.startStream(_processCameraImage);
+
+    if (!mounted) return;
     setState(() => _isInitialized = true);
   }
 
@@ -73,16 +92,31 @@ class _SquatsScreenState extends State<SquatsScreen> {
     if (_isBusy) return;
     _isBusy = true;
 
+    // --- ADDED BY AI: Capture Image Metadata for Painter ---
+    _cameraImageSize ??= Size(image.width.toDouble(), image.height.toDouble());
+
+    final sensorOrientation =
+        _cameraService.controller!.description.sensorOrientation;
+    _imageRotation ??=
+        InputImageRotationValue.fromRawValue(sensorOrientation) ??
+        InputImageRotation.rotation0deg;
+    // -----------------------------------------------------
+
     try {
-      final inputImage = _cameraImageToInputImage(
-        image,
-        _cameraService.controller!.description.sensorOrientation,
-      );
+      final inputImage = _cameraImageToInputImage(image, sensorOrientation);
 
       final poses = await _poseService.detectPoses(inputImage);
-      if (poses.isEmpty) return;
+
+      // If no pose detected, clear the last pose so the skeleton disappears
+      if (poses.isEmpty) {
+        _lastPose = null;
+        return;
+      }
 
       final pose = poses.first;
+
+      // --- ADDED BY AI: Update Pose for UI ---
+      _lastPose = pose;
 
       switch (currentStage) {
         case ExerciseStage.distanceCheck:
@@ -97,7 +131,7 @@ class _SquatsScreenState extends State<SquatsScreen> {
       }
     } finally {
       _isBusy = false;
-      if (mounted) setState(() {}); // Only one UI update per frame
+      if (mounted) setState(() {});
     }
   }
 
@@ -147,11 +181,11 @@ class _SquatsScreenState extends State<SquatsScreen> {
     const maxCm = 150;
 
     if (distanceCm < minCm) {
-      distanceStatus = "❌ Too Close! Move back";
+      distanceStatus = "Too Close! Move back";
     } else if (distanceCm > maxCm) {
-      distanceStatus = "❌ Too Far! Move closer";
+      distanceStatus = "Too Far! Move closer";
     } else {
-      distanceStatus = "✅ Perfect Distance! Stay in that position.";
+      distanceStatus = "Perfect Distance! Stay there.";
       currentStage = ExerciseStage.gestureDetection;
       handsStatus = "Raise your right hand above the head";
     }
@@ -163,21 +197,20 @@ class _SquatsScreenState extends State<SquatsScreen> {
       startCountdown: countdown,
       onHoldProgress:
           (progress) =>
-              countdownStatus =
-                  "✋ Raise your hand for 1 second… ${(progress * 100).toInt()}%",
+              countdownStatus = "Raise your hand… ${(progress * 100).toInt()}%",
       onHandsUpDetected: () {
-        handsStatus = "✅ Hands detected! Starting countdown...";
+        handsStatus = "Hands detected! Starting countdown...";
         countdownStatus = "";
       },
-      onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s remaining",
+      onCountdownTick: (seconds) => countdownStatus = "⏱ $seconds s",
       onCountdownComplete: () {
-        countdownStatus = "✅ Timer complete!";
+        countdownStatus = "Timer complete!";
         currentStage = ExerciseStage.formCorrection;
       },
     );
 
     if (!handsUp && !_gestureService.countdownRunning) {
-      handsStatus = "❌ Raise your hand!";
+      handsStatus = "Raise your hand!";
       countdownStatus = "";
     }
   }
@@ -202,9 +235,10 @@ class _SquatsScreenState extends State<SquatsScreen> {
         rightKnee == null ||
         leftAnkle == null ||
         rightAnkle == null) {
-      _feedback.add("Rep helper: stand fully in frame for squat analysis.");
       return;
     }
+
+    // --- SQUAT LOGIC START ---
 
     // Angles
     double kneeAngleLeft = _calculateAngle(
@@ -264,14 +298,13 @@ class _SquatsScreenState extends State<SquatsScreen> {
     // 1. Torso too far forward/back.
     if (torsoAngle < 70 || torsoAngle > 100) {
       formGood = false;
-      correction =
-          "Squat: keep chest up over mid-foot, not too far forward/back.";
+      correction = "Keep chest up.";
     }
 
     // 2. Hip angle – avoid excessive lean.
     if (formGood && (hipAngle < 70 || hipAngle > 110)) {
       formGood = false;
-      correction = "Squat: hinge at hips but stay relatively upright.";
+      correction = "Stay relatively upright.";
     }
 
     // 3. Knee tracking – knees not too far past toes.
@@ -285,13 +318,13 @@ class _SquatsScreenState extends State<SquatsScreen> {
     );
     if (formGood && (leftKneeForward > 15 || rightKneeForward > 15)) {
       formGood = false;
-      correction = "Squat: sit hips back—don’t let knees travel far past toes.";
+      correction = "Knees too far forward.";
     }
 
     // 4. Hip shift – left vs right hip angle.
     if (formGood && (hipAngleLeft - hipAngleRight).abs() > 15) {
       formGood = false;
-      correction = "Squat: keep weight centered; avoid shifting to one side.";
+      correction = "Don't shift weight to one side.";
     }
 
     // Rep state-machine.
@@ -299,6 +332,7 @@ class _SquatsScreenState extends State<SquatsScreen> {
       _rightMinElbowAngleDuringRep,
       avgKnee,
     );
+
     if (!_rightStartedDown && atTop) {
       _rightStartedDown = true;
     }
@@ -307,16 +341,20 @@ class _SquatsScreenState extends State<SquatsScreen> {
     }
 
     if (_rightStartedDown && _rightReachedUp && atTop) {
-      _rightCurlCount++;
+      _squatCount++;
 
       if (!formGood || !atBottom) {
-        _rightWrongCount++;
-        _feedback.add(
-          "Rep $_rightCurlCount: "
-          "${correction.isNotEmpty ? correction : "Squat deeper to reach 80°–100° at the knees."}",
-        );
+        _wrongCount++;
+        _lastRepCorrect = false;
+
+        String finalFeedback =
+            correction.isNotEmpty ? correction : "Squat deeper (80°–110°)";
+
+        _feedback.add("Rep $_squatCount: $finalFeedback");
       } else {
-        _rightCorrectCount++;
+        _correctCount++;
+        _lastRepCorrect = true;
+        _feedback.add("Correct form!");
       }
 
       // Reset
@@ -324,16 +362,20 @@ class _SquatsScreenState extends State<SquatsScreen> {
       _rightReachedUp = false;
       _rightMinElbowAngleDuringRep = 180.0;
 
-      if (_rightCurlCount >= 5) {
+      if (_squatCount >= 5) {
         await _cameraService.controller?.stopImageStream();
         if (!mounted) return;
+
+        await Future.delayed(const Duration(seconds: 1));
+        if (!mounted) return;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder:
                 (_) => ExerciseSummaryScreen(
-                  correct: _rightCorrectCount,
-                  wrong: _rightWrongCount,
+                  correct: _correctCount,
+                  wrong: _wrongCount,
                   feedbacks: _feedback,
                 ),
           ),
@@ -364,105 +406,297 @@ class _SquatsScreenState extends State<SquatsScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // Determine UI Colors and Messages based on Logic
     String displayMessage = "";
+    Color bgColor = AppColors.primary;
+
     switch (currentStage) {
       case ExerciseStage.distanceCheck:
         displayMessage = distanceStatus;
+        if (displayMessage.toLowerCase().contains("too")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("perfect")) {
+          bgColor = AppColors.green;
+        }
         break;
+
       case ExerciseStage.gestureDetection:
         displayMessage =
             countdownStatus.isNotEmpty ? countdownStatus : handsStatus;
+        if (displayMessage.toLowerCase().contains("raise")) {
+          bgColor = AppColors.red;
+        } else if (displayMessage.toLowerCase().contains("detected") ||
+            displayMessage.toLowerCase().contains("complete")) {
+          bgColor = AppColors.green;
+        }
         break;
+
       case ExerciseStage.formCorrection:
+        if (_feedback.isNotEmpty) {
+          displayMessage = _feedback.last;
+          // Use the result of the last rep to determine color
+          bgColor = _lastRepCorrect ? AppColors.green : AppColors.red;
+        } else {
+          displayMessage = "Start your Squats!";
+          bgColor = AppColors.primary;
+        }
         break;
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Test Exercise")),
-      body: Stack(
+      appBar: AppBar(title: const Text("Squats Exercise")),
+      body: Column(
         children: [
-          CameraPreview(_cameraService.controller!),
+          // 1. TOP MESSAGE PANEL
+          Container(
+            width: double.infinity,
+            color: bgColor,
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              displayMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
 
-          // Overlay messages
-          if (currentStage != ExerciseStage.formCorrection)
-            Positioned(
-              bottom: 150,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
+          // 2. CAMERA + OVERLAY
+          Expanded(
+            child: Stack(
+              children: [
+                CameraPreview(_cameraService.controller!),
+
+                // --- ADDED BY AI: Pose Skeleton Overlay ---
+                // LayoutBuilder ensures we get the exact display size of the camera preview
+                // to correctly scale the skeleton landmarks.
+                if (_lastPose != null &&
+                    _cameraImageSize != null &&
+                    _imageRotation != null)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final widgetSize = Size(
+                        constraints.maxWidth,
+                        constraints.maxHeight,
+                      );
+                      final controller = _cameraService.controller!;
+                      final isFront =
+                          controller.description.lensDirection ==
+                          CameraLensDirection.front;
+
+                      return CustomPaint(
+                        painter: PosePainter(
+                          pose: _lastPose!,
+                          imageSize: _cameraImageSize!,
+                          widgetSize: widgetSize,
+                          rotation: _imageRotation!,
+                          isFrontCamera: isFront,
+                        ),
+                        size: widgetSize,
+                      );
+                    },
                   ),
-                  child: Text(
-                    displayMessage,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+
+                // ------------------------------------------
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: CornerPainter(
+                      cornerLength: 60,
+                      strokeWidth: 5,
+                      padding: 50,
+                      topLeft: bgColor,
+                      topRight: bgColor,
+                      bottomLeft: bgColor,
+                      bottomRight: bgColor,
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
 
-          // Overlay rep counter
-          if (currentStage == ExerciseStage.formCorrection)
-            Positioned(
-              top: 20,
-              left: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "Reps: $_rightCurlCount\n✅ $_rightCorrectCount | ❌ $_rightWrongCount",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+          Gap(AppSizes.gap10),
+
+          // 3. SCORE CARD
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.padding16),
+            child: Card(
+              color: AppColors.grey,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      children: [
+                        Text("CORRECT", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_correctCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1.2,
+                      color: Colors.grey.shade300,
+                    ),
+                    Column(
+                      children: [
+                        Text("WRONG", style: TextStyles.label),
+                        Gap(6),
+                        Text(
+                          "$_wrongCount",
+                          style: TextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
+          Gap(AppSizes.gap10),
         ],
       ),
     );
   }
 }
 
-class PosePainter extends CustomPainter {
-  final Pose pose;
-  final Size imageSize;
+class CornerPainter extends CustomPainter {
+  final double cornerLength;
+  final double strokeWidth;
+  final double padding;
+  final Color topLeft;
+  final Color topRight;
+  final Color bottomLeft;
+  final Color bottomRight;
 
-  PosePainter(this.pose, this.imageSize);
+  CornerPainter({
+    this.cornerLength = 30,
+    this.strokeWidth = 4,
+    this.padding = 20,
+    required this.topLeft,
+    required this.topRight,
+    required this.bottomLeft,
+    required this.bottomRight,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = Colors.greenAccent
-          ..strokeWidth = 4
-          ..strokeCap = StrokeCap.round;
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.square
+          ..style = PaintingStyle.stroke;
 
-    // Map from image coordinates to widget coordinates
-    double scaleX = size.width / imageSize.width;
-    double scaleY = size.height / imageSize.height;
+    // Top-left
+    paint.color = topLeft;
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding + cornerLength, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, padding),
+      Offset(padding, padding + cornerLength),
+      paint,
+    );
 
-    Offset toOffset(PoseLandmark landmark) {
-      return Offset(landmark.x * scaleX, landmark.y * scaleY);
-    }
+    // Top-right
+    paint.color = topRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, padding),
+      Offset(size.width - padding, padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, padding),
+      Offset(size.width - padding, padding + cornerLength),
+      paint,
+    );
 
-    // List of bones (pairs of landmarks to connect)
-    List<List<PoseLandmarkType>> bones = [
+    // Bottom-left
+    paint.color = bottomLeft;
+    canvas.drawLine(
+      Offset(padding, size.height - padding - cornerLength),
+      Offset(padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(padding, size.height - padding),
+      Offset(padding + cornerLength, size.height - padding),
+      paint,
+    );
+
+    // Bottom-right
+    paint.color = bottomRight;
+    canvas.drawLine(
+      Offset(size.width - padding - cornerLength, size.height - padding),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - padding, size.height - padding - cornerLength),
+      Offset(size.width - padding, size.height - padding),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// --- ADDED BY AI: Pose Painter Class ---
+// Responsible for translating ML Kit coordinates to Screen coordinates
+// and drawing the skeleton.
+class PosePainter extends CustomPainter {
+  final Pose pose;
+  final Size imageSize;
+  final Size widgetSize;
+  final InputImageRotation rotation;
+  final bool isFrontCamera;
+
+  PosePainter({
+    required this.pose,
+    required this.imageSize,
+    required this.widgetSize,
+    required this.rotation,
+    required this.isFrontCamera,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Paints for different parts
+    final whitePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0
+          ..color = Colors.white;
+
+    final leftPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color.fromRGBO(255, 138, 0, 1); // Orange for left
+
+    final rightPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = const Color.fromRGBO(0, 217, 245, 1); // Cyan for right
+
+    // Define connections (Bone structure)
+    final connections = [
       [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
       [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
       [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
@@ -477,19 +711,94 @@ class PosePainter extends CustomPainter {
       [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
     ];
 
-    // Draw lines
-    for (var bone in bones) {
-      final start = pose.landmarks[bone[0]];
-      final end = pose.landmarks[bone[1]];
-      if (start != null && end != null) {
-        canvas.drawLine(toOffset(start), toOffset(end), paint);
+    // Draw Connections
+    for (final connection in connections) {
+      final startLandmark = pose.landmarks[connection[0]];
+      final endLandmark = pose.landmarks[connection[1]];
+
+      if (startLandmark != null && endLandmark != null) {
+        final start = _translateX(
+          startLandmark.x,
+          startLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        final end = _translateX(
+          endLandmark.x,
+          endLandmark.y,
+          imageSize,
+          widgetSize,
+          rotation,
+          isFrontCamera,
+        );
+        canvas.drawLine(start, end, whitePaint);
       }
     }
 
-    // Draw landmarks as circles
-    for (var landmark in pose.landmarks.values) {
-      canvas.drawCircle(toOffset(landmark), 6, paint);
+    // Draw Landmarks
+    pose.landmarks.forEach((_, landmark) {
+      final point = _translateX(
+        landmark.x,
+        landmark.y,
+        imageSize,
+        widgetSize,
+        rotation,
+        isFrontCamera,
+      );
+
+      if (landmark.type.name.toLowerCase().contains('left')) {
+        canvas.drawCircle(point, 5, leftPaint);
+      } else if (landmark.type.name.toLowerCase().contains('right')) {
+        canvas.drawCircle(point, 5, rightPaint);
+      } else {
+        canvas.drawCircle(point, 5, whitePaint..style = PaintingStyle.fill);
+      }
+    });
+  }
+
+  // Helper method to translate coordinates
+  Offset _translateX(
+    double x,
+    double y,
+    Size absoluteImageSize,
+    Size screenWidgetSize,
+    InputImageRotation rotation,
+    bool isFront,
+  ) {
+    // 1. Determine if we need to swap width/height based on rotation
+    // Mobile sensors are landscape, but screen is portrait.
+    final bool isPortrait =
+        rotation == InputImageRotation.rotation90deg ||
+        rotation == InputImageRotation.rotation270deg;
+
+    final double imageWidth =
+        isPortrait ? absoluteImageSize.height : absoluteImageSize.width;
+    final double imageHeight =
+        isPortrait ? absoluteImageSize.width : absoluteImageSize.height;
+
+    // 2. Calculate scale factors (Cover)
+    double scaleX = screenWidgetSize.width / imageWidth;
+    double scaleY = screenWidgetSize.height / imageHeight;
+    final double scale = math.max(scaleX, scaleY);
+
+    // 3. Center the image (Offset)
+    final double scaledImageWidth = imageWidth * scale;
+    final double scaledImageHeight = imageHeight * scale;
+    final double offsetX = (scaledImageWidth - screenWidgetSize.width) / 2;
+    final double offsetY = (scaledImageHeight - screenWidgetSize.height) / 2;
+
+    // 4. Transform coordinates
+    double finalX = x * scale - offsetX;
+    double finalY = y * scale - offsetY;
+
+    // 5. Mirror X for front camera (Selfie view)
+    if (isFront) {
+      finalX = screenWidgetSize.width - finalX;
     }
+
+    return Offset(finalX, finalY);
   }
 
   @override
