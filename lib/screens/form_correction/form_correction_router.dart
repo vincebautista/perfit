@@ -14,12 +14,12 @@ class FormCorrectionRouter {
   static final Map<String, Widget Function()> routes = {
     "barbell_curl": () => CurlUpScreen(),
     "knee_extension_seated_partial": () => KneeExtensionSeatedPartialScreen(),
-    // "forearm_plank": () => PlankFormCorrection(),
     "push_up": () => PushUpScreen(),
-    // "split_squat": () => SplitSquatFormCorrection(),
     "bodyweight_squat": () => SquatsScreen(),
     "crunches": () => CrunchesScreen(),
     "barbell_bent_over_row": () => BarbellRowScreen(),
+    // "split_squat": () => SplitSquatFormCorrection(),
+    // "forearm_plank": () => PlankFormCorrection(),
     // "barbell_bench_press": () => BenchPressFormCorrection(),
     // "barbell_deadlift": () => DeadliftFormCorrection(),
   };

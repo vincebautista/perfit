@@ -18,7 +18,7 @@ class ScreenTwo extends StatelessWidget {
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage("assets/images/screen_two_bg.png"),
+            image: AssetImage("assets/images/screen_two_bgg.png"),
             alignment: Alignment.topCenter,
             opacity: 0.9,
           ),
