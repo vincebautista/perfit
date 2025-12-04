@@ -2,6 +2,199 @@ import 'package:perfit/data/models/exercise_model.dart';
 
 List<ExerciseModel> exercises = [
   ExerciseModel(
+    id: "barbell_curl",
+    name: "Barbell Curl",
+    video: [
+      "assets/videos/male-Barbell-barbell-curl-side-converted.mp4",
+      "assets/videos/male-Barbell-barbell-curl-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/barbell_curl.jpg",
+    instructions: [
+      "While holding the upper arms stationary, curl the weights forward while contracting the biceps as you breathe out.",
+      "Continue the movement until your biceps are fully contracted and the bar is at shoulder level.",
+      "Hold the contracted position for a second and squeeze the biceps hard.",
+      "Slowly bring the weight back down to the starting position.",
+    ],
+    difficulty: "Intermediate",
+    type: "rep",
+    targetBody: "Biceps",
+    location: "gym",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "knee_extension_seated_partial",
+    name: "Knee Extension Seated Partial",
+    video: [
+      "assets/videos/male-Recovery-knee-extension-seated-partial-side-converted.mp4",
+      "assets/videos/male-Recovery-knee-extension-seated-partial-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/knee_extension_seated_partial.jpg",
+    instructions: [
+      "Sit with knees bent, feet flat under you.",
+      "Extend one leg forward partially, contracting the quad.",
+      "Return to start and repeat with other leg.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Quadriceps",
+    location: "home",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "forearm_plank",
+    name: "Forearm Plank",
+    video: [
+      "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
+      "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/forearm_plank.jpg",
+    instructions: [
+      "Lie face‑down, then prop up on forearms and toes.",
+      "Keep body in a straight line, core braced.",
+      "Hold for required time while breathing steadily.",
+    ],
+    difficulty: "Beginner",
+    type: "time",
+    targetBody: "Lower Back",
+    location: "home",
+    hasFormCorrection: false,
+  ),
+  ExerciseModel(
+    id: "push_up",
+    name: "Push Up",
+    video: [
+      "assets/videos/male-Bodyweight-push-up-side-converted.mp4",
+      "assets/videos/male-Bodyweight-push-up-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/push_up.jpg",
+    instructions: [
+      "Start in plank on hands under shoulders.",
+      "Lower chest toward the floor while keeping a straight line.",
+      "Push back up fully extending elbows.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Chest",
+    location: "home",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "split_squat",
+    name: "Split Squat",
+    video: [
+      "assets/videos/male-bodyweight-split-squat-side-converted.mp4",
+      "assets/videos/male-bodyweight-split-squat-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/split_squat.jpg",
+    instructions: [
+      "Stand in a split stance, back foot elevated or on ground.",
+      "Bend front knee and lower until back knee nears floor.",
+      "Push through front heel to return.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Quadriceps",
+    location: "home",
+    hasFormCorrection: false,
+  ),
+  ExerciseModel(
+    id: "bodyweight_squat",
+    name: "Bodyweight Squat",
+    video: [
+      "assets/videos/male-Bodyweight-bodyweight-squat-side-converted.mp4",
+      "assets/videos/male-Bodyweight-bodyweight-squat-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/bodyweight_squat.jpg",
+    instructions: [
+      "Stand feet shoulder‑width apart, toes slightly out.",
+      "Lower hips by bending knees and pushing them out.",
+      "Go as low as comfortable, then drive back up through heels.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Quadriceps",
+    location: "home",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "crunches",
+    name: "Crunches",
+    video: [
+      "assets/videos/male-bodyweight-crunch-side-converted.mp4",
+      "assets/videos/male-bodyweight-crunch-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/crunches.jpg",
+    instructions: [
+      "Lie on back with knees bent, feet flat.",
+      "Lift shoulders toward hips, engaging upper abs.",
+      "Lower with control.",
+    ],
+    difficulty: "Beginner",
+    type: "rep",
+    targetBody: "Upper Abs",
+    location: "home",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "barbell_bent_over_row",
+    name: "Barbell Bent Over Row",
+    video: [
+      "assets/videos/male-barbell-bent-over-row-side-converted.mp4",
+      "assets/videos/male-barbell-bent-over-row-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/bent_over.jpg",
+    instructions: [
+      "Grab a barbell with a shoulder width pronated or supinated grip.",
+      "Bend forward at your hips while maintaining a flat back.",
+      "Pull the weight toward your upper abdomen.",
+      "Lower the weight in a controlled manner and repeat.",
+    ],
+    difficulty: "Intermediate",
+    type: "rep",
+    targetBody: "Back",
+    location: "gym",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "barbell_bench_press",
+    name: "Bench Press",
+    video: [
+      "assets/videos/male-barbell-bench-press-side_KciuhbB-converted.mp4",
+      "assets/videos/male-barbell-bench-press-front-converted.mp4",
+    ],
+    image: "assets/images/exercises/bench.jpg",
+    instructions: [
+      "Lay flat on the bench with your feet on the ground. With straight arms unrack the bar.",
+      "Lower the bar to your mid chest",
+      "Raise the bar until you've locked your elbows.",
+    ],
+    difficulty: "Intermediate",
+    type: "rep",
+    targetBody: "Chest",
+    location: "gym",
+    hasFormCorrection: true,
+  ),
+  ExerciseModel(
+    id: "barbell_deadlift",
+    name: "Barbell Deadlift",
+    video: [
+      "assets/videos/male-Barbell-barbell-deadlift-side.mp4",
+      "assets/videos/male-Barbell-barbell-deadlift-front.mp4",
+    ],
+    image: "assets/images/exercises/deadlift.jpg",
+    instructions: [
+      "Stand with your mid-foot under the bar and grip the bar with your hands, about a shoulder width apart.",
+      "Bend your knees, then lift the bar by straightening your back. It is important to keep your back straight.",
+      "Stand to your full height and hold.",
+      "Lower the bar to the floor by bending your knees and keeping your back straight.",
+    ],
+    difficulty: "Intermediate",
+    type: "rep",
+    targetBody: "Legs",
+    location: "gym",
+  ),
+
+  ExerciseModel(
     id: "wall_sit",
     name: "Wall Sit",
     video: [
@@ -91,42 +284,7 @@ List<ExerciseModel> exercises = [
     targetBody: "Stomach Muscles",
     location: "home",
   ),
-  ExerciseModel(
-    id: "knee_extension_seated_partial",
-    name: "Knee Extension Seated Partial",
-    video: [
-      "assets/videos/male-Recovery-knee-extension-seated-partial-side-converted.mp4",
-      "assets/videos/male-Recovery-knee-extension-seated-partial-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/knee_extension_seated_partial.jpg",
-    instructions: [
-      "Sit with knees bent, feet flat under you.",
-      "Extend one leg forward partially, contracting the quad.",
-      "Return to start and repeat with other leg.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Quadriceps",
-    location: "home",
-  ),
-  ExerciseModel(
-    id: "bodyweight_squat",
-    name: "Bodyweight Squat",
-    video: [
-      "assets/videos/male-Bodyweight-bodyweight-squat-side-converted.mp4",
-      "assets/videos/male-Bodyweight-bodyweight-squat-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/bodyweight_squat.jpg",
-    instructions: [
-      "Stand feet shoulder‑width apart, toes slightly out.",
-      "Lower hips by bending knees and pushing them out.",
-      "Go as low as comfortable, then drive back up through heels.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Quadriceps",
-    location: "home",
-  ),
+
   ExerciseModel(
     id: "bird_dog",
     name: "Bird Dog",
@@ -145,24 +303,7 @@ List<ExerciseModel> exercises = [
     targetBody: "Hip Muscles",
     location: "home",
   ),
-  ExerciseModel(
-    id: "forearm_plank",
-    name: "Forearm Plank",
-    video: [
-      "assets/videos/male-bodyweight-forearm-plank-side-converted.mp4",
-      "assets/videos/male-bodyweight-forearm-plank-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/forearm_plank.jpg",
-    instructions: [
-      "Lie face‑down, then prop up on forearms and toes.",
-      "Keep body in a straight line, core braced.",
-      "Hold for required time while breathing steadily.",
-    ],
-    difficulty: "Beginner",
-    type: "time",
-    targetBody: "Lower Back",
-    location: "home",
-  ),
+
   ExerciseModel(
     id: "hand_side_plank",
     name: "Hand Side Plank",
@@ -217,24 +358,7 @@ List<ExerciseModel> exercises = [
     targetBody: "Lower Abs",
     location: "home",
   ),
-  ExerciseModel(
-    id: "push_up",
-    name: "Push Up",
-    video: [
-      "assets/videos/male-Bodyweight-push-up-side-converted.mp4",
-      "assets/videos/male-Bodyweight-push-up-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/push_up.jpg",
-    instructions: [
-      "Start in plank on hands under shoulders.",
-      "Lower chest toward the floor while keeping a straight line.",
-      "Push back up fully extending elbows.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Chest",
-    location: "home",
-  ),
+
   ExerciseModel(
     id: "wall_angel",
     name: "Wall Angel",
@@ -376,24 +500,7 @@ List<ExerciseModel> exercises = [
     targetBody: "Chest",
     location: "home",
   ),
-  ExerciseModel(
-    id: "crunches",
-    name: "Crunches",
-    video: [
-      "assets/videos/male-bodyweight-crunch-side-converted.mp4",
-      "assets/videos/male-bodyweight-crunch-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/crunches.jpg",
-    instructions: [
-      "Lie on back with knees bent, feet flat.",
-      "Lift shoulders toward hips, engaging upper abs.",
-      "Lower with control.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Upper Abs",
-    location: "home",
-  ),
+
   ExerciseModel(
     id: "bodyweight_box_assisted_dips",
     name: "Bodyweight Box Assisted Dips",
@@ -430,24 +537,7 @@ List<ExerciseModel> exercises = [
     targetBody: "Obliques",
     location: "home",
   ),
-  ExerciseModel(
-    id: "split_squat",
-    name: "Split Squat",
-    video: [
-      "assets/videos/male-bodyweight-split-squat-side-converted.mp4",
-      "assets/videos/male-bodyweight-split-squat-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/split_squat.jpg",
-    instructions: [
-      "Stand in a split stance, back foot elevated or on ground.",
-      "Bend front knee and lower until back knee nears floor.",
-      "Push through front heel to return.",
-    ],
-    difficulty: "Beginner",
-    type: "rep",
-    targetBody: "Quadriceps",
-    location: "home",
-  ),
+
   ExerciseModel(
     id: "dumbbell_goblet_squat",
     name: "dumbbell_goblet_squat",
@@ -649,43 +739,7 @@ List<ExerciseModel> exercises = [
     targetBody: "Quadriceps",
     location: "gym",
   ),
-  ExerciseModel(
-    id: "barbell_bench_press",
-    name: "Barbell Bench Press",
-    video: [
-      "assets/videos/male-barbell-bench-press-side_KciuhbB-converted.mp4",
-      "assets/videos/male-barbell-bench-press-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/bench.jpg",
-    instructions: [
-      "Lay flat on the bench with your feet on the ground. With straight arms unrack the bar.",
-      "Lower the bar to your mid chest",
-      "Raise the bar until you've locked your elbows.",
-    ],
-    difficulty: "Intermediate",
-    type: "rep",
-    targetBody: "Chest",
-    location: "gym",
-  ),
-  ExerciseModel(
-    id: "barbell_bent_over_row",
-    name: "Barbell Bent Over Row",
-    video: [
-      "assets/videos/male-barbell-bent-over-row-side-converted.mp4",
-      "assets/videos/male-barbell-bent-over-row-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/bent_over.jpg",
-    instructions: [
-      "Grab a barbell with a shoulder width pronated or supinated grip.",
-      "Bend forward at your hips while maintaining a flat back.",
-      "Pull the weight toward your upper abdomen.",
-      "Lower the weight in a controlled manner and repeat.",
-    ],
-    difficulty: "Intermediate",
-    type: "rep",
-    targetBody: "Back",
-    location: "gym",
-  ),
+
   ExerciseModel(
     id: "barbell_landmine_row",
     name: "Barbell Landmine Row",
@@ -723,25 +777,7 @@ List<ExerciseModel> exercises = [
     targetBody: "Hamstrings",
     location: "gym",
   ),
-  ExerciseModel(
-    id: "barbell_curl",
-    name: "Barbell Curl",
-    video: [
-      "assets/videos/male-Barbell-barbell-curl-side-converted.mp4",
-      "assets/videos/male-Barbell-barbell-curl-front-converted.mp4",
-    ],
-    image: "assets/images/exercises/barbell_curl.jpg",
-    instructions: [
-      "While holding the upper arms stationary, curl the weights forward while contracting the biceps as you breathe out.",
-      "Continue the movement until your biceps are fully contracted and the bar is at shoulder level.",
-      "Hold the contracted position for a second and squeeze the biceps hard.",
-      "Slowly bring the weight back down to the starting position.",
-    ],
-    difficulty: "Intermediate",
-    type: "rep",
-    targetBody: "Biceps",
-    location: "gym",
-  ),
+
   ExerciseModel(
     id: "dumbbell_single_arm_row",
     name: "Dumbbell Single Arm Row",

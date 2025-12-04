@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="perfit"
+        android:label="Perfit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <service android:name="com.ekasetiawans.flutter_background.FlutterBackgroundService"

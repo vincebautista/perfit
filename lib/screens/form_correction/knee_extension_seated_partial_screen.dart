@@ -176,8 +176,8 @@ class _KneeExtensionSeatedPartialScreenState
 
   void _handleDistanceCheck(Pose pose) {
     final distanceCm = _distanceService.computeSmoothedDistance(pose);
-    const minCm = 100;
-    const maxCm = 150;
+    const minCm = 150;
+    const maxCm = 200;
 
     if (distanceCm < minCm) {
       distanceStatus = "Too Close! Move back";
