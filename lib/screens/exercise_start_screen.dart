@@ -60,13 +60,16 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
   int countdown = 3;
   int _startCountdown = 3;
   bool isRepExercise = false;
+  final SettingService _settingService = SettingService();
+
+  bool isDarkMode = true;
 
   @override
   void initState() {
     super.initState();
 
     loadSettings();
-
+    _loadTheme();
     isRepExercise = widget.exercise.type == "rep";
 
     // Initialize video
@@ -95,6 +98,14 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
         startRepTimer();
       }
     }
+  }
+
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
   }
 
   Future<void> loadSettings() async {
@@ -359,7 +370,8 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
                         horizontal: AppSizes.padding16,
                       ),
                       child: Card(
-                        color: AppColors.grey,
+                        color:
+                            isDarkMode ? AppColors.grey : AppColors.lightgrey,
                         elevation: 4,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -440,7 +452,11 @@ class _ExerciseStartScreenState extends State<ExerciseStartScreen> {
                         GestureDetector(
                           onTap: skipExercise,
                           child: Card(
-                            color: AppColors.grey,
+                            color:
+                                isDarkMode
+                                    ? AppColors.grey
+                                    : AppColors.lightgrey,
+
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSizes.padding16 * 3,

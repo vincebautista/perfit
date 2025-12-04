@@ -470,9 +470,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context), // cancel
-                            child: const Text(
+                            child: Text(
                               "Cancel",
-                              style: TextStyle(color: AppColors.white),
+                              style: TextStyles.caption.copyWith(
+                                color:
+                                    isDarkMode
+                                        ? AppColors.white
+                                        : AppColors.black,
+                              ),
                             ),
                           ),
                           Container(

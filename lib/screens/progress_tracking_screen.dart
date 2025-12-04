@@ -37,9 +37,9 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
   Map<String, dynamic>? _cachedFitnessPlan;
 
   final geminiService = GeminiApiService();
-final SettingService _settingService = SettingService();  
+  final SettingService _settingService = SettingService();
 
-bool isDarkMode = true;
+  bool isDarkMode = true;
   @override
   void initState() {
     // TODO: implement initState
@@ -49,6 +49,7 @@ bool isDarkMode = true;
     uid = user?.uid;
     _loadTheme();
   }
+
   Future<void> _loadTheme() async {
     final mode = await _settingService.loadThemeMode();
     if (!mounted) return;
@@ -616,8 +617,6 @@ bool isDarkMode = true;
                 );
               }
 
-              
-
               return StreamBuilder<QuerySnapshot>(
                 stream:
                     FirebaseFirestore.instance
@@ -1143,9 +1142,12 @@ bool isDarkMode = true;
                             if (!mounted) return;
                             Navigator.of(context).pop();
                           },
-                          child: const Text(
+                          child: Text(
                             "Cancel",
-                            style: TextStyle(color: AppColors.white),
+                            style: TextStyle(
+                              color:
+                                  isDarkMode ? AppColors.white : AppColors.grey,
+                            ),
                           ),
                         ),
                         Container(

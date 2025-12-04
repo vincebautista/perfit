@@ -161,7 +161,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ? AppColors.grey
                                       : AppColors.lightgrey,
                               child: ListTile(
-                                title: Text("Rest Time"),
+                                title: Text("Rest Time",style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.black : AppColors.white,
+                    ) ,),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -198,7 +200,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text("$countdown secs"),
+                                    Text("$countdown secs",style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.white : AppColors.black,
+                    ) ),
                                     Gap(AppSizes.gap10),
                                     IconButton(
                                       onPressed: () {
@@ -228,7 +232,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       : AppColors.lightgrey,
 
                               child: ListTile(
-                                title: Text("Workout Reminder"),
+                                title: Text("Workout Reminder",style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.white : AppColors.black,
+                    ) ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -262,7 +268,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Card(
-                              color: AppColors.grey,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.grey
+                                      : AppColors.lightgrey,
                               child: ListTile(
                                 onTap:
                                     () => NavigationUtils.push(

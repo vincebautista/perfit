@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:perfit/core/constants/colors.dart';
 import 'package:perfit/core/constants/sizes.dart';
+import 'package:perfit/core/services/setting_service.dart';
 import 'package:perfit/core/utils/validation_utils.dart';
 import 'package:perfit/data/models/meal_provider.dart';
 import 'package:perfit/widgets/text_styles.dart';
@@ -14,6 +16,7 @@ import 'package:provider/provider.dart';
 class AddFoodScreen extends StatefulWidget {
   final String meal;
   final bool isFromMeal;
+  
 
   const AddFoodScreen({
     super.key,
@@ -32,6 +35,23 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   final appKey = "f7455b98be55ee9b094918b0b9c3f767";
 
   Future<List<dynamic>>? foodResult;
+final SettingService _settingService = SettingService();  
+
+bool isDarkMode = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final mode = await _settingService.loadThemeMode();
+    if (!mounted) return;
+    setState(() {
+      isDarkMode = mode == ThemeMode.dark;
+    });
+  }
 
   // Search Edamam for foods
   Future<List<dynamic>> searchFood(String query) async {
@@ -228,7 +248,9 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
             final double totalFat = fat * quantity;
 
             return AlertDialog(
-              title: Text(fullFoodInfo["food_name"]),
+              title: Text(fullFoodInfo["food_name"],style: TextStyles.caption.copyWith(
+                      color: isDarkMode ? AppColors.white : AppColors.black,
+                    ),),
               content: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
