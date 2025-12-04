@@ -95,7 +95,7 @@ List<ExerciseModel> exercises = [
     type: "rep",
     targetBody: "Quadriceps",
     location: "home",
-    hasFormCorrection: false,
+    hasFormCorrection: true,
   ),
   ExerciseModel(
     id: "bodyweight_squat",

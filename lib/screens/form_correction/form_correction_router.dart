@@ -16,10 +16,8 @@ class FormCorrectionRouter {
     "knee_extension_seated_partial": () => KneeExtensionSeatedPartialScreen(),
     "push_up": () => PushUpScreen(),
     "bodyweight_squat": () => SquatsScreen(),
-    "crunches": () => CrunchesScreen(),
     "barbell_bent_over_row": () => BarbellRowScreen(),
-    // "split_squat": () => SplitSquatFormCorrection(),
-    // "forearm_plank": () => PlankFormCorrection(),
+    "split_squat": () => SplitSquatScreen(),
     // "barbell_bench_press": () => BenchPressFormCorrection(),
     // "barbell_deadlift": () => DeadliftFormCorrection(),
   };
