@@ -5,6 +5,7 @@ import 'package:perfit/core/constants/sizes.dart';
 import 'package:perfit/core/utils/navigation_utils.dart';
 import 'package:perfit/screens/food_screen.dart';
 import 'package:perfit/screens/home_screen.dart';
+import 'package:perfit/screens/onboarding/subscription_screen.dart';
 import 'package:perfit/screens/profile_screen.dart';
 import 'package:perfit/screens/progress_tracking_screen.dart';
 import 'package:perfit/screens/welcome_screen.dart';
@@ -59,7 +60,8 @@ class _MainNavigationState extends State<MainNavigation> {
                 AppSizes.padding16,
               ),
               child: ElevatedButton(
-                onPressed: () => NavigationUtils.push(context, WelcomeScreen()),
+                onPressed:
+                    () => NavigationUtils.push(context, SubscriptionScreen()),
                 child: Text("Start your journey"),
               ),
             );
